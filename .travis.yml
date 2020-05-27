@@ -5,16 +5,14 @@ branches:
   only:
     - master
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test 
-    packages:
-      - doxygen
-      - g++-10
+before_install:
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update
+  - sudo apt install g++-10
+
+
       
 script:
-  - doxygen Doxyfile
   - CXX=/usr/bin/g++-10 CC=/usr/bin/gcc-10 cmake .
   - cmake --build .
   
