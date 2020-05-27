@@ -5,14 +5,14 @@ branches:
   only:
     - master
 
-before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-  - sudo apt-get update
-  - sudo apt install g++-10
-
-
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test 
+    packages:
+      - g++-8
       
 script:
-  - CXX=/usr/bin/g++-10 CC=/usr/bin/gcc-10 cmake .
+  - CXX=/usr/bin/g++-8 CC=/usr/bin/gcc-8 cmake .
   - cmake --build .
   
