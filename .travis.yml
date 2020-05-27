@@ -1,0 +1,20 @@
+dist: trusty
+sudo: false
+
+branches:
+  only:
+    - master
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test 
+    packages:
+      - doxygen
+      - g++-10
+      
+script:
+  - doxygen Doxyfile
+  - CXX=/usr/bin/g++-10 CC=/usr/bin/gcc-10 cmake .
+  - cmake --build .
+  
