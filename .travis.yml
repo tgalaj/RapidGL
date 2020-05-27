@@ -1,18 +1,23 @@
+language: cpp
+sudo: required
 dist: trusty
-sudo: false
 
 branches:
   only:
     - master
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install xorg-dev libglu1-mesa-dev
 
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test 
     packages:
-      - g++-8
+      - g++-9
       
 script:
-  - CXX=/usr/bin/g++-8 CC=/usr/bin/gcc-8 cmake .
+  - CXX=/usr/bin/g++-9 CC=/usr/bin/gcc-9 cmake .
   - cmake --build .
   
