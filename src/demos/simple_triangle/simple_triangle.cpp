@@ -1,6 +1,7 @@
 #include "simple_triangle.h"
 #include "input.h"
 #include "gui/gui.h"
+#include "glm/gtc/constants.hpp"
 
 SimpleTriangle::SimpleTriangle()
     : m_vao_id(0),
@@ -36,8 +37,6 @@ void SimpleTriangle::init_app()
     std::string dir = "../src/demos/simple_triangle/";
     m_shader = std::make_shared<RapidGL::Shader>(dir + "simple_triangle.vert", dir + "simple_triangle.frag");
     m_shader->link();
-
-    m_shader->setUniform("triangle_color", m_triangle_color);
 }
 
 void SimpleTriangle::input()
@@ -57,6 +56,32 @@ void SimpleTriangle::render()
     glClear(GL_COLOR_BUFFER_BIT);
 
     m_shader->bind();
+    m_shader->setUniform("triangle_color",       m_triangle_color);
+    m_shader->setUniform("triangle_translation", m_triangle_translation);
+
     glBindVertexArray(m_vao_id);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+void SimpleTriangle::renderGUI()
+{
+    CoreApp::renderGUI();
+
+    ImVec2 window_pos = ImVec2(10.0, 150.0);
+    ImVec2 window_pos_pivot = ImVec2(0.0f, 1.0f);
+
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::SetNextWindowSize({ 250, 0 });
+
+    ImGui::Begin("Triangle Position/Color");
+    {
+        static float translation[] = { 0.0, 0.0 };
+        ImGui::SliderFloat2("position", translation, -1.0, 1.0);
+        m_triangle_translation = glm::vec2(translation[0], translation[1]);
+
+        static float color[3] = { m_triangle_color.r, m_triangle_color.g, m_triangle_color.b };
+        ImGui::ColorEdit3("color", color);
+        m_triangle_color = glm::vec3(color[0], color[1], color[2]);
+    }
+    ImGui::End();
 }
