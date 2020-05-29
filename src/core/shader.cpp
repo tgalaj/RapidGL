@@ -96,7 +96,7 @@ namespace RapidGL
         }
 
 
-        std::string code = Util::loadFile("res/shaders/" + file_name);
+        std::string code = Util::loadFile(file_name);
         code = Util::loadShaderIncludes(code);
 
         const char * shader_code = code.c_str();

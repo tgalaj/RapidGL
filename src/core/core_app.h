@@ -2,6 +2,7 @@
 
 #include <string>
 
+#define GLFW_INCLUDE_NONE
 #define MIN_GL_VERSION_MAJOR 4
 #define MIN_GL_VERSION_MINOR 6
 

@@ -1,7 +1,11 @@
 #include "simple_triangle.h"
 #include "input.h"
+#include "gui/gui.h"
 
 SimpleTriangle::SimpleTriangle()
+    : m_vao_id(0),
+      m_vbo_id(0),
+      m_triangle_color(1.0, 0.5, 0.2)
 {
 }
 
@@ -12,6 +16,28 @@ SimpleTriangle::~SimpleTriangle()
 void SimpleTriangle::init_app()
 {
     glClearColor(0.5, 0.5, 0.5, 1.0);
+
+    float vertices[] = { 
+                         -0.5f, -0.5f, 0.0f, 
+                          0.5f, -0.5f, 0.0f,
+                          0.0f,  0.5f, 0.0f
+                       };
+
+    glGenVertexArrays(1, &m_vao_id);
+    glBindVertexArray(m_vao_id);
+
+    glGenBuffers(1, &m_vbo_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(vertices[0]), nullptr);
+    glEnableVertexAttribArray(0);
+
+    std::string dir = "../src/demos/simple_triangle/";
+    m_shader = std::make_shared<RapidGL::Shader>(dir + "simple_triangle.vert", dir + "simple_triangle.frag");
+    m_shader->link();
+
+    m_shader->setUniform("triangle_color", m_triangle_color);
 }
 
 void SimpleTriangle::input()
@@ -29,9 +55,8 @@ void SimpleTriangle::update(double delta_time)
 void SimpleTriangle::render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
-}
 
-void SimpleTriangle::renderGUI()
-{
-    RapidGL::CoreApp::renderGUI();
+    m_shader->bind();
+    glBindVertexArray(m_vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 }
