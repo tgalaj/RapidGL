@@ -43,6 +43,6 @@ namespace RapidGL
         */
         static unsigned char* loadTextureData(const std::string & filename, ImageData & image_data);
         
-        static unsigned int loadGLTexture(const char * path, const std::string & directory, bool gamma)
+        static unsigned int loadGLTexture(const char* path, const std::string& directory, bool gamma);
     };
 }
