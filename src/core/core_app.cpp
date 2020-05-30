@@ -1,5 +1,7 @@
 #include "core_app.h"
 
+#include <vector>
+
 #include "stb_image_write.h"
 #include "stb_image_resize.h"
 
