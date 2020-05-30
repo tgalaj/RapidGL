@@ -31,5 +31,9 @@
 *.out
 *.app
 
+# Visual Studio files
+.vs/
+CMakeSettings.json
+
 build/
 configuration/root_directory.h
