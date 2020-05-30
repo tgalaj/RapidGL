@@ -1,4 +1,5 @@
 #include "simple_triangle.h"
+#include "filesystem.h"
 #include "input.h"
 #include "gui/gui.h"
 #include "glm/gtc/constants.hpp"
@@ -6,7 +7,8 @@
 SimpleTriangle::SimpleTriangle()
     : m_vao_id(0),
       m_vbo_id(0),
-      m_triangle_color(1.0, 0.5, 0.2)
+      m_triangle_color(1.0, 0.5, 0.2),
+      m_triangle_translation(0.0, 0.0)
 {
 }
 
@@ -44,6 +46,19 @@ void SimpleTriangle::input()
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
     {
         stop();
+    }
+
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
+    {
+        std::string filename = "simple_triangle";
+        if (take_screenshot_png(filename, 400, 300))
+        {
+            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+        }
+        else
+        {
+            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+        }
     }
 }
 
