@@ -1,6 +1,6 @@
 # Copyright (C) 2020 Tomasz Gałaj
 
-set(DEMO_NAME "simple_triangle")
+set(DEMO_NAME "00_template_project")
 
 # Add source files
 file(GLOB_RECURSE SOURCE_FILES_EXE 

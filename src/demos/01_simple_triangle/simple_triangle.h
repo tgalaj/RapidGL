@@ -4,11 +4,11 @@
 #include "core_app.h"
 #include "shader.h"
 
-class SimpleTriangle : public RapidGL::CoreApp
+class TemplateProject : public RapidGL::CoreApp
 {
 public:
-    SimpleTriangle();
-    ~SimpleTriangle();
+    TemplateProject();
+    ~TemplateProject();
 
     void init_app()                override;
     void input()                   override;

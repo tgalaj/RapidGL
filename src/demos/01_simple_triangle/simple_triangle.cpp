@@ -4,7 +4,7 @@
 #include "gui/gui.h"
 #include "glm/gtc/constants.hpp"
 
-SimpleTriangle::SimpleTriangle()
+TemplateProject::TemplateProject()
     : m_vao_id(0),
       m_vbo_id(0),
       m_triangle_color(1.0, 0.5, 0.2),
@@ -12,11 +12,11 @@ SimpleTriangle::SimpleTriangle()
 {
 }
 
-SimpleTriangle::~SimpleTriangle()
+TemplateProject::~TemplateProject()
 {
 }
 
-void SimpleTriangle::init_app()
+void TemplateProject::init_app()
 {
     glClearColor(0.5, 0.5, 0.5, 1.0);
 
@@ -41,7 +41,7 @@ void SimpleTriangle::init_app()
     m_shader->link();
 }
 
-void SimpleTriangle::input()
+void TemplateProject::input()
 {
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
     {
@@ -50,7 +50,7 @@ void SimpleTriangle::input()
 
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
     {
-        std::string filename = "simple_triangle";
+        std::string filename = "01_simple_triangle";
         if (take_screenshot_png(filename, 400, 300))
         {
             std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
@@ -62,11 +62,11 @@ void SimpleTriangle::input()
     }
 }
 
-void SimpleTriangle::update(double delta_time)
+void TemplateProject::update(double delta_time)
 {
 }
 
-void SimpleTriangle::render()
+void TemplateProject::render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -78,7 +78,7 @@ void SimpleTriangle::render()
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void SimpleTriangle::renderGUI()
+void TemplateProject::renderGUI()
 {
     CoreApp::renderGUI();
 
