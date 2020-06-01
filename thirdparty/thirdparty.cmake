@@ -72,7 +72,7 @@ set(IMGUI_INCLUDE_DIR "${IMGUI_DIR}")
 
 # stb_image
 set(STB_IMAGE_DIR "${THIRDPARTY_DIR}/stb_image")
-add_library("stb_image" STATIC "${STB_IMAGE_DIR}/stb_image.cpp")
+add_library("stb_image" STATIC ${STB_IMAGE_DIR}/stb_image.cpp ${STB_IMAGE_DIR}/stb_image_write.cpp ${STB_IMAGE_DIR}/stb_image_resize.cpp)
 target_include_directories("stb_image" PRIVATE "${STB_IMAGE_DIR}")
 
 set(STB_IMAGE_LIBRARY "stb_image")

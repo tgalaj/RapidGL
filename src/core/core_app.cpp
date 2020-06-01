@@ -1,4 +1,11 @@
 #include "core_app.h"
+
+#include <vector>
+
+#include "stb_image_write.h"
+#include "stb_image_resize.h"
+
+#include "filesystem.h"
 #include "input.h"
 #include "timer.h"
 #include "window.h"
@@ -76,6 +83,46 @@ namespace RapidGL
         }
 
         m_is_running = false;
+    }
+
+    bool CoreApp::take_screenshot_png(const std::string & filename, size_t dst_width, size_t dst_height)
+    {
+        size_t width  = Window::getWidth();
+        size_t height = Window::getHeight();
+        bool   resize = true;
+
+        if (dst_width == 0 || dst_height == 0)
+        {
+            resize = false;
+        }
+
+        std::vector<uint8_t> image;
+        image.resize(width * height * 4);
+
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+
+        if (resize)
+        {
+            auto resized_image = image;
+            stbir_resize_uint8(image.data(), width, height, 0, resized_image.data(), dst_width, dst_height, 0, 4);
+
+            width  = dst_width;
+            height = dst_height;
+            image  = resized_image;
+        }
+
+        auto screenshots_dir = FileSystem::getPath("../screenshots");
+        if (!FileSystem::directoryExists(screenshots_dir))
+        {
+            FileSystem::createDirectory(screenshots_dir);
+        }
+
+        auto filepath = screenshots_dir + "/" + filename + ".png";
+
+        stbi_flip_vertically_on_write(true);
+        auto ret = stbi_write_png(filepath.c_str(), width, height, 4, image.data(), 0);
+
+        return ret;
     }
 
     void CoreApp::run()

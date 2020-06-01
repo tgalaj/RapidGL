@@ -8,6 +8,21 @@ namespace RapidGL
         return getPathRelativeRoot(path);
     }
 
+    bool FileSystem::directoryExists(const fs::path& path, fs::file_status status)
+    {
+        if (fs::status_known(status) ? fs::exists(status) : fs::exists(path))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    void FileSystem::createDirectory(const std::string& directory_name)
+    {
+        fs::create_directories(directory_name);
+    }
+
     const std::string& FileSystem::getRoot()
     {
         static std::string root = (rapidgl_root != nullptr ? rapidgl_root : "");

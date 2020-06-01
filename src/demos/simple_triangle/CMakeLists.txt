@@ -25,11 +25,5 @@ target_include_directories(${DEMO_NAME} PRIVATE ${CORE_LIB_INCLUDE})
 # Define the link libraries
 target_link_libraries(${DEMO_NAME} ${CORE_LIB_NAME})
 
-# TODO: Better use config file with macro to res directory than copying it after building
-add_custom_command(TARGET  ${DEMO_NAME} POST_BUILD
-				   COMMAND ${CMAKE_COMMAND} -E copy_directory
-						   ${PROJECT_SOURCE_DIR}/resources
-						   ${CMAKE_CURRENT_BINARY_DIR}/resources)
-
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "sources" FILES ${SOURCE_FILES_EXE})						   
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "headers" FILES ${HEADER_FILES_EXE})
