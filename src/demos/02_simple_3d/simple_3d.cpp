@@ -1,23 +1,32 @@
-#include "template_project.h"
+#include "simple_3d.h"
 #include "filesystem.h"
 #include "input.h"
 #include "gui/gui.h"
 
-TemplateProject::TemplateProject()
+Simple3d::Simple3d()
 {
 }
 
-TemplateProject::~TemplateProject()
+Simple3d::~Simple3d()
 {
 }
 
-void TemplateProject::init_app()
+void Simple3d::init_app()
 {
+    /* TODO:
+     * 
+     * - Show model loding
+     * - show camera navigation
+     * - show model generation using built-in functions
+     * - show texturing
+     * 
+    */
+
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.5, 0.5, 0.5, 1.0);
 }
 
-void TemplateProject::input()
+void Simple3d::input()
 {
     /* Close the application when Esc is released. */
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
@@ -29,7 +38,7 @@ void TemplateProject::input()
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
     {
         /* Specify filename of the screenshot. */
-        std::string filename = "00_template_project";
+        std::string filename = "02_simple_3d";
         if (take_screenshot_png(filename, 400, 300))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
@@ -42,18 +51,18 @@ void TemplateProject::input()
     }
 }
 
-void TemplateProject::update(double delta_time)
+void Simple3d::update(double delta_time)
 {
     /* Update variables here. */
 }
 
-void TemplateProject::render()
+void Simple3d::render()
 {
     /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void TemplateProject::renderGUI()
+void Simple3d::renderGUI()
 {
     /* This method is responsible for rendering GUI using ImGUI. */
 
@@ -75,8 +84,6 @@ void TemplateProject::renderGUI()
         ImGui::Text("Controls info: \n\n"
                     "Alpha 1 - take a screenshot\n"
                     "Esc     - close the app\n\n");
-
-        ImGui::TextWrapped("See src/demos/00_template_project/template_project.h for documentation.");
     }
     ImGui::End();
 }
