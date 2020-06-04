@@ -4,7 +4,7 @@
 #include "gui/gui.h"
 #include "glm/gtc/constants.hpp"
 
-TemplateProject::TemplateProject()
+SimpleTriangle::SimpleTriangle()
     : m_vao_id(0),
       m_vbo_id(0),
       m_triangle_color(1.0, 0.5, 0.2),
@@ -12,11 +12,11 @@ TemplateProject::TemplateProject()
 {
 }
 
-TemplateProject::~TemplateProject()
+SimpleTriangle::~SimpleTriangle()
 {
 }
 
-void TemplateProject::init_app()
+void SimpleTriangle::init_app()
 {
     glClearColor(0.5, 0.5, 0.5, 1.0);
 
@@ -36,12 +36,12 @@ void TemplateProject::init_app()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(vertices[0]), nullptr);
     glEnableVertexAttribArray(0);
 
-    std::string dir = "../src/demos/simple_triangle/";
+    std::string dir = "../src/demos/01_simple_triangle/";
     m_shader = std::make_shared<RapidGL::Shader>(dir + "simple_triangle.vert", dir + "simple_triangle.frag");
     m_shader->link();
 }
 
-void TemplateProject::input()
+void SimpleTriangle::input()
 {
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
     {
@@ -62,11 +62,11 @@ void TemplateProject::input()
     }
 }
 
-void TemplateProject::update(double delta_time)
+void SimpleTriangle::update(double delta_time)
 {
 }
 
-void TemplateProject::render()
+void SimpleTriangle::render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -78,7 +78,7 @@ void TemplateProject::render()
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void TemplateProject::renderGUI()
+void SimpleTriangle::renderGUI()
 {
     CoreApp::renderGUI();
 
