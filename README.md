@@ -40,3 +40,8 @@ All of the demos are available in ```src/demos```.
 
 ### Simple Triangle
 ![Simple Triangle](screenshots/01_simple_triangle.png)
+
+### Simple 3D
+This demo shows how to create camera, load models, generate primitives using built-in functions and add textures for specific objects.
+
+![Simple 3D](screenshots/02_simple_3d.png)

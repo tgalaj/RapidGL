@@ -13,25 +13,6 @@ namespace RapidGL
     class Camera
     {
     public:
-        Camera(bool is_ortho = false) 
-            : m_orientation     (glm::vec3(0.0f)),
-              m_position        (glm::vec3(0.0f)),
-              m_direction       (glm::vec3(0.0f, 0.0f, -1.0f)),
-              m_is_dirty        (true),
-              m_free_look_locked(false),
-              m_view            (1.0f),
-              m_projection      (1.0f),
-              m_is_ortho        (is_ortho),
-              m_sensitivity     (0.2),
-              m_move_speed      (10.0),
-              m_unlock_mouse_key(KeyCode::MouseRight),
-              m_forward_key     (KeyCode::W),
-              m_backward_key    (KeyCode::S),
-              m_left_key        (KeyCode::A),
-              m_right_key       (KeyCode::D),
-              m_up_key          (KeyCode::E),
-              m_down_key        (KeyCode::Q) {}
-
         /*
          * Perspective camera
          */
@@ -123,6 +104,25 @@ namespace RapidGL
         KeyCode m_down_key;
     
     private:
+        Camera(bool is_ortho = false) 
+            : m_orientation     (glm::vec3(0.0f)),
+              m_position        (glm::vec3(0.0f)),
+              m_direction       (glm::vec3(0.0f, 0.0f, -1.0f)),
+              m_is_dirty        (true),
+              m_free_look_locked(false),
+              m_view            (1.0f),
+              m_projection      (1.0f),
+              m_is_ortho        (is_ortho),
+              m_sensitivity     (0.2),
+              m_move_speed      (10.0),
+              m_unlock_mouse_key(KeyCode::MouseRight),
+              m_forward_key     (KeyCode::W),
+              m_backward_key    (KeyCode::S),
+              m_left_key        (KeyCode::A),
+              m_right_key       (KeyCode::D),
+              m_up_key          (KeyCode::E),
+              m_down_key        (KeyCode::Q) {}
+
         glm::quat m_orientation;
         glm::vec3 m_position;
         glm::vec3 m_direction;

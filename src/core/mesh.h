@@ -57,7 +57,7 @@ namespace RapidGL
         GLenum getDrawMode()     const { return m_mesh_data->m_draw_mode; }
         GLuint getIndicesCount() const { return m_mesh_data->m_indices_count; }
 
-        void render(Shader & shader);
+        void render(std::shared_ptr<Shader> & shader);
 
     private:
         std::shared_ptr<MeshData> m_mesh_data;

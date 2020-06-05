@@ -26,7 +26,7 @@ namespace RapidGL
         void genQuad    (float width = 1.0f, float height = 1.0f);
 
         void load(const std::string & filename);
-        void render(Shader & shader);
+        void render(std::shared_ptr<Shader> & shader);
 
         void setDrawMode(GLenum draw_mode);
         GLenum getDrawMode() { return getMesh(0).getDrawMode(); }
@@ -45,7 +45,7 @@ namespace RapidGL
 
     private:
         void calcTangentSpace(VertexBuffers & buffers) const;
-        void genPrimitive(VertexBuffers & buffers);
+        void genPrimitive(VertexBuffers & buffers, bool generate_tangents = true);
 
         void processNode(aiNode * node, const aiScene * scene, aiString & directory);
         Mesh processMesh(aiMesh * mesh, const aiScene * scene, aiString & directory) const;

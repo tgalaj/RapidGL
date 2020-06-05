@@ -481,7 +481,7 @@ namespace RapidGL
             v.m_position = positions[i];
             v.m_normal   = normals[i];
             v.m_texcoord = texcoords[i];
-            v.m_tangent  = glm::vec3(0.0f);
+            v.m_tangent  = glm::vec3(1.0f);
 
             buffers.m_vertices.push_back(v);
         }

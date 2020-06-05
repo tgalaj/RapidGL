@@ -72,7 +72,7 @@ namespace RapidGL
         m_mesh_data->m_textures.push_back(texture);
     }
 
-    void Mesh::render(Shader& shader)
+    void Mesh::render(std::shared_ptr<Shader> & shader)
     {        
         unsigned int diffuse_nr  = 1;
         unsigned int specular_nr = 1;
@@ -95,11 +95,12 @@ namespace RapidGL
             else if (name == "texture_height")
                 number = std::to_string(height_nr++);
 
-            shader.setUniform((name + number).c_str(), i);
+            shader->setUniform((name + number).c_str(), i);
             glBindTexture(GL_TEXTURE_2D, m_mesh_data->m_textures[i].m_id);
         }
 
         glBindVertexArray(m_mesh_data->m_vao_id);
         glDrawElements(m_mesh_data->m_draw_mode, m_mesh_data->m_indices_count, GL_UNSIGNED_INT, nullptr);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 }

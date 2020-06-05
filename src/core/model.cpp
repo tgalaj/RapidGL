@@ -172,11 +172,15 @@ namespace RapidGL
         }
     }
 
-    void Model::genPrimitive(VertexBuffers & buffers)
+    void Model::genPrimitive(VertexBuffers & buffers, bool generate_tangents)
     {
         Mesh mesh;
 
-        calcTangentSpace(buffers);
+        if (generate_tangents)
+        {
+            calcTangentSpace(buffers);
+        }
+
         mesh.setBuffers(buffers);
 
         if(m_meshes.size() > 0)
@@ -240,11 +244,11 @@ namespace RapidGL
         VertexBuffers buffers;
         GeomPrimitive::genQuad(buffers, width, height);
 
-        genPrimitive(buffers);
+        genPrimitive(buffers, false);
         m_meshes[m_meshes.size() - 1].setDrawMode(GL_TRIANGLE_STRIP);
     }
 
-    void Model::render(Shader & shader)
+    void Model::render(std::shared_ptr<Shader>& shader)
     {
         for(unsigned i = 0; i < m_meshes.size(); ++i)
         {
