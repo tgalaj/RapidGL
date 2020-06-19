@@ -23,9 +23,9 @@ namespace RapidGL
         virtual void input()                   = 0;
         virtual void update(double delta_time) = 0;
         virtual void render()                  = 0;
-        virtual void renderGUI();
+        virtual void render_gui();
 
-        unsigned int getFPS() const;
+        unsigned int get_fps() const;
 
         virtual void start() final;
         virtual void stop()  final;

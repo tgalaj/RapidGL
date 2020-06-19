@@ -36,7 +36,7 @@ namespace RapidGL
         init_app();
     }
 
-    void CoreApp::renderGUI()
+    void CoreApp::render_gui()
     {
         /* Overlay start */
         const float DISTANCE = 10.0f;
@@ -60,7 +60,7 @@ namespace RapidGL
         /* Overlay end */
     }
 
-    unsigned int CoreApp::getFPS() const
+    unsigned int CoreApp::get_fps() const
     {
         return m_fpsToReturn;
     }
@@ -186,7 +186,7 @@ namespace RapidGL
 
                 GUI::prepare();
                 {
-                    renderGUI();
+                    render_gui();
                 }
                 GUI::render();
 

@@ -78,9 +78,9 @@ void SimpleTriangle::render()
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void SimpleTriangle::renderGUI()
+void SimpleTriangle::render_gui()
 {
-    CoreApp::renderGUI();
+    CoreApp::render_gui();
 
     ImVec2 window_pos = ImVec2(10.0, 150.0);
     ImVec2 window_pos_pivot = ImVec2(0.0f, 1.0f);

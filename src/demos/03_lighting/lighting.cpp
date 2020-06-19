@@ -140,15 +140,15 @@ void Lighting::render()
     }
 }
 
-void Lighting::renderGUI()
+void Lighting::render_gui()
 {
     /* This method is responsible for rendering GUI using ImGUI. */
 
     /* 
-     * It's possible to call renderGUI() from the base class.
+     * It's possible to call render_gui() from the base class.
      * It renders performance info overlay.
      */
-    CoreApp::renderGUI();
+    CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
     ImVec2 window_pos = ImVec2(790.0, 10.0);

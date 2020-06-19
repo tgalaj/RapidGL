@@ -33,5 +33,5 @@ public:
     void input()                   override;
     void update(double delta_time) override;
     void render()                  override;
-    void renderGUI()               override;
+    void render_gui()               override;
 };

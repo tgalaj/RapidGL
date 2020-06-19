@@ -18,9 +18,12 @@ public:
     void input()                   override;
     void update(double delta_time) override;
     void render()                  override;
-    void renderGUI()               override;
+    void render_gui()               override;
 
 private:
+    void render_opaque();
+    void render_lights_forward();
+
     std::shared_ptr<RapidGL::Camera> m_camera;
     std::shared_ptr<RapidGL::Shader> m_simple_texturing_shader;
 
