@@ -21,7 +21,7 @@ namespace RapidGL
 
         if (!inFile)
         {
-            fprintf(stderr, "Could not open file %s", FileSystem::getPath(filename).c_str());
+            fprintf(stderr, "Could not open file %s\n", FileSystem::getPath(filename).c_str());
             inFile.close();
 
             return "";
@@ -49,7 +49,7 @@ namespace RapidGL
             if(line.substr(0, include_phrase.size()) == include_phrase)
             {
                 std::string include_file_name = line.substr(include_phrase.size() + 2, line.size() - include_phrase .size() - 3);
-                line = loadFile(FileSystem::getPath(dir + include_file_name));
+                line = loadFile(dir + include_file_name);
             }
 
             new_shader_code.append(line + "\n");

@@ -53,7 +53,7 @@ namespace RapidGL
 
         void setUniform(const std::string & uniformName, float value);
         void setUniform(const std::string & uniformName, int value);
-        void setUniform(const std::string & uniformName, unsigned int value);
+        void setUniform(const std::string & uniformName, GLuint value);
         void setUniform(const std::string & uniformName, GLsizei count, float * value);
         void setUniform(const std::string & uniformName, GLsizei count, int * value);
         void setUniform(const std::string & uniformName, GLsizei count, glm::vec3 * vectors);

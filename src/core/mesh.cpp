@@ -95,7 +95,7 @@ namespace RapidGL
             else if (name == "texture_height")
                 number = std::to_string(height_nr++);
 
-            shader->setUniform((name + number).c_str(), i);
+            shader->setUniform((name + number).c_str(), static_cast<int>(i));
             glBindTexture(GL_TEXTURE_2D, m_mesh_data->m_textures[i].m_id);
         }
 

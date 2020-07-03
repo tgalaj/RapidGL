@@ -21,15 +21,14 @@ public:
     void render_gui()               override;
 
 private:
-    void render_opaque();
-    void render_lights_forward();
-
     std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_simple_texturing_shader;
+    std::shared_ptr<RapidGL::Shader> m_ambient_light_shader;
+    std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
+    std::shared_ptr<RapidGL::Shader> m_point_light_shader;
+    std::shared_ptr<RapidGL::Shader> m_spot_light_shader;
 
     std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
-    std::vector<glm::vec3> m_objects_colors;
 
     float m_mix_factor;
 };

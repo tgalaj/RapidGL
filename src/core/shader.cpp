@@ -218,7 +218,7 @@ namespace RapidGL
         }
     }
 
-    void Shader::setUniform(const std::string & uniformName, unsigned int value)
+    void Shader::setUniform(const std::string & uniformName, GLuint value)
     {
         if (m_uniforms_locations.count(uniformName))
         {

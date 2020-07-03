@@ -54,8 +54,9 @@ namespace RapidGL
         void setDrawMode(GLenum draw_mode) const { m_mesh_data->m_draw_mode = draw_mode; }
         void addTexture(const Texture & texture);
 
-        GLenum getDrawMode()     const { return m_mesh_data->m_draw_mode; }
-        GLuint getIndicesCount() const { return m_mesh_data->m_indices_count; }
+        GLenum getDrawMode()      const { return m_mesh_data->m_draw_mode; }
+        GLuint getIndicesCount()  const { return m_mesh_data->m_indices_count; }
+        GLuint getTexturesCount() const { return m_mesh_data->m_textures.size(); }
 
         void render(std::shared_ptr<Shader> & shader);
 

@@ -4,6 +4,12 @@
 #include "util.h"
 #include "gui/gui.h"
 
+/* 
+   ** TODO: **
+   - GUI: ability to control the lights' properties
+   - Dir and spot lights: direction depends on angles (eg. azimuth, elevation)
+*/
+
 Lighting::Lighting()
     : m_mix_factor(1.0f)
 {
@@ -19,13 +25,14 @@ void Lighting::init_app()
     glClearColor(0.5, 0.5, 0.5, 1.0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Create models. */
-    for (unsigned i = 0; i < 8; ++i)
+    for (unsigned i = 0; i < 9; ++i)
     {
         m_objects.emplace_back(std::make_shared<RapidGL::Model>());
     }
@@ -39,39 +46,52 @@ void Lighting::init_app()
     m_objects[5]->genSphere(0.5);
     m_objects[6]->genTorus(0.5, 1.0);
     m_objects[7]->genQuad();
+    m_objects[8]->genPlane(50, 50);
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // monkey
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0, 0.5, -5)));                                                                         // cone
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5, 0.0, -5)));                                                                         // cube
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, 0.0, -5)));                                                                         // cylinder
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 2.5, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // plane
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 5.0, 0.0, -5)));                                                                         // sphere
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 7.5, 0.0, -5)));                                                                         // torus
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5,  0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // monkey
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0,  0.5, -5)));                                                                         // cone
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5,  0.0, -5)));                                                                         // cube
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0,  0.0, -5)));                                                                         // cylinder
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 2.5,  0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // plane
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 5.0,  0.0, -5)));                                                                         // sphere
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 7.5,  0.0, -5)));                                                                         // torus
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0,  0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, -1.0, -5)));                                                                         // ground plane
 
-    /* Set colors for individual models. */
-    m_objects_colors.emplace_back(glm::vec3(1.0, 0.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 1.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 0.0, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(1.0, 1.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 1.0, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(1.0, 0.0, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(0.5, 0.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 0.5, 0.0));
-
-    /* Add texture to the monkey and sphere models only. */
+    /* Add textures to the objects. */
     RapidGL::Texture texture;
     texture.m_id = RapidGL::Util::loadGLTexture("bricks.jpg", "textures", false);
     texture.m_type = "texture_diffuse";
 
+    RapidGL::Texture default_diffuse_texture;
+    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", false);
+    default_diffuse_texture.m_type = "texture_diffuse";
+
     m_objects[0]->getMesh(0).addTexture(texture);
     m_objects[5]->getMesh(0).addTexture(texture);
 
+    for (auto& model : m_objects)
+    {
+        if (model->getMesh(0).getTexturesCount() == 0)
+        {
+            model->getMesh(0).addTexture(default_diffuse_texture);
+        }
+    }
+
     /* Create shader. */
     std::string dir = "../src/demos/03_lighting/";
-    m_simple_texturing_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting.frag");
-    m_simple_texturing_shader->link();
+    m_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
+    m_ambient_light_shader->link();
+
+    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-directional.frag");
+    m_directional_light_shader->link();
+
+    m_point_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-point.frag");
+    m_point_light_shader->link();
+
+    m_spot_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-spot.frag");
+    m_spot_light_shader->link();
 }
 
 void Lighting::input()
@@ -127,17 +147,102 @@ void Lighting::render()
     /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_simple_texturing_shader->bind();
-    m_simple_texturing_shader->setUniform("mix_factor", m_mix_factor);
+    m_ambient_light_shader->bind();
+    m_ambient_light_shader->setUniform("ambient_factor", 0.18f);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
-    
+
+    /* First, render the ambient color only for the opaque objects. */
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        m_simple_texturing_shader->setUniform("color", m_objects_colors[i]);
-        m_simple_texturing_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
-        m_objects[i]->render(m_simple_texturing_shader);
+        //m_ambient_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_ambient_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+
+        m_objects[i]->render(m_ambient_light_shader);
     }
+
+    /*
+     * Disable writing to the depth buffer and additively
+     * shade only those pixels, that were shaded in the ambient step.
+     */
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_EQUAL);
+
+    /* Render directional light(s) */
+    m_directional_light_shader->bind();
+
+    m_directional_light_shader->setUniform("directional_light.base.color",     glm::vec3(1.0, 1.0, 1.0));
+    m_directional_light_shader->setUniform("directional_light.base.intensity", 0.5f);
+    m_directional_light_shader->setUniform("directional_light.direction",      glm::normalize(glm::vec3(0.0, -1.0, 0.0)));
+    
+    m_directional_light_shader->setUniform("cam_pos",            m_camera->position());
+    m_directional_light_shader->setUniform("specular_intensity", 0.2f);
+    m_directional_light_shader->setUniform("specular_power",     120.0f);
+
+    for (unsigned i = 0; i < m_objects.size(); ++i)
+    {
+        m_directional_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_directional_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+
+        m_objects[i]->render(m_directional_light_shader);
+    }
+
+    /* Render point lights */
+    m_point_light_shader->bind();
+
+    m_point_light_shader->setUniform("point_light.base.color",      glm::vec3(1.0, 0.0, 0.0));
+    m_point_light_shader->setUniform("point_light.base.intensity",  5.0f);
+    m_point_light_shader->setUniform("point_light.atten.constant",  1.0f);
+    m_point_light_shader->setUniform("point_light.atten.linear",    1.0f);
+    m_point_light_shader->setUniform("point_light.atten.quadratic", 2.0f);
+    m_point_light_shader->setUniform("point_light.position",        glm::vec3(0.0, 1.0, -2.0));
+    m_point_light_shader->setUniform("point_light.range",           5.0f);
+
+    m_point_light_shader->setUniform("cam_pos", m_camera->position());
+    m_point_light_shader->setUniform("specular_intensity", 0.2f);
+    m_point_light_shader->setUniform("specular_power", 120.0f);
+
+    for (unsigned i = 0; i < m_objects.size(); ++i)
+    {
+        m_point_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_point_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_point_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+
+        m_objects[i]->render(m_point_light_shader);
+    }
+
+    /* Render spot lights */
+    m_spot_light_shader->bind();
+
+    m_spot_light_shader->setUniform("spot_light.point.base.color",      glm::vec3(0.0, 0.0, 1.0));
+    m_spot_light_shader->setUniform("spot_light.point.base.intensity",  100.0f);
+    m_spot_light_shader->setUniform("spot_light.point.atten.constant",  1.0f);
+    m_spot_light_shader->setUniform("spot_light.point.atten.linear",    1.0f);
+    m_spot_light_shader->setUniform("spot_light.point.atten.quadratic", 8.0f);
+    m_spot_light_shader->setUniform("spot_light.point.position",        glm::vec3(-7.5, 3.0, -5));
+    m_spot_light_shader->setUniform("spot_light.point.range",           5.0f);
+    m_spot_light_shader->setUniform("spot_light.direction",             glm::normalize(glm::vec3(0.0, -1.0, 0.0)));
+    m_spot_light_shader->setUniform("spot_light.cutoff",                glm::radians(45.0f));
+
+    m_spot_light_shader->setUniform("cam_pos", m_camera->position());
+    m_spot_light_shader->setUniform("specular_intensity", 0.2f);
+    m_spot_light_shader->setUniform("specular_power", 120.0f);
+
+    for (unsigned i = 0; i < m_objects.size(); ++i)
+    {
+        m_spot_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_spot_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_spot_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+
+        m_objects[i]->render(m_spot_light_shader);
+    }
+
+    /* Enable writing to the depth buffer. */
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+    glBlendFunc(GL_ONE, GL_ZERO);
 }
 
 void Lighting::render_gui()
