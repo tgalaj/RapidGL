@@ -8,6 +8,61 @@
 #include <memory>
 #include <vector>
 
+struct BaseLight
+{
+    glm::vec3 color;
+    float intensity;
+};
+
+struct DirectionalLight : BaseLight
+{
+    glm::vec3 direction;
+
+    void setDirection(float azimuth, float elevation)
+    {
+        float az = glm::radians(azimuth);
+        float el = glm::radians(elevation);
+
+        direction.x = glm::sin(el) * glm::cos(az);
+        direction.y = glm::cos(el);
+        direction.z = glm::sin(el) * glm::sin(az);
+
+        direction = glm::normalize(-direction);
+    }
+};
+
+struct Attenuation
+{
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct PointLight : BaseLight
+{
+    Attenuation attenuation;
+    glm::vec3 position;
+    float range;
+};
+
+struct SpotLight : PointLight
+{
+    glm::vec3 direction;
+    float cutoff;
+
+    void setDirection(float azimuth, float elevation)
+    {
+        float az = glm::radians(azimuth);
+        float el = glm::radians(elevation);
+
+        direction.x = glm::sin(el) * glm::cos(az);
+        direction.y = glm::cos(el);
+        direction.z = glm::sin(el) * glm::sin(az);
+
+        direction = glm::normalize(-direction);
+    }
+};
+
 class Lighting : public RapidGL::CoreApp
 {
 public:
@@ -30,5 +85,14 @@ private:
     std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
-    float m_mix_factor;
+    DirectionalLight m_dir_light_properties;
+    PointLight       m_point_light_properties;
+    SpotLight        m_spot_light_properties;
+    
+    glm::vec3 m_specular_power;     /* specular powers for directional, point and spot lights respectively */
+    glm::vec3 m_specular_intenstiy; /* specular intensities for directional, point and spot lights respectively */
+    glm::vec2 m_dir_light_angles;   /* azimuth and elevation angles */
+    glm::vec2 m_spot_light_angles;  /* azimuth and elevation angles */
+
+    float m_ambient_factor;
 };

@@ -4,14 +4,12 @@
 #include "util.h"
 #include "gui/gui.h"
 
-/* 
-   ** TODO: **
-   - GUI: ability to control the lights' properties
-   - Dir and spot lights: direction depends on angles (eg. azimuth, elevation)
-*/
-
 Lighting::Lighting()
-    : m_mix_factor(1.0f)
+    : m_specular_power(120.0f),
+      m_specular_intenstiy(0.2f),
+      m_ambient_factor(0.18f),
+      m_dir_light_angles(0.0f, 0.0f),
+      m_spot_light_angles(0.0f, 0.0f)
 {
 }
 
@@ -25,11 +23,29 @@ void Lighting::init_app()
     glClearColor(0.5, 0.5, 0.5, 1.0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 10.0);
+
+    /* Initialize lights' properties */
+    m_dir_light_properties.color     = glm::vec3(1.0f);
+    m_dir_light_properties.intensity = 0.6f;
+    m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+
+    m_point_light_properties.color       = glm::vec3(1.0, 0.0, 0.0);
+    m_point_light_properties.intensity   = 5.0f;
+    m_point_light_properties.attenuation = { 1.0f, 1.0f, 2.0f };
+    m_point_light_properties.position    = glm::vec3(0.0, 1.0, -2.0);
+    m_point_light_properties.range       = 5.0f;
+
+    m_spot_light_properties.color       = glm::vec3(0.0, 0.0, 1.0);
+    m_spot_light_properties.intensity   = 100.0f;
+    m_spot_light_properties.attenuation = { 1.0f, 1.0f, 8.0f };
+    m_spot_light_properties.position    = glm::vec3(-7.5, 3.0, -5);
+    m_spot_light_properties.range       = 5.0f;
+    m_spot_light_properties.cutoff      = 45.0f;
+    m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
 
     /* Create models. */
     for (unsigned i = 0; i < 9; ++i)
@@ -148,7 +164,7 @@ void Lighting::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_ambient_light_shader->bind();
-    m_ambient_light_shader->setUniform("ambient_factor", 0.18f);
+    m_ambient_light_shader->setUniform("ambient_factor", m_ambient_factor);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
@@ -165,6 +181,7 @@ void Lighting::render()
      * Disable writing to the depth buffer and additively
      * shade only those pixels, that were shaded in the ambient step.
      */
+    glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_EQUAL);
@@ -172,13 +189,13 @@ void Lighting::render()
     /* Render directional light(s) */
     m_directional_light_shader->bind();
 
-    m_directional_light_shader->setUniform("directional_light.base.color",     glm::vec3(1.0, 1.0, 1.0));
-    m_directional_light_shader->setUniform("directional_light.base.intensity", 0.5f);
-    m_directional_light_shader->setUniform("directional_light.direction",      glm::normalize(glm::vec3(0.0, -1.0, 0.0)));
+    m_directional_light_shader->setUniform("directional_light.base.color",     m_dir_light_properties.color);
+    m_directional_light_shader->setUniform("directional_light.base.intensity", m_dir_light_properties.intensity);
+    m_directional_light_shader->setUniform("directional_light.direction",      m_dir_light_properties.direction);
     
     m_directional_light_shader->setUniform("cam_pos",            m_camera->position());
-    m_directional_light_shader->setUniform("specular_intensity", 0.2f);
-    m_directional_light_shader->setUniform("specular_power",     120.0f);
+    m_directional_light_shader->setUniform("specular_intensity", m_specular_intenstiy.x);
+    m_directional_light_shader->setUniform("specular_power",     m_specular_power.x);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -192,17 +209,17 @@ void Lighting::render()
     /* Render point lights */
     m_point_light_shader->bind();
 
-    m_point_light_shader->setUniform("point_light.base.color",      glm::vec3(1.0, 0.0, 0.0));
-    m_point_light_shader->setUniform("point_light.base.intensity",  5.0f);
-    m_point_light_shader->setUniform("point_light.atten.constant",  1.0f);
-    m_point_light_shader->setUniform("point_light.atten.linear",    1.0f);
-    m_point_light_shader->setUniform("point_light.atten.quadratic", 2.0f);
-    m_point_light_shader->setUniform("point_light.position",        glm::vec3(0.0, 1.0, -2.0));
-    m_point_light_shader->setUniform("point_light.range",           5.0f);
+    m_point_light_shader->setUniform("point_light.base.color",      m_point_light_properties.color);
+    m_point_light_shader->setUniform("point_light.base.intensity",  m_point_light_properties.intensity);
+    m_point_light_shader->setUniform("point_light.atten.constant",  m_point_light_properties.attenuation.constant);
+    m_point_light_shader->setUniform("point_light.atten.linear",    m_point_light_properties.attenuation.linear);
+    m_point_light_shader->setUniform("point_light.atten.quadratic", m_point_light_properties.attenuation.quadratic);
+    m_point_light_shader->setUniform("point_light.position",        m_point_light_properties.position);
+    m_point_light_shader->setUniform("point_light.range",           m_point_light_properties.range);
 
-    m_point_light_shader->setUniform("cam_pos", m_camera->position());
-    m_point_light_shader->setUniform("specular_intensity", 0.2f);
-    m_point_light_shader->setUniform("specular_power", 120.0f);
+    m_point_light_shader->setUniform("cam_pos",            m_camera->position());
+    m_point_light_shader->setUniform("specular_intensity", m_specular_intenstiy.y);
+    m_point_light_shader->setUniform("specular_power",     m_specular_power.y);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -216,19 +233,19 @@ void Lighting::render()
     /* Render spot lights */
     m_spot_light_shader->bind();
 
-    m_spot_light_shader->setUniform("spot_light.point.base.color",      glm::vec3(0.0, 0.0, 1.0));
-    m_spot_light_shader->setUniform("spot_light.point.base.intensity",  100.0f);
-    m_spot_light_shader->setUniform("spot_light.point.atten.constant",  1.0f);
-    m_spot_light_shader->setUniform("spot_light.point.atten.linear",    1.0f);
-    m_spot_light_shader->setUniform("spot_light.point.atten.quadratic", 8.0f);
-    m_spot_light_shader->setUniform("spot_light.point.position",        glm::vec3(-7.5, 3.0, -5));
-    m_spot_light_shader->setUniform("spot_light.point.range",           5.0f);
-    m_spot_light_shader->setUniform("spot_light.direction",             glm::normalize(glm::vec3(0.0, -1.0, 0.0)));
-    m_spot_light_shader->setUniform("spot_light.cutoff",                glm::radians(45.0f));
+    m_spot_light_shader->setUniform("spot_light.point.base.color",      m_spot_light_properties.color);
+    m_spot_light_shader->setUniform("spot_light.point.base.intensity",  m_spot_light_properties.intensity);
+    m_spot_light_shader->setUniform("spot_light.point.atten.constant",  m_spot_light_properties.attenuation.constant);
+    m_spot_light_shader->setUniform("spot_light.point.atten.linear",    m_spot_light_properties.attenuation.linear);
+    m_spot_light_shader->setUniform("spot_light.point.atten.quadratic", m_spot_light_properties.attenuation.quadratic);
+    m_spot_light_shader->setUniform("spot_light.point.position",        m_spot_light_properties.position);
+    m_spot_light_shader->setUniform("spot_light.point.range",           m_spot_light_properties.range);
+    m_spot_light_shader->setUniform("spot_light.direction",             m_spot_light_properties.direction);
+    m_spot_light_shader->setUniform("spot_light.cutoff",                glm::radians(90.0f - m_spot_light_properties.cutoff));
 
-    m_spot_light_shader->setUniform("cam_pos", m_camera->position());
-    m_spot_light_shader->setUniform("specular_intensity", 0.2f);
-    m_spot_light_shader->setUniform("specular_power", 120.0f);
+    m_spot_light_shader->setUniform("cam_pos",            m_camera->position());
+    m_spot_light_shader->setUniform("specular_intensity", m_specular_intenstiy.z);
+    m_spot_light_shader->setUniform("specular_power",     m_specular_power.z);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -242,7 +259,7 @@ void Lighting::render()
     /* Enable writing to the depth buffer. */
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
-    glBlendFunc(GL_ONE, GL_ZERO);
+    glDisable(GL_BLEND);
 }
 
 void Lighting::render_gui()
@@ -256,7 +273,7 @@ void Lighting::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos = ImVec2(790.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
@@ -264,14 +281,87 @@ void Lighting::render_gui()
 
     ImGui::Begin("Info");
     {
-        ImGui::SliderFloat("Color mix factor", &m_mix_factor, 0.0, 1.0);
+        if (ImGui::CollapsingHeader("Help"))
+        {
+            ImGui::Text("Controls info: \n\n"
+                        "Alpha 1 - take a screenshot\n"
+                        "Alpha 2 - toggle wireframe rendering\n"
+                        "WASDQE  - control camera movement\n"
+                        "RMB     - toggle cursor lock and rotate camera\n"
+                        "Esc     - close the app\n\n");
+        }
 
-        ImGui::Text("\nControls info: \n\n"
-                    "Alpha 1 - take a screenshot\n"
-                    "Alpha 2 - toggle wireframe rendering\n"
-                    "WASDQE  - control camera movement\n"
-                    "RMB     - toggle cursor lock and rotate camera\n"
-                    "Esc     - close the app\n\n");
+        ImGui::Spacing();
+
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0, "%.2f");
+
+        ImGui::Spacing();
+
+        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+        if (ImGui::BeginTabBar("Lights' properties", tab_bar_flags))
+        {
+            if (ImGui::BeginTabItem("Directional"))
+            {
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                {
+                    ImGui::ColorEdit3 ("Color",                 &m_dir_light_properties.color[0]);
+                    ImGui::SliderFloat("Light intensity",       &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");
+                    ImGui::SliderFloat("Specular power",        &m_specular_power.x,               1.0, 120.0, "%.0f");
+                    ImGui::SliderFloat("Specular intensity",    &m_specular_intenstiy.x,           0.0, 1.0,   "%.2f");
+                    
+                    if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
+                    {
+                        m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+                    }
+                }
+                ImGui::PopItemWidth();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Point"))
+            {
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                {
+                    ImGui::ColorEdit3 ("Color",              &m_point_light_properties.color[0]);
+                    ImGui::SliderFloat("Light intensity",    &m_point_light_properties.intensity, 0.0, 50.0, "%.1f");
+                    ImGui::SliderFloat("Specular power",     &m_specular_power.y,     1.0, 120.0,            "%.0f");
+                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.y, 0.0, 1.0,              "%.2f");
+
+                    ImGui::SliderFloat ("Constant attenuation",  &m_point_light_properties.attenuation.constant,  0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat ("Linear attenuation",    &m_point_light_properties.attenuation.linear,    0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat ("Quadratic attenuation", &m_point_light_properties.attenuation.quadratic, 0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat ("Range",                 &m_point_light_properties.range,                 0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat3("Position",              &m_point_light_properties.position[0],          -10.0, 10.0, "%.1f");
+                }
+                ImGui::PopItemWidth();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Spot"))
+            {
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                {
+                    ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
+                    ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 500.0, "%.1f");
+                    ImGui::SliderFloat("Specular power",     &m_specular_power.z,                1.0, 120.0, "%.0f");
+                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.z,            0.0, 1.0,   "%.2f");
+
+                    ImGui::SliderFloat("Constant attenuation",  &m_spot_light_properties.attenuation.constant,  0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat("Linear attenuation",    &m_spot_light_properties.attenuation.linear,    0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat("Quadratic attenuation", &m_spot_light_properties.attenuation.quadratic, 0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat("Range",                 &m_spot_light_properties.range,                 0.01, 10.0, "%.2f");
+                    ImGui::SliderFloat("Cut-off angle",         &m_spot_light_properties.cutoff,                33.0, 90.0, "%.1f");
+                    ImGui::SliderFloat3("Position",             &m_spot_light_properties.position[0],          -10.0, 10.0, "%.1f");
+
+                    if (ImGui::SliderFloat2("Azimuth and Elevation", &m_spot_light_angles[0], -180.0, 180.0, "%.1f"))
+                    {
+                        m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
+                    }
+                }
+                ImGui::PopItemWidth();
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
     }
     ImGui::End();
 }

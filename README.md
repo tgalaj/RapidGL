@@ -45,3 +45,8 @@ All of the demos are available in ```src/demos```.
 This demo shows how to create camera, load models, generate primitives using built-in functions and add textures for specific objects.
 
 ![Simple 3D](screenshots/02_simple_3d.png)
+
+### Lighitng
+This demo presents implementation of Blinn-Phong shading model for directional, point and spot lights.
+
+![Lighting](screenshots/03_lighting.png)
