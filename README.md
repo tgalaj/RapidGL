@@ -46,7 +46,7 @@ This demo shows how to create camera, load models, generate primitives using bui
 
 ![Simple 3D](screenshots/02_simple_3d.png)
 
-### Lighitng
+### Lighting
 This demo presents implementation of Blinn-Phong shading model for directional, point and spot lights.
 
 ![Lighting](screenshots/03_lighting.png)
