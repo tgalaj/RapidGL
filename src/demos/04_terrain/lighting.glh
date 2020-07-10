@@ -1,0 +1,101 @@
+in vec2 texcoord;
+in vec3 world_pos;
+in vec3 normal;
+
+out vec4 frag_color;
+
+uniform sampler2D texture_diffuse1;
+
+uniform vec3 cam_pos;
+
+uniform float specular_intensity;
+uniform float specular_power;
+
+struct BaseLight
+{
+    vec3 color;
+    float intensity;
+};
+
+struct DirectionalLight
+{
+    BaseLight base;
+    vec3 direction;
+};
+
+struct Attenuation
+{
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct PointLight
+{
+    BaseLight base;
+    Attenuation atten;
+    vec3 position;
+    float range;
+};
+
+struct SpotLight
+{
+    PointLight point;
+    vec3 direction;
+    float cutoff;
+};
+
+vec4 blinnPhong(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
+{
+    float diffuse = max(dot(normal, -direction), 0.0f);
+
+    vec3 dir_to_eye  = normalize(cam_pos - world_pos);
+    vec3 half_vector = normalize(dir_to_eye - direction);
+    float specular   = pow(max(dot(half_vector, normal), 0.0f), specular_power);
+
+    vec4 diffuse_color  = vec4(base.color, 1.0f) * base.intensity * diffuse * texture(texture_diffuse1, texcoord);
+    vec4 specular_color = vec4(1.0) * specular * specular_intensity;
+
+    return diffuse_color + specular_color;
+}
+
+vec4 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 world_pos)
+{
+    return blinnPhong(light.base, light.direction, normal, world_pos);
+}
+
+vec4 calcPointLight(PointLight light, vec3 normal, vec3 world_pos)
+{
+    vec3 light_direction    = world_pos - light.position;
+    float distance_to_point = length(light_direction);
+
+    if(distance_to_point > light.range)
+    {
+        return vec4(0.0f);
+    }
+
+    float attenuation = light.atten.constant                                          + 
+                        light.atten.linear    * distance_to_point                     +
+                        light.atten.quadratic * distance_to_point * distance_to_point +
+                        0.00001f; //to prevent division by zero
+    
+    vec4 color = blinnPhong(light.base, normalize(light_direction), normal, world_pos);
+
+    return color / attenuation;
+}
+
+vec4 calcSpotLight(SpotLight light, vec3 normal, vec3 world_pos)
+{
+    vec3 light_direction = normalize(world_pos - light.point.position);
+    float theta = dot(light_direction, light.direction);
+    
+    vec4 color = vec4(0.0f);
+    
+    if(theta > light.cutoff)
+    {
+        float smoothing_factor = 1.0 - ((1.0 - theta) / (1.0 - light.cutoff));
+        color = calcPointLight(light.point, normal, world_pos) * smoothing_factor;
+    }
+
+    return color;
+}

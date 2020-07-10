@@ -59,14 +59,14 @@ namespace RapidGL
     }
 
 
-    unsigned char* Util::loadTextureData(const std::string & filename, ImageData & image_data)
+    unsigned char* Util::loadTextureData(const std::string & filename, ImageData & image_data, int desired_number_of_channels)
     {
         int width, height, nr_channels;
-        unsigned char* data = stbi_load(FileSystem::getPath(filename).c_str(), &width, &height, &nr_channels, 0);
+        unsigned char* data = stbi_load(FileSystem::getPath(filename).c_str(), &width, &height, &nr_channels, desired_number_of_channels);
 
         image_data.width    = width;
         image_data.height   = height;
-        image_data.channels = nr_channels;
+        image_data.channels = desired_number_of_channels == 0 ? nr_channels : desired_number_of_channels;
 
         return data;
     }

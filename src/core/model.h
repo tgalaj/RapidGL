@@ -43,7 +43,7 @@ namespace RapidGL
 
         unsigned meshesCount() const { return m_meshes.size(); }
 
-    private:
+    protected:
         void calcTangentSpace(VertexBuffers & buffers) const;
         void genPrimitive(VertexBuffers & buffers, bool generate_tangents = true);
 
