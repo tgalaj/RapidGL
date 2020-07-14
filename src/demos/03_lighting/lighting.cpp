@@ -77,7 +77,7 @@ void Lighting::init_app()
 
     /* Add textures to the objects. */
     RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.jpg", "textures", false);
+    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
     texture.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;

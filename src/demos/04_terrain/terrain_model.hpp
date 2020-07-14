@@ -6,7 +6,7 @@
 class TerrainModel : public RapidGL::Model
 {
 public:
-    TerrainModel(const std::string & heightmap_filename, float size = 200.0f);
+    TerrainModel(const std::string & heightmap_filename, float size = 200.0f, float max_height = 100.0f);
     ~TerrainModel();
 
     float getHeightOfTerrain(float world_x, float world_z, float terrain_world_x, float terrain_world_z);
@@ -21,6 +21,6 @@ protected:
     std::vector<std::vector<float>> m_heights;
 
     const float M_SIZE;
-    const float M_MAX_HEIGHT      = 40.0f;
+    const float M_MAX_HEIGHT;
     const float M_MAX_PIXEL_COLOR = 255.0;
 };

@@ -2,11 +2,11 @@
 #include <iostream>
 #include <cmath>
 
-/* TODO: - rectangular heightmaps 
-         - multitexturing */
+/* TODO: - multitexturing */
 
-TerrainModel::TerrainModel(const std::string& heightmap_filename, float size)
-    : M_SIZE(size)
+TerrainModel::TerrainModel(const std::string& heightmap_filename, float size, float max_height)
+    : M_SIZE(size),
+      M_MAX_HEIGHT(max_height)
 {
     genTerrainVertices(heightmap_filename);
 }
@@ -17,36 +17,38 @@ TerrainModel::~TerrainModel()
 
 float TerrainModel::getHeightOfTerrain(float world_x, float world_z, float terrain_world_x, float terrain_world_z)
 {
-    float terrain_x = terrain_world_x - world_x;
-    float terrain_z = terrain_world_z - world_z;
+    float terrain_x    = terrain_world_x - world_x;
+    float terrain_z    = terrain_world_z - world_z;
+    float aspect_ratio = float(m_heights[0].size()) / float(m_heights.size());
 
-    float grid_square_size = M_SIZE / float(m_heights.size() - 1);
+    float grid_square_size_x = aspect_ratio * M_SIZE / float(m_heights[0].size() - 1);
+    float grid_square_size_z = M_SIZE / float(m_heights.size()    - 1);
 
-    int grid_x = int(terrain_x / grid_square_size);
-    int grid_z = int(terrain_z / grid_square_size);
+    int grid_x = int(terrain_x / grid_square_size_x);
+    int grid_z = int(terrain_z / grid_square_size_z);
 
-    if (grid_x >= m_heights.size() - 1 || grid_z >= m_heights.size() - 1 || grid_x < 0 || grid_z < 0)
+    if (grid_x >= m_heights[0].size() - 1 || grid_z >= m_heights.size() - 1 || grid_x < 0 || grid_z < 0)
     {
         return 0;
     }
 
-    float x_coord = std::fmod(terrain_x, grid_square_size) / grid_square_size;
-    float z_coord = std::fmod(terrain_z, grid_square_size) / grid_square_size;
+    float x_coord = std::fmod(terrain_x, grid_square_size_x) / grid_square_size_x;
+    float z_coord = std::fmod(terrain_z, grid_square_size_z) / grid_square_size_z;
 
     float height;
     if (x_coord <= 1.0 - z_coord)
     {
-        height = barycentricHeight(glm::vec3(0.0, m_heights[grid_x    ][grid_z    ], 0.0), 
-                                   glm::vec3(1.0, m_heights[grid_x + 1][grid_z    ], 0.0),
-                                   glm::vec3(0.0, m_heights[grid_x    ][grid_z + 1], 1.0),
-                                   glm::vec2(x_coord, z_coord));
+        height = barycentricHeight(glm::vec3(0.0, m_heights[grid_z    ][grid_x    ], 0.0), 
+                                   glm::vec3(1.0, m_heights[grid_z + 1][grid_x    ], 0.0),
+                                   glm::vec3(0.0, m_heights[grid_z    ][grid_x + 1], 1.0),
+                                   glm::vec2(z_coord, x_coord));
     }
     else
     {
-        height = barycentricHeight(glm::vec3(1.0, m_heights[grid_x + 1][grid_z    ], 0.0), 
-                                   glm::vec3(1.0, m_heights[grid_x + 1][grid_z + 1], 1.0),
-                                   glm::vec3(0.0, m_heights[grid_x    ][grid_z + 1], 1.0),
-                                   glm::vec2(x_coord, z_coord));
+        height = barycentricHeight(glm::vec3(1.0, m_heights[grid_z + 1][grid_x    ], 0.0), 
+                                   glm::vec3(1.0, m_heights[grid_z + 1][grid_x + 1], 1.0),
+                                   glm::vec3(0.0, m_heights[grid_z    ][grid_x + 1], 1.0),
+                                   glm::vec2(z_coord, x_coord));
     }
 
     return height;
@@ -65,22 +67,26 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
     {
         std::cout << "Success loading heightmap\n";
 
-        int vertex_count = heightmap_metadata.height;
-        m_heights = std::vector<std::vector<float>>(vertex_count /* rows */, std::vector<float>(vertex_count /* cols */));
+        int vertex_count_width  = heightmap_metadata.width;
+        int vertex_count_height = heightmap_metadata.height;
 
-        for (unsigned int i = 0; i < vertex_count; ++i)
+        float aspect_ratio = float(vertex_count_width) / float(vertex_count_height);
+
+        m_heights = std::vector<std::vector<float>>(vertex_count_height /* rows */, std::vector<float>(vertex_count_width /* cols */));
+
+        for (unsigned int j = 0; j < vertex_count_height; ++j)
         {
-            for (unsigned int j = 0; j < vertex_count; ++j)
+            for (unsigned int i = 0; i < vertex_count_width; ++i)
             {
                 RapidGL::VertexBuffers::Vertex v;
-                m_heights[j][i] = getHeight(j, i, heightmap_image, heightmap_metadata);
+                m_heights[j][i] = getHeight(i, j, heightmap_image, heightmap_metadata);
 
-                v.m_position = glm::vec3(-float(j) / (float(vertex_count) - 1.0f) * M_SIZE, 
+                v.m_position = glm::vec3(-float(i) / float(vertex_count_width - 1) * M_SIZE * aspect_ratio,
                                           m_heights[j][i], 
-                                         -float(i) / (float(vertex_count) - 1.0f) * M_SIZE);
-                v.m_normal   = calculateNormal(j, i, heightmap_image, heightmap_metadata);
-                v.m_texcoord = glm::vec3(float(j) / (float(vertex_count) - 1.0f), 
-                                         float(i) / (float(vertex_count) - 1.0f), 
+                                         -float(j) / float(vertex_count_height - 1) * M_SIZE);
+                v.m_normal   = calculateNormal(i, j, heightmap_image, heightmap_metadata);
+                v.m_texcoord = glm::vec3(float(i) / float(vertex_count_width - 1) * aspect_ratio,
+                                         float(j) / float(vertex_count_height - 1),
                                          0.0f) * M_SIZE / 4.0f;
                 v.m_tangent  = glm::vec3(0.0f);
 
@@ -88,13 +94,13 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
             }
         }
 
-        for (unsigned int j = 0; j < vertex_count - 1; ++j)
+        for (unsigned int j = 0; j < vertex_count_height - 1; ++j)
         {
-            for (unsigned int i = 0; i < vertex_count - 1; ++i)
+            for (unsigned int i = 0; i < vertex_count_width - 1; ++i)
             {
-                int top_left     = j * vertex_count + i;
+                int top_left     = j * vertex_count_width + i;
                 int top_right    = top_left + 1;
-                int bottom_left  = (j + 1) * vertex_count + i;
+                int bottom_left  = (j + 1) * vertex_count_width + i;
                 int bottom_right = bottom_left + 1;
 
                 buffers.m_indices.push_back(top_left);
@@ -119,7 +125,7 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
 
 float TerrainModel::getHeight(int x, int z, unsigned char* heightmap_data, RapidGL::ImageData & heightmap_metadata)
 {
-    if (x < 0 || x >= heightmap_metadata.height || z < 0 || z >= heightmap_metadata.height)
+    if (x < 0 || x >= heightmap_metadata.width || z < 0 || z >= heightmap_metadata.height)
     {
         return 0.0f;
     }

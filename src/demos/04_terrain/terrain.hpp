@@ -75,7 +75,7 @@ public:
     void input()                   override;
     void update(double delta_time) override;
     void render()                  override;
-    void render_gui()               override;
+    void render_gui()              override;
 
 private:
     std::shared_ptr<RapidGL::Camera> m_camera;

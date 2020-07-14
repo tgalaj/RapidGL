@@ -31,7 +31,7 @@ void Terrain::init_app()
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Create terrain */
-    m_terrain_model        = std::make_shared<TerrainModel>("textures/heightmap.png", m_terrain_size);
+    m_terrain_model        = std::make_shared<TerrainModel>("textures/heightmap.png", m_terrain_size, 50.0);
     m_terrain_position     = glm::vec3(m_terrain_size / 2.0, 0.0, m_terrain_size / 2.0);
     m_terrain_model_matrix = glm::translate(glm::mat4(1.0), m_terrain_position);// *0.025f)* glm::scale(glm::mat4(1.0), glm::vec3(0.025));
 
@@ -85,7 +85,7 @@ void Terrain::init_app()
 
     /* Add textures to the objects. */
     RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.jpg", "textures", false);
+    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
     texture.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
