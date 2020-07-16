@@ -5,11 +5,11 @@
 #include "gui/gui.h"
 
 Lighting::Lighting()
-    : m_specular_power(120.0f),
+    : m_specular_power    (120.0f),
       m_specular_intenstiy(0.2f),
-      m_ambient_factor(0.18f),
-      m_dir_light_angles(0.0f, 0.0f),
-      m_spot_light_angles(0.0f, 0.0f)
+      m_ambient_factor    (0.18f),
+      m_dir_light_angles  (0.0f, 0.0f),
+      m_spot_light_angles (0.0f, 0.0f)
 {
 }
 
@@ -30,20 +30,20 @@ void Lighting::init_app()
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
-    m_dir_light_properties.intensity = 0.6f;
+    m_dir_light_properties.intensity = 0.2f;
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     m_point_light_properties.color       = glm::vec3(1.0, 0.0, 0.0);
-    m_point_light_properties.intensity   = 5.0f;
-    m_point_light_properties.attenuation = { 1.0f, 1.0f, 2.0f };
+    m_point_light_properties.intensity   = 2.0f;
+    m_point_light_properties.attenuation = { 1.0f, 0.1f, 0.01f };
     m_point_light_properties.position    = glm::vec3(0.0, 1.0, -2.0);
-    m_point_light_properties.range       = 5.0f;
+    m_point_light_properties.range       = 30.0f;
 
     m_spot_light_properties.color       = glm::vec3(0.0, 0.0, 1.0);
-    m_spot_light_properties.intensity   = 100.0f;
-    m_spot_light_properties.attenuation = { 1.0f, 1.0f, 8.0f };
+    m_spot_light_properties.intensity   = 5.0f;
+    m_spot_light_properties.attenuation = { 1.0f, 0.1f, 0.01f };
     m_spot_light_properties.position    = glm::vec3(-7.5, 3.0, -5);
-    m_spot_light_properties.range       = 5.0f;
+    m_spot_light_properties.range       = 35.0f;
     m_spot_light_properties.cutoff      = 45.0f;
     m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
 
@@ -119,7 +119,7 @@ void Lighting::input()
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha2))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -136,7 +136,7 @@ void Lighting::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "03_lighting";
@@ -284,11 +284,11 @@ void Lighting::render_gui()
         if (ImGui::CollapsingHeader("Help"))
         {
             ImGui::Text("Controls info: \n\n"
-                        "Alpha 1 - take a screenshot\n"
-                        "Alpha 2 - toggle wireframe rendering\n"
-                        "WASDQE  - control camera movement\n"
-                        "RMB     - toggle cursor lock and rotate camera\n"
-                        "Esc     - close the app\n\n");
+                        "F1     - take a screenshot\n"
+                        "F2     - toggle wireframe rendering\n"
+                        "WASDQE - control camera movement\n"
+                        "RMB    - toggle cursor lock and rotate camera\n"
+                        "Esc    - close the app\n\n");
         }
 
         ImGui::Spacing();
@@ -323,15 +323,15 @@ void Lighting::render_gui()
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",              &m_point_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",    &m_point_light_properties.intensity, 0.0, 50.0, "%.1f");
-                    ImGui::SliderFloat("Specular power",     &m_specular_power.y,     1.0, 120.0,            "%.0f");
-                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.y, 0.0, 1.0,              "%.2f");
+                    ImGui::SliderFloat("Light intensity",    &m_point_light_properties.intensity, 0.0, 50.0,  "%.1f");
+                    ImGui::SliderFloat("Specular power",     &m_specular_power.y,                 1.0, 120.0, "%.0f");
+                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.y,             0.0, 1.0,   "%.2f");
 
-                    ImGui::SliderFloat ("Constant attenuation",  &m_point_light_properties.attenuation.constant,  0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat ("Linear attenuation",    &m_point_light_properties.attenuation.linear,    0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat ("Quadratic attenuation", &m_point_light_properties.attenuation.quadratic, 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat ("Range",                 &m_point_light_properties.range,                 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat3("Position",              &m_point_light_properties.position[0],          -10.0, 10.0, "%.1f");
+                    ImGui::SliderFloat ("Constant attenuation",  &m_point_light_properties.attenuation.constant,  0.01, 10.0,  "%.2f");
+                    ImGui::SliderFloat ("Linear attenuation",    &m_point_light_properties.attenuation.linear,    0.01, 10.0,  "%.2f");
+                    ImGui::SliderFloat ("Quadratic attenuation", &m_point_light_properties.attenuation.quadratic, 0.01, 10.0,  "%.2f");
+                    ImGui::SliderFloat ("Range",                 &m_point_light_properties.range,                 0.01, 100.0, "%.2f");
+                    ImGui::SliderFloat3("Position",              &m_point_light_properties.position[0],          -10.0, 10.0,  "%.1f");
                 }
                 ImGui::PopItemWidth();
                 ImGui::EndTabItem();
@@ -341,16 +341,16 @@ void Lighting::render_gui()
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 500.0, "%.1f");
+                    ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 100.0, "%.1f");
                     ImGui::SliderFloat("Specular power",     &m_specular_power.z,                1.0, 120.0, "%.0f");
                     ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.z,            0.0, 1.0,   "%.2f");
 
-                    ImGui::SliderFloat("Constant attenuation",  &m_spot_light_properties.attenuation.constant,  0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Linear attenuation",    &m_spot_light_properties.attenuation.linear,    0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Quadratic attenuation", &m_spot_light_properties.attenuation.quadratic, 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Range",                 &m_spot_light_properties.range,                 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Cut-off angle",         &m_spot_light_properties.cutoff,                33.0, 90.0, "%.1f");
-                    ImGui::SliderFloat3("Position",             &m_spot_light_properties.position[0],          -10.0, 10.0, "%.1f");
+                    ImGui::SliderFloat("Constant attenuation",  &m_spot_light_properties.attenuation.constant,  0.01, 10.0,  "%.2f");
+                    ImGui::SliderFloat("Linear attenuation",    &m_spot_light_properties.attenuation.linear,    0.01, 10.0,  "%.2f");
+                    ImGui::SliderFloat("Quadratic attenuation", &m_spot_light_properties.attenuation.quadratic, 0.01, 10.0,  "%.2f");
+                    ImGui::SliderFloat("Range",                 &m_spot_light_properties.range,                 0.01, 100.0, "%.2f");
+                    ImGui::SliderFloat("Cut-off angle",         &m_spot_light_properties.cutoff,                33.0, 90.0,  "%.1f");
+                    ImGui::SliderFloat3("Position",             &m_spot_light_properties.position[0],          -10.0, 10.0,  "%.1f");
 
                     if (ImGui::SliderFloat2("Azimuth and Elevation", &m_spot_light_angles[0], -180.0, 180.0, "%.1f"))
                     {

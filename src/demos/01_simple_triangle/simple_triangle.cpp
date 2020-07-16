@@ -48,7 +48,7 @@ void SimpleTriangle::input()
         stop();
     }
 
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         std::string filename = "01_simple_triangle";
         if (take_screenshot_png(filename, 400, 300))
@@ -82,7 +82,7 @@ void SimpleTriangle::render_gui()
 {
     CoreApp::render_gui();
 
-    ImVec2 window_pos = ImVec2(10.0, 150.0);
+    ImVec2 window_pos       = ImVec2(10.0, 150.0);
     ImVec2 window_pos_pivot = ImVec2(0.0f, 1.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

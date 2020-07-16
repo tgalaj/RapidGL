@@ -78,6 +78,8 @@ public:
     void render_gui()              override;
 
 private:
+    void render_terrain(const glm::mat4 & view_projection);
+
     std::shared_ptr<RapidGL::Camera> m_camera;
     std::shared_ptr<RapidGL::Shader> m_ambient_light_shader;
     std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
@@ -88,6 +90,18 @@ private:
     glm::mat4 m_terrain_model_matrix;
     glm::vec3 m_terrain_position;
     float m_terrain_size;
+    float m_terrain_max_height;
+    float m_texcoord_tiling_factor;
+    float m_grass_slope_threshold;
+    float m_slope_rock_threshold;
+
+    std::vector<std::string> m_terrain_textures_filenames;
+    std::vector<std::string> m_terrain_heightmaps_filenames;
+
+    std::shared_ptr<RapidGL::Shader> m_terrain_ambient_light_shader;
+    std::shared_ptr<RapidGL::Shader> m_terrain_directional_light_shader;
+    std::shared_ptr<RapidGL::Shader> m_terrain_point_light_shader;
+    std::shared_ptr<RapidGL::Shader> m_terrain_spot_light_shader;
 
     std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;

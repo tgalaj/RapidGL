@@ -50,3 +50,8 @@ This demo shows how to create camera, load models, generate primitives using bui
 This demo presents implementation of Blinn-Phong shading model for directional, point and spot lights.
 
 ![Lighting](screenshots/03_lighting.png)
+
+### Multitextured terrain
+This demo presents implementation of multitextured terrain. It uses a blend map (for varying X-Z texturing) and slope based texturing (for texturing the slopes).
+
+![Multitextured-terrain](screenshots/04_terrain.png)

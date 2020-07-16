@@ -2,17 +2,18 @@
 #include <iostream>
 #include <cmath>
 
-/* TODO: - multitexturing */
-
 TerrainModel::TerrainModel(const std::string& heightmap_filename, float size, float max_height)
     : M_SIZE(size),
       M_MAX_HEIGHT(max_height)
 {
     genTerrainVertices(heightmap_filename);
+
+    std::cout << "Created terrain with max height = " << M_MAX_HEIGHT << std::endl;
 }
 
 TerrainModel::~TerrainModel()
 {
+    std::cout << "Deleted terrain with max height = " << M_MAX_HEIGHT << std::endl;
 }
 
 float TerrainModel::getHeightOfTerrain(float world_x, float world_z, float terrain_world_x, float terrain_world_z)
@@ -85,9 +86,9 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
                                           m_heights[j][i], 
                                          -float(j) / float(vertex_count_height - 1) * M_SIZE);
                 v.m_normal   = calculateNormal(i, j, heightmap_image, heightmap_metadata);
-                v.m_texcoord = glm::vec3(float(i) / float(vertex_count_width - 1) * aspect_ratio,
-                                         float(j) / float(vertex_count_height - 1),
-                                         0.0f) * M_SIZE / 4.0f;
+                v.m_texcoord = glm::vec3((1.0 - float(i) / float(vertex_count_width - 1)),
+                                         1.0 - float(j) / float(vertex_count_height - 1),
+                                         0.0f);
                 v.m_tangent  = glm::vec3(0.0f);
 
                 buffers.m_vertices.push_back(v);
@@ -125,10 +126,8 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
 
 float TerrainModel::getHeight(int x, int z, unsigned char* heightmap_data, RapidGL::ImageData & heightmap_metadata)
 {
-    if (x < 0 || x >= heightmap_metadata.width || z < 0 || z >= heightmap_metadata.height)
-    {
-        return 0.0f;
-    }
+    x = std::clamp(x, 0, int(heightmap_metadata.width  - 1));
+    z = std::clamp(z, 0, int(heightmap_metadata.height - 1));
 
     float height = heightmap_data[z * heightmap_metadata.width + (heightmap_metadata.width - x - 1)];
 

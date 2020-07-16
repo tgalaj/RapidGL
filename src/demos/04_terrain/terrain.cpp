@@ -5,13 +5,17 @@
 #include "gui/gui.h"
 
 Terrain::Terrain()
-    : m_specular_power       (10.0f),
-      m_specular_intenstiy   (0.0f),
-      m_ambient_factor       (0.18f),
-      m_dir_light_angles     (0.0f, 0.0f),
-      m_spot_light_angles    (0.0f, 0.0f),
-      m_terrain_size         (800.0f),
-      m_snap_camera_to_ground(true)
+    : m_specular_power        (10.0f),
+      m_specular_intenstiy    (0.0f),
+      m_ambient_factor        (0.18f),
+      m_dir_light_angles      (0.0f, 40.0f),
+      m_spot_light_angles     (0.0f, 0.0f),
+      m_terrain_size          (500.0f),
+      m_terrain_max_height    (50.0f),
+      m_snap_camera_to_ground (true),
+      m_texcoord_tiling_factor(40.0f),
+      m_grass_slope_threshold (0.2f),
+      m_slope_rock_threshold  (0.7)
 {
 }
 
@@ -31,9 +35,9 @@ void Terrain::init_app()
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Create terrain */
-    m_terrain_model        = std::make_shared<TerrainModel>("textures/heightmap.png", m_terrain_size, 50.0);
+    m_terrain_model        = std::make_shared<TerrainModel>("textures/heightmap.png", m_terrain_size, m_terrain_max_height);
     m_terrain_position     = glm::vec3(m_terrain_size / 2.0, 0.0, m_terrain_size / 2.0);
-    m_terrain_model_matrix = glm::translate(glm::mat4(1.0), m_terrain_position);// *0.025f)* glm::scale(glm::mat4(1.0), glm::vec3(0.025));
+    m_terrain_model_matrix = glm::translate(glm::mat4(1.0), m_terrain_position);
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
@@ -41,16 +45,16 @@ void Terrain::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     m_point_light_properties.color       = glm::vec3(1.0, 0.0, 0.0);
-    m_point_light_properties.intensity   = 5.0f;
-    m_point_light_properties.attenuation = { 1.0f, 1.0f, 2.0f };
+    m_point_light_properties.intensity   = 2.0f;
+    m_point_light_properties.attenuation = { 1.0f, 0.1f, 0.01f };
     m_point_light_properties.position    = glm::vec3(0.0, 1.0 + m_terrain_model->getHeightOfTerrain(0.0, -2.0, m_terrain_position.x, m_terrain_position.z), -2.0);
-    m_point_light_properties.range       = 5.0f;
+    m_point_light_properties.range       = 30.0f;
 
     m_spot_light_properties.color       = glm::vec3(0.0, 0.0, 1.0);
-    m_spot_light_properties.intensity   = 100.0f;
-    m_spot_light_properties.attenuation = { 1.0f, 1.0f, 8.0f };
+    m_spot_light_properties.intensity   = 5.0f;
+    m_spot_light_properties.attenuation = { 1.0f, 0.1f, 0.01f };
     m_spot_light_properties.position    = glm::vec3(-7.5, 3.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5);
-    m_spot_light_properties.range       = 5.0f;
+    m_spot_light_properties.range       = 35.0f;
     m_spot_light_properties.cutoff      = 45.0f;
     m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
 
@@ -80,9 +84,6 @@ void Terrain::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 7.5, 1.0 + m_terrain_model->getHeightOfTerrain( 7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)));                                                                         // torus
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0, 1.0 + m_terrain_model->getHeightOfTerrain(10.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
 
-    m_objects.push_back(m_terrain_model);
-    m_objects_model_matrices.push_back(m_terrain_model_matrix);
-
     /* Add textures to the objects. */
     RapidGL::Texture texture;
     texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
@@ -92,11 +93,6 @@ void Terrain::init_app()
     default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", false);
     default_diffuse_texture.m_type = "texture_diffuse";
 
-    RapidGL::Texture terrain_texture;
-    terrain_texture.m_id = RapidGL::Util::loadGLTexture("grass.png", "textures", false);
-    terrain_texture.m_type = "texture_diffuse";
-
-    m_terrain_model->getMesh(0).addTexture(terrain_texture);
     m_objects[0]->getMesh(0).addTexture(texture);
     m_objects[5]->getMesh(0).addTexture(texture);
 
@@ -107,9 +103,22 @@ void Terrain::init_app()
             model->getMesh(0).addTexture(default_diffuse_texture);
         }
     }
+    
+    /* Add textures for the terrain */
+    m_terrain_textures_filenames   = { "grass_green_d.jpg", "ground_mud2_d.jpg", "grass_flowers.png", "path.png", "blendmap.png", "mntn_white_d.jpg", "grass_rocky_d.jpg" };
+    m_terrain_heightmaps_filenames = { "heightmap.png",  "heightmap1.png", "heightmap2.png", "heightmap3.png", "heightmap_test.png"};
 
-    /* Create shader. */
-    std::string dir = "../src/demos/04_terrain/";
+    for (auto& tf : m_terrain_textures_filenames)
+    {
+        RapidGL::Texture texture;
+        texture.m_id   = RapidGL::Util::loadGLTexture(tf.c_str(), "textures", false);
+        texture.m_type = "texture_diffuse";
+
+        m_terrain_model->getMesh(0).addTexture(texture);
+    }
+
+    /* Create the shaders... */
+    std::string dir = "../src/demos/03_lighting/";
     m_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -121,6 +130,20 @@ void Terrain::init_app()
 
     m_spot_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-spot.frag");
     m_spot_light_shader->link();
+
+    /* ... and the terrain specific shaders */
+    std::string dir_terrain = "../src/demos/04_terrain/";
+    m_terrain_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-ambient-terrain.frag");
+    m_terrain_ambient_light_shader->link();
+
+    m_terrain_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-directional-terrain.frag");
+    m_terrain_directional_light_shader->link();
+
+    m_terrain_point_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-point-terrain.frag");
+    m_terrain_point_light_shader->link();
+
+    m_terrain_spot_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-spot-terrain.frag");
+    m_terrain_spot_light_shader->link();
 }
 
 void Terrain::input()
@@ -132,7 +155,7 @@ void Terrain::input()
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha2))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -149,7 +172,7 @@ void Terrain::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "04_terrain";
@@ -188,6 +211,7 @@ void Terrain::render()
     /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    /* Render normal objects first */
     m_ambient_light_shader->bind();
     m_ambient_light_shader->setUniform("ambient_factor", m_ambient_factor);
 
@@ -196,11 +220,22 @@ void Terrain::render()
     /* First, render the ambient color only for the opaque objects. */
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        //m_ambient_light_shader->setUniform("model", m_objects_model_matrices[i]);
-        m_ambient_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        //m_ambient_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_ambient_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_ambient_light_shader);
     }
+
+    /* Now render terrain - ambient only. */
+    m_terrain_ambient_light_shader->bind();
+    m_terrain_ambient_light_shader->setUniform("ambient_factor", m_ambient_factor);
+    m_terrain_ambient_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
+    m_terrain_ambient_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
+    m_terrain_ambient_light_shader->setUniform("texcoord_tiling_factor", m_texcoord_tiling_factor);
+
+    m_terrain_ambient_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_terrain_model_matrix))));
+    m_terrain_ambient_light_shader->setUniform("mvp",           view_projection * m_terrain_model_matrix);
+    m_terrain_model->render(m_terrain_ambient_light_shader);
 
     /*
      * Disable writing to the depth buffer and additively
@@ -224,9 +259,9 @@ void Terrain::render()
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        m_directional_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_directional_light_shader->setUniform("model",         m_objects_model_matrices[i]);
         m_directional_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
-        m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        m_directional_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_directional_light_shader);
     }
@@ -248,9 +283,9 @@ void Terrain::render()
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        m_point_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_point_light_shader->setUniform("model",         m_objects_model_matrices[i]);
         m_point_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
-        m_point_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        m_point_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_point_light_shader);
     }
@@ -274,17 +309,98 @@ void Terrain::render()
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        m_spot_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_spot_light_shader->setUniform("model",         m_objects_model_matrices[i]);
         m_spot_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
-        m_spot_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        m_spot_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_spot_light_shader);
     }
+
+    render_terrain(view_projection);
 
     /* Enable writing to the depth buffer. */
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
     glDisable(GL_BLEND);
+}
+
+void Terrain::render_terrain(const glm::mat4& view_projection)
+{
+    auto terrain_normal_matrix = glm::transpose(glm::inverse(glm::mat3(m_terrain_model_matrix)));
+    auto mvp                   = view_projection * m_terrain_model_matrix;
+
+    /* Render directional light(s) */
+    m_terrain_directional_light_shader->bind();
+
+    m_terrain_directional_light_shader->setUniform("directional_light.base.color",     m_dir_light_properties.color);
+    m_terrain_directional_light_shader->setUniform("directional_light.base.intensity", m_dir_light_properties.intensity);
+    m_terrain_directional_light_shader->setUniform("directional_light.direction",      m_dir_light_properties.direction);
+
+    m_terrain_directional_light_shader->setUniform("cam_pos",            m_camera->position());
+    m_terrain_directional_light_shader->setUniform("specular_intensity", m_specular_intenstiy.x);
+    m_terrain_directional_light_shader->setUniform("specular_power",     m_specular_power.x);
+
+    m_terrain_directional_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
+    m_terrain_directional_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
+    m_terrain_directional_light_shader->setUniform("texcoord_tiling_factor", m_texcoord_tiling_factor);
+
+    m_terrain_directional_light_shader->setUniform("model",         m_terrain_model_matrix);
+    m_terrain_directional_light_shader->setUniform("normal_matrix", terrain_normal_matrix);
+    m_terrain_directional_light_shader->setUniform("mvp",           mvp);
+
+    m_terrain_model->render(m_terrain_directional_light_shader);
+
+    /* Render point lights */
+    m_terrain_point_light_shader->bind();
+
+    m_terrain_point_light_shader->setUniform("point_light.base.color",      m_point_light_properties.color);
+    m_terrain_point_light_shader->setUniform("point_light.base.intensity",  m_point_light_properties.intensity);
+    m_terrain_point_light_shader->setUniform("point_light.atten.constant",  m_point_light_properties.attenuation.constant);
+    m_terrain_point_light_shader->setUniform("point_light.atten.linear",    m_point_light_properties.attenuation.linear);
+    m_terrain_point_light_shader->setUniform("point_light.atten.quadratic", m_point_light_properties.attenuation.quadratic);
+    m_terrain_point_light_shader->setUniform("point_light.position",        m_point_light_properties.position);
+    m_terrain_point_light_shader->setUniform("point_light.range",           m_point_light_properties.range);
+
+    m_terrain_point_light_shader->setUniform("cam_pos",            m_camera->position());
+    m_terrain_point_light_shader->setUniform("specular_intensity", m_specular_intenstiy.y);
+    m_terrain_point_light_shader->setUniform("specular_power",     m_specular_power.y);
+
+    m_terrain_point_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
+    m_terrain_point_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
+    m_terrain_point_light_shader->setUniform("texcoord_tiling_factor", m_texcoord_tiling_factor);
+
+    m_terrain_point_light_shader->setUniform("model",         m_terrain_model_matrix);
+    m_terrain_point_light_shader->setUniform("normal_matrix", terrain_normal_matrix);
+    m_terrain_point_light_shader->setUniform("mvp",           mvp);
+
+    m_terrain_model->render(m_terrain_point_light_shader);
+
+    /* Render spot lights */
+    m_terrain_spot_light_shader->bind();
+
+    m_terrain_spot_light_shader->setUniform("spot_light.point.base.color",      m_spot_light_properties.color);
+    m_terrain_spot_light_shader->setUniform("spot_light.point.base.intensity",  m_spot_light_properties.intensity);
+    m_terrain_spot_light_shader->setUniform("spot_light.point.atten.constant",  m_spot_light_properties.attenuation.constant);
+    m_terrain_spot_light_shader->setUniform("spot_light.point.atten.linear",    m_spot_light_properties.attenuation.linear);
+    m_terrain_spot_light_shader->setUniform("spot_light.point.atten.quadratic", m_spot_light_properties.attenuation.quadratic);
+    m_terrain_spot_light_shader->setUniform("spot_light.point.position",        m_spot_light_properties.position);
+    m_terrain_spot_light_shader->setUniform("spot_light.point.range",           m_spot_light_properties.range);
+    m_terrain_spot_light_shader->setUniform("spot_light.direction",             m_spot_light_properties.direction);
+    m_terrain_spot_light_shader->setUniform("spot_light.cutoff",                glm::radians(90.0f - m_spot_light_properties.cutoff));
+
+    m_terrain_spot_light_shader->setUniform("cam_pos",            m_camera->position());
+    m_terrain_spot_light_shader->setUniform("specular_intensity", m_specular_intenstiy.z);
+    m_terrain_spot_light_shader->setUniform("specular_power",     m_specular_power.z);
+
+    m_terrain_spot_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
+    m_terrain_spot_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
+    m_terrain_spot_light_shader->setUniform("texcoord_tiling_factor", m_texcoord_tiling_factor);
+
+    m_terrain_spot_light_shader->setUniform("model",         m_terrain_model_matrix);
+    m_terrain_spot_light_shader->setUniform("normal_matrix", terrain_normal_matrix);
+    m_terrain_spot_light_shader->setUniform("mvp",           mvp);
+
+    m_terrain_model->render(m_terrain_spot_light_shader);
 }
 
 void Terrain::render_gui()
@@ -309,81 +425,165 @@ void Terrain::render_gui()
         if (ImGui::CollapsingHeader("Help"))
         {
             ImGui::Text("Controls info: \n\n"
-                        "Alpha 1 - take a screenshot\n"
-                        "Alpha 2 - toggle wireframe rendering\n"
-                        "WASDQE  - control camera movement\n"
-                        "RMB     - toggle cursor lock and rotate camera\n"
-                        "T       - toggle snapping camera to the ground\n"
-                        "Esc     - close the app\n\n");
+                        "F1     - take a screenshot\n"
+                        "F2     - toggle wireframe rendering\n"
+                        "WASDQE - control camera movement\n"
+                        "RMB    - toggle cursor lock and rotate camera\n"
+                        "T      - toggle snapping camera to the ground\n"
+                        "Esc    - close the app\n\n");
         }
 
         ImGui::Spacing();
 
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-        ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0, "%.2f");
-
-        ImGui::Spacing();
-
-        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-        if (ImGui::BeginTabBar("Lights' properties", tab_bar_flags))
+        if (ImGui::BeginTabBar("Main tab bar", ImGuiTabBarFlags_None))
         {
-            if (ImGui::BeginTabItem("Directional"))
+            if (ImGui::BeginTabItem("Terrain"))
             {
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
                 {
-                    ImGui::ColorEdit3 ("Color",                 &m_dir_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",       &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");
-                    ImGui::SliderFloat("Specular power",        &m_specular_power.x,               1.0, 120.0, "%.0f");
-                    ImGui::SliderFloat("Specular intensity",    &m_specular_intenstiy.x,           0.0, 1.0,   "%.2f");
-                    
-                    if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
+                    static float terrain_size            = m_terrain_size;
+                    static std::string current_heightmap = m_terrain_heightmaps_filenames[0];
+
+                    ImGui::TextWrapped("Textures' parameters:");
+                    ImGui::Spacing();
+
+                    ImGui::SliderFloat("Grass/Slope threshold",  &m_grass_slope_threshold,  0.01, 0.5,    "%.2f");
+                    ImGui::SliderFloat("Slope/Rock threshold",   &m_slope_rock_threshold,   0.51, 1.0,    "%.2f");
+                    ImGui::SliderFloat("Texcoord tiling factor", &m_texcoord_tiling_factor, 1.0,  150.0,  "%.0f");
+
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+
+                    ImGui::TextWrapped("Altering below settings requires hitting 'Reload terrain' button");
+                    ImGui::Spacing();
+
+                    if(ImGui::BeginCombo("Heightmaps' list", current_heightmap.c_str()))
                     {
-                        m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+                        for (auto& hf : m_terrain_heightmaps_filenames)
+                        {
+                            bool is_selected = (current_heightmap == hf);
+                            if (ImGui::Selectable(hf.c_str(), is_selected))
+                            {
+                                current_heightmap = hf;
+                            }
+
+                            if (is_selected)
+                            {
+                                ImGui::SetItemDefaultFocus();
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+
+                    ImGui::SliderFloat("Size",                   &terrain_size,             10.0, 3000.0, "%.0f");
+                    ImGui::SliderFloat("Max height",             &m_terrain_max_height,     1.0,  100.0,  "%.0f");
+
+                    if (ImGui::Button("Reload terrain"))
+                    {
+                        m_terrain_size         = terrain_size;
+                        m_terrain_model        = std::make_shared<TerrainModel>("textures/" + current_heightmap, m_terrain_size, m_terrain_max_height);
+                        m_terrain_position     = glm::vec3(m_terrain_size / 2.0, 0.0, m_terrain_size / 2.0);
+                        m_terrain_model_matrix = glm::translate(glm::mat4(1.0), m_terrain_position);
+
+                        for (auto& tf : m_terrain_textures_filenames)
+                        {
+                            RapidGL::Texture texture;
+                            texture.m_id   = RapidGL::Util::loadGLTexture(tf.c_str(), "textures", false);
+                            texture.m_type = "texture_diffuse";
+
+                            m_terrain_model->getMesh(0).addTexture(texture);
+
+                            /* Update other models' matrices */
+                            m_objects_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 1.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)); // monkey
+                            m_objects_model_matrices[1] = glm::translate(glm::mat4(1.0), glm::vec3(-5.0, 1.0 + m_terrain_model->getHeightOfTerrain(-5.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // cone
+                            m_objects_model_matrices[2] = glm::translate(glm::mat4(1.0), glm::vec3(-2.5, 1.0 + m_terrain_model->getHeightOfTerrain(-2.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // cube
+                            m_objects_model_matrices[3] = glm::translate(glm::mat4(1.0), glm::vec3( 0.0, 1.0 + m_terrain_model->getHeightOfTerrain( 0.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // cylinder
+                            m_objects_model_matrices[4] = glm::translate(glm::mat4(1.0), glm::vec3( 2.5, 1.0 + m_terrain_model->getHeightOfTerrain( 2.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0));  // plane
+                            m_objects_model_matrices[5] = glm::translate(glm::mat4(1.0), glm::vec3( 5.0, 1.0 + m_terrain_model->getHeightOfTerrain( 5.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // sphere
+                            m_objects_model_matrices[6] = glm::translate(glm::mat4(1.0), glm::vec3( 7.5, 1.0 + m_terrain_model->getHeightOfTerrain( 7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // torus
+                            m_objects_model_matrices[7] = glm::translate(glm::mat4(1.0), glm::vec3(10.0, 1.0 + m_terrain_model->getHeightOfTerrain(10.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0));  // quad
+
+                            /* Update lights' position */
+                            m_point_light_properties.position.y = 1.0 + m_terrain_model->getHeightOfTerrain(m_point_light_properties.position.x, m_point_light_properties.position.z, m_terrain_position.x, m_terrain_position.z);
+                            m_spot_light_properties.position.y  = 3.0 + m_terrain_model->getHeightOfTerrain(m_spot_light_properties.position.x,  m_spot_light_properties.position.z,  m_terrain_position.x, m_terrain_position.z);
+                        }
                     }
                 }
                 ImGui::PopItemWidth();
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Point"))
+
+            if (ImGui::BeginTabItem("Lights"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0, "%.2f");
+
+                ImGui::Spacing();
+
+                if (ImGui::BeginTabBar("Lights' properties", ImGuiTabBarFlags_None))
                 {
-                    ImGui::ColorEdit3 ("Color",              &m_point_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",    &m_point_light_properties.intensity, 0.0, 50.0, "%.1f");
-                    ImGui::SliderFloat("Specular power",     &m_specular_power.y,     1.0, 120.0,            "%.0f");
-                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.y, 0.0, 1.0,              "%.2f");
-
-                    ImGui::SliderFloat ("Constant attenuation",  &m_point_light_properties.attenuation.constant,  0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat ("Linear attenuation",    &m_point_light_properties.attenuation.linear,    0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat ("Quadratic attenuation", &m_point_light_properties.attenuation.quadratic, 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat ("Range",                 &m_point_light_properties.range,                 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat3("Position",              &m_point_light_properties.position[0],          -10.0, 10.0, "%.1f");
-                }
-                ImGui::PopItemWidth();
-                ImGui::EndTabItem();
-            }
-            if (ImGui::BeginTabItem("Spot"))
-            {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-                {
-                    ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 500.0, "%.1f");
-                    ImGui::SliderFloat("Specular power",     &m_specular_power.z,                1.0, 120.0, "%.0f");
-                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.z,            0.0, 1.0,   "%.2f");
-
-                    ImGui::SliderFloat("Constant attenuation",  &m_spot_light_properties.attenuation.constant,  0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Linear attenuation",    &m_spot_light_properties.attenuation.linear,    0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Quadratic attenuation", &m_spot_light_properties.attenuation.quadratic, 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Range",                 &m_spot_light_properties.range,                 0.01, 10.0, "%.2f");
-                    ImGui::SliderFloat("Cut-off angle",         &m_spot_light_properties.cutoff,                33.0, 90.0, "%.1f");
-                    ImGui::SliderFloat3("Position",             &m_spot_light_properties.position[0],          -10.0, 10.0, "%.1f");
-
-                    if (ImGui::SliderFloat2("Azimuth and Elevation", &m_spot_light_angles[0], -180.0, 180.0, "%.1f"))
+                    if (ImGui::BeginTabItem("Directional"))
                     {
-                        m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                        {
+                            ImGui::ColorEdit3 ("Color",              &m_dir_light_properties.color[0]);
+                            ImGui::SliderFloat("Light intensity",    &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");
+                            ImGui::SliderFloat("Specular power",     &m_specular_power.x,               1.0, 120.0, "%.0f");
+                            ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.x,           0.0, 1.0,   "%.2f");
+
+                            if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
+                            {
+                                m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+                            }
+                        }
+                        ImGui::PopItemWidth();
+                        ImGui::EndTabItem();
                     }
+                    if (ImGui::BeginTabItem("Point"))
+                    {
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                        {
+                            ImGui::ColorEdit3 ("Color",              &m_point_light_properties.color[0]);
+                            ImGui::SliderFloat("Light intensity",    &m_point_light_properties.intensity, 0.0, 50.0,  "%.1f");
+                            ImGui::SliderFloat("Specular power",     &m_specular_power.y,                 1.0, 120.0, "%.0f");
+                            ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.y,             0.0, 1.0,   "%.2f");
+
+                            ImGui::SliderFloat("Constant attenuation",  &m_point_light_properties.attenuation.constant,  0.01, 10.0,  "%.2f");
+                            ImGui::SliderFloat("Linear attenuation",    &m_point_light_properties.attenuation.linear,    0.01, 10.0,  "%.2f");
+                            ImGui::SliderFloat("Quadratic attenuation", &m_point_light_properties.attenuation.quadratic, 0.01, 10.0,  "%.2f");
+                            ImGui::SliderFloat("Range",                 &m_point_light_properties.range,                 0.01, 100.0, "%.2f");
+                            ImGui::SliderFloat3("Position",             &m_point_light_properties.position[0],          -10.0, 10.0,  "%.1f");
+                        }
+                        ImGui::PopItemWidth();
+                        ImGui::EndTabItem();
+                    }
+                    if (ImGui::BeginTabItem("Spot"))
+                    {
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                        {
+                            ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
+                            ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 100.0, "%.1f");
+                            ImGui::SliderFloat("Specular power",     &m_specular_power.z,                1.0, 120.0, "%.0f");
+                            ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.z,            0.0, 1.0,   "%.2f");
+
+                            ImGui::SliderFloat("Constant attenuation",  &m_spot_light_properties.attenuation.constant,  0.01, 10.0,  "%.2f");
+                            ImGui::SliderFloat("Linear attenuation",    &m_spot_light_properties.attenuation.linear,    0.01, 10.0,  "%.2f");
+                            ImGui::SliderFloat("Quadratic attenuation", &m_spot_light_properties.attenuation.quadratic, 0.01, 10.0,  "%.2f");
+                            ImGui::SliderFloat("Range",                 &m_spot_light_properties.range,                 0.01, 100.0, "%.2f");
+                            ImGui::SliderFloat("Cut-off angle",         &m_spot_light_properties.cutoff,                33.0, 90.0,  "%.1f");
+                            ImGui::SliderFloat3("Position",             &m_spot_light_properties.position[0],          -10.0, 10.0,  "%.1f");
+
+                            if (ImGui::SliderFloat2("Azimuth and Elevation", &m_spot_light_angles[0], -180.0, 180.0, "%.1f"))
+                            {
+                                m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
+                            }
+                        }
+                        ImGui::PopItemWidth();
+                        ImGui::EndTabItem();
+                    }
+                    ImGui::EndTabBar();
                 }
-                ImGui::PopItemWidth();
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();

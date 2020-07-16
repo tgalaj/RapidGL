@@ -26,7 +26,7 @@ void TemplateProject::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "00_template_project";
@@ -73,8 +73,8 @@ void TemplateProject::render_gui()
     ImGui::Begin("Info");
     {
         ImGui::Text("Controls info: \n\n"
-                    "Alpha 1 - take a screenshot\n"
-                    "Esc     - close the app\n\n");
+                    "F1  - take a screenshot\n"
+                    "Esc - close the app\n\n");
 
         ImGui::TextWrapped("See src/demos/00_template_project/template_project.h for documentation.");
     }

@@ -83,7 +83,7 @@ void Simple3d::input()
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha2))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -100,7 +100,7 @@ void Simple3d::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Alpha1))
+    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "02_simple_3d";
@@ -162,11 +162,11 @@ void Simple3d::render_gui()
         ImGui::SliderFloat("Color mix factor", &m_mix_factor, 0.0, 1.0);
 
         ImGui::Text("\nControls info: \n\n"
-                    "Alpha 1 - take a screenshot\n"
-                    "Alpha 2 - toggle wireframe rendering\n"
-                    "WASDQE  - control camera movement\n"
-                    "RMB     - toggle cursor lock and rotate camera\n"
-                    "Esc     - close the app\n\n");
+                    "F1     - take a screenshot\n"
+                    "F2     - toggle wireframe rendering\n"
+                    "WASDQE - control camera movement\n"
+                    "RMB    - toggle cursor lock and rotate camera\n"
+                    "Esc    - close the app\n\n");
     }
     ImGui::End();
 }
