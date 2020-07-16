@@ -2,7 +2,7 @@
 
 #include <fstream>
 #include <sstream>
-#include <GLFW\glfw3.h>
+#include <GLFW/glfw3.h>
 
 #include "filesystem.h"
 
