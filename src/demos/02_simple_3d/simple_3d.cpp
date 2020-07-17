@@ -31,7 +31,7 @@ void Simple3d::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/monkey.obj"));
+    m_objects[0]->load(RapidGL::FileSystem::getPath("models/spot/spot.obj"));
     m_objects[1]->genCone(1.0, 0.5);
     m_objects[2]->genCube();
     m_objects[3]->genCylinder(1.0, 0.5);
@@ -41,7 +41,7 @@ void Simple3d::init_app()
     m_objects[7]->genQuad();
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // monkey
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // spot
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0, 0.5, -5)));                                                                         // cone
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5, 0.0, -5)));                                                                         // cube
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, 0.0, -5)));                                                                         // cylinder
@@ -61,11 +61,15 @@ void Simple3d::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.5, 0.0));
 
     /* Add texture to the monkey and sphere models only. */
+    RapidGL::Texture texture_spot;
+    texture_spot.m_id   = RapidGL::Util::loadGLTexture("spot.png", "models/spot", false);
+    texture_spot.m_type = "texture_diffuse";
+
     RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
+    texture.m_id   = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
     texture.m_type = "texture_diffuse";
 
-    m_objects[0]->getMesh(0).addTexture(texture);
+    m_objects[0]->getMesh(0).addTexture(texture_spot);
     m_objects[5]->getMesh(0).addTexture(texture);
 
     /* Create shader. */

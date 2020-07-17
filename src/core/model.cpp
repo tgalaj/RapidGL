@@ -67,7 +67,15 @@ namespace RapidGL
             VertexBuffers::Vertex vertex;
             vertex.m_position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
             vertex.m_normal   = glm::vec3(mesh->mNormals[i].x,  mesh->mNormals[i].y,  mesh->mNormals[i].z);
-            vertex.m_tangent  = glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
+
+            if (mesh->HasTangentsAndBitangents())
+            {
+                vertex.m_tangent = glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
+            }
+            else
+            {
+                vertex.m_tangent = glm::vec3(0.0, 1.0, 0.0);
+            }
 
             if (mesh->mTextureCoords[0])
             {

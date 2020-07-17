@@ -54,7 +54,7 @@ void Lighting::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/monkey.obj"));
+    m_objects[0]->load(RapidGL::FileSystem::getPath("models/bunny.obj"));
     m_objects[1]->genCone(1.0, 0.5);
     m_objects[2]->genCube();
     m_objects[3]->genCylinder(1.0, 0.5);
@@ -65,7 +65,7 @@ void Lighting::init_app()
     m_objects[8]->genPlane(50, 50);
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5,  0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // monkey
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, -1.0, -5)));                                                                         // bunny
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0,  0.5, -5)));                                                                         // cone
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5,  0.0, -5)));                                                                         // cube
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0,  0.0, -5)));                                                                         // cylinder
@@ -84,7 +84,6 @@ void Lighting::init_app()
     default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", false);
     default_diffuse_texture.m_type = "texture_diffuse";
 
-    m_objects[0]->getMesh(0).addTexture(texture);
     m_objects[5]->getMesh(0).addTexture(texture);
 
     for (auto& model : m_objects)
