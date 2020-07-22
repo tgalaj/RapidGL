@@ -446,8 +446,8 @@ void Terrain::render_gui()
                     ImGui::TextWrapped("Textures' parameters:");
                     ImGui::Spacing();
 
-                    ImGui::SliderFloat("Grass/Slope threshold",  &m_grass_slope_threshold,  0.01, 0.5,    "%.2f");
-                    ImGui::SliderFloat("Slope/Rock threshold",   &m_slope_rock_threshold,   0.51, 1.0,    "%.2f");
+                    ImGui::SliderFloat("Slope/Grass threshold",  &m_grass_slope_threshold,  0.01, 0.5,    "%.2f");
+                    ImGui::SliderFloat("Rock/Slope threshold",   &m_slope_rock_threshold,   0.51, 1.0,    "%.2f");
                     ImGui::SliderFloat("Texcoord tiling factor", &m_texcoord_tiling_factor, 1.0,  150.0,  "%.0f");
 
                     ImGui::Spacing();

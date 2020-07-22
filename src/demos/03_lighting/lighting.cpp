@@ -4,6 +4,8 @@
 #include "util.h"
 #include "gui/gui.h"
 
+#include <glm/gtc/matrix_inverse.hpp>
+
 Lighting::Lighting()
     : m_specular_power    (120.0f),
       m_specular_intenstiy(0.2f),
@@ -199,7 +201,7 @@ void Lighting::render()
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
         m_directional_light_shader->setUniform("model", m_objects_model_matrices[i]);
-        m_directional_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_directional_light_shader);
@@ -223,7 +225,7 @@ void Lighting::render()
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
         m_point_light_shader->setUniform("model", m_objects_model_matrices[i]);
-        m_point_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_point_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_point_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_point_light_shader);
@@ -249,7 +251,7 @@ void Lighting::render()
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
         m_spot_light_shader->setUniform("model", m_objects_model_matrices[i]);
-        m_spot_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
+        m_spot_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_spot_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->render(m_spot_light_shader);
