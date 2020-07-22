@@ -26,6 +26,8 @@ uniform vec3 rim_color;
 uniform float rim_threshold;
 uniform float rim_amount;
 
+const vec3 specular_color = vec3(0.9);
+
 vec4 toonShadingRim(vec3 normal)
 {
     vec3 dir_to_eye  = normalize(cam_pos - world_pos);
@@ -41,20 +43,18 @@ vec4 toonShadingRim(vec3 normal)
     /* Calculate specular factor */
           sf        = pow(sf * diffuse, specular_power * specular_power);
     float sf_smooth = smoothstep(0.005, 0.01, sf);
-    vec3 specular_color = vec3(sf_smooth) * specular_intensity;
+    vec3 specular_color = sf_smooth * specular_color * specular_intensity;
 
     /* Calculate rim lighting */
-    float rim_dot       = 1.0 - dot(dir_to_eye, normal);
+    float rim_dot       = 1.0 - max(dot(-dir_to_eye, normal), 0.0);
     float rim_intensity = rim_dot * pow(df, rim_threshold);
           rim_intensity = smoothstep(rim_amount - 0.01, rim_amount + 0.01, rim_intensity);
     vec3  rim           = rim_intensity * rim_color;
 
-    vec3 albedo_texture = texture(texture_diffuse1, texcoord).rgb;
+    vec3 texture_sample = texture(texture_diffuse1, texcoord).rgb;
     vec3 ambient_color  = vec3(ambient_factor);
 
-    vec3 color = (light + ambient_color) * object_color * albedo_texture * light_intensity + 
-                 mix(specular_color, object_color * albedo_texture, 1.0 - specular_intensity) * light_intensity + 
-                 mix(rim, object_color * albedo_texture, rim_amount) * light_intensity;
+    vec3 color = light_intensity * texture_sample * object_color * (light + ambient_color + rim + specular_color);
 
     return vec4(color, 1.0);
 }

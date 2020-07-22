@@ -75,15 +75,15 @@ void ToonOutline::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 10.0,  -0.5,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.3)));                            // teapot
 
     /* Set colors for individual models. */
-    m_objects_colors.emplace_back(glm::vec3(1.0, 1.0,  1.0));
+    m_objects_colors.emplace_back(glm::vec3(0.9, 0.9,  0.9));
     m_objects_colors.emplace_back(glm::vec3(0.5, 0.64, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 1.0,  0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 0.0,  1.0));
-    m_objects_colors.emplace_back(glm::vec3(1.0, 1.0,  0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 1.0,  1.0));
-    m_objects_colors.emplace_back(glm::vec3(1.0, 0.0,  1.0));
-    m_objects_colors.emplace_back(glm::vec3(0.5, 0.0,  0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 0.5,  0.0));
+    m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
+    m_objects_colors.emplace_back(glm::vec3(0.0, 0.0,  0.5));
+    m_objects_colors.emplace_back(glm::vec3(0.9, 0.9,  0.0));
+    m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.9));
+    m_objects_colors.emplace_back(glm::vec3(0.9, 0.0,  0.9));
+    m_objects_colors.emplace_back(glm::vec3(0.9, 0.0,  0.0));
+    m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
 
     RapidGL::Texture texture_spot;
     texture_spot.m_id   = RapidGL::Util::loadGLTexture("spot.png", "models/spot", false);
