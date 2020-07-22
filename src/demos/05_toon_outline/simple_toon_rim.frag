@@ -12,15 +12,14 @@ uniform float ambient_factor;
 uniform vec3 object_color;
 
 uniform vec3 cam_pos;
+uniform float gamma;
 
 uniform float specular_power;
 uniform float specular_intensity;
 
 uniform sampler2D texture_diffuse1;
 
-/* Code inspiration: https://roystan.net/articles/toon-shader.html */
-
-/* Something is off with this shader... Maybe adding tonemapping will improve visuals... ? */
+/* Code courtesy of: https://roystan.net/articles/toon-shader.html */
 
 uniform vec3 rim_color;
 uniform float rim_threshold;
@@ -46,7 +45,7 @@ vec4 toonShadingRim(vec3 normal)
     vec3 specular_color = sf_smooth * specular_color * specular_intensity;
 
     /* Calculate rim lighting */
-    float rim_dot       = 1.0 - max(dot(-dir_to_eye, normal), 0.0);
+    float rim_dot       = 1.0 - max(dot(dir_to_eye, normal), 0.0);
     float rim_intensity = rim_dot * pow(df, rim_threshold);
           rim_intensity = smoothstep(rim_amount - 0.01, rim_amount + 0.01, rim_intensity);
     vec3  rim           = rim_intensity * rim_color;
@@ -59,7 +58,18 @@ vec4 toonShadingRim(vec3 normal)
     return vec4(color, 1.0);
 }
 
+vec4 reinhard(vec4 hdr_color)
+{
+    // reinhard tonemapping
+    vec3 ldr_color = hdr_color.rgb / (hdr_color.rgb + 1.0);
+
+    // gamma correction
+    ldr_color = pow(ldr_color, vec3(1.0 / gamma));
+
+    return vec4(ldr_color, 1.0);
+}
+
 void main()
 {
-    frag_color = toonShadingRim(normalize(normal));
+    frag_color = reinhard(toonShadingRim(normalize(normal)));
 } 

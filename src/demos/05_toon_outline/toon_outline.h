@@ -55,6 +55,7 @@ private:
 
     float m_specular_power;
     float m_specular_intensity;
+    float m_gamma;
 
     enum class ToonShadingMethod { SIMPLE, ADVANCED, SIMPLE_RIM, TWIN_SHADE} m_toon_shading_method;
     std::vector<std::string> m_toon_shading_methods_names;

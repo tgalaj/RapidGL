@@ -12,6 +12,7 @@ uniform float ambient_factor;
 uniform vec3 object_color;
 
 uniform vec3 cam_pos;
+uniform float gamma;
 
 uniform float specular_power;
 uniform float specular_intensity;
@@ -43,7 +44,18 @@ vec4 toonShading(vec3 normal)
     return vec4(color, 1.0);
 }
 
+vec4 reinhard(vec4 hdr_color)
+{
+    // reinhard tonemapping
+    vec3 ldr_color = hdr_color.rgb / (hdr_color.rgb + 1.0);
+
+    // gamma correction
+    ldr_color = pow(ldr_color, vec3(1.0 / gamma));
+
+    return vec4(ldr_color, 1.0);
+}
+
 void main()
 {
-    frag_color = toonShading(normalize(normal));
+    frag_color = reinhard(toonShading(normalize(normal)));
 } 

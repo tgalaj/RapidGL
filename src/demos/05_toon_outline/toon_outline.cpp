@@ -6,11 +6,12 @@
 
 ToonOutline::ToonOutline()
     : m_light_color                       (1.0),
-      m_dir_light_azimuth_elevation_angles(45.0, 75.0),
+      m_dir_light_azimuth_elevation_angles(45.0, 9.0),
       m_light_intensity                   (1.0),
       m_ambient_factor                    (0.18),
       m_specular_power                    (120.0),
       m_specular_intensity                (1.0),
+      m_gamma                             (2.2),
       m_advanced_toon_A                   (0.1),
       m_advanced_toon_B                   (0.3),
       m_advanced_toon_C                   (0.6),
@@ -86,11 +87,11 @@ void ToonOutline::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
 
     RapidGL::Texture texture_spot;
-    texture_spot.m_id   = RapidGL::Util::loadGLTexture("spot.png", "models/spot", false);
+    texture_spot.m_id   = RapidGL::Util::loadGLTexture("spot.png", "models/spot", true);
     texture_spot.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id   = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", false);
+    default_diffuse_texture.m_id   = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[0]->getMesh(0).addTexture(texture_spot);
@@ -185,6 +186,7 @@ void ToonOutline::render()
     m_toon_shaders[toon_shader_id]->setUniform("cam_pos",            m_camera->position());
     m_toon_shaders[toon_shader_id]->setUniform("specular_power",     m_specular_power);
     m_toon_shaders[toon_shader_id]->setUniform("specular_intensity", m_specular_intensity);
+    m_toon_shaders[toon_shader_id]->setUniform("gamma",              m_gamma);
     
     if (m_toon_shading_method == ToonShadingMethod::SIMPLE)
     {
@@ -319,6 +321,7 @@ void ToonOutline::render_gui()
 
         ImGui::ColorEdit3 ("Outline color", &m_outline_color[0]);
         ImGui::SliderFloat("Outline width", &m_outline_width, 0.1, 10.0, "%.1f");
+        ImGui::SliderFloat("Gamma",         &m_gamma,         0.0, 10.0, "%.1f");
         
         ImGui::Separator();
 

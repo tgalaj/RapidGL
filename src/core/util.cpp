@@ -85,15 +85,25 @@ namespace RapidGL
         if (data)
         {
             GLenum format;
+            GLenum internal_format;
             if (img_data.channels == 1)
-                format = GL_RED;
+            {
+                format          = GL_RED;
+                internal_format = GL_RED;
+            }
             else if (img_data.channels == 3)
-                format = GL_RGB;
+            {
+                format          = GL_RGB;
+                internal_format = gamma ? GL_SRGB : GL_RGB;
+            }
             else if (img_data.channels == 4)
-                format = GL_RGBA;
+            {
+                format          = GL_RGBA;
+                internal_format = gamma ? GL_SRGB_ALPHA : GL_RGBA;
+            }
 
             glBindTexture(GL_TEXTURE_2D, texture_id);
-            glTexImage2D(GL_TEXTURE_2D, 0, format, img_data.width, img_data.height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, img_data.width, img_data.height, 0, format, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
