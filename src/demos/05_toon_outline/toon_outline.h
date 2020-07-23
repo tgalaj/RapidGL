@@ -18,9 +18,11 @@ public:
     void input()                   override;
     void update(double delta_time) override;
     void render()                  override;
-    void render_gui()               override;
+    void render_gui()              override;
 
 private:
+    void render_toon_shaded_objects();
+
     glm::vec3 calcDirection(const glm::vec2 & azimuth_elevation_angles)
     {
         float az = glm::radians(azimuth_elevation_angles.x);
@@ -85,4 +87,6 @@ private:
     /* Outline properties */
     glm::vec3 m_outline_color;
     float m_outline_width;
+
+    std::shared_ptr<RapidGL::Shader> m_simple_outline_shader;
 };

@@ -31,6 +31,8 @@ void Terrain::init_app()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
+    glEnable(GL_MULTISAMPLE);
+
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 1000.0);
     m_camera->setPosition(1.5, 0.0, 10.0);

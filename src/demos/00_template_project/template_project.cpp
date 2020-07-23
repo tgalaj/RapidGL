@@ -15,6 +15,8 @@ void TemplateProject::init_app()
 {
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.5, 0.5, 0.5, 1.0);
+
+    glEnable(GL_MULTISAMPLE);
 }
 
 void TemplateProject::input()

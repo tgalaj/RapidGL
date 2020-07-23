@@ -26,7 +26,7 @@ namespace RapidGL
         void genQuad    (float width = 1.0f, float height = 1.0f);
 
         void load(const std::string & filename);
-        void render(std::shared_ptr<Shader> & shader);
+        void render(std::shared_ptr<Shader> & shader, bool is_textured = true);
 
         void setDrawMode(GLenum draw_mode);
         GLenum getDrawMode() { return getMesh(0).getDrawMode(); }

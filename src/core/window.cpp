@@ -37,6 +37,7 @@ namespace RapidGL
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, MIN_GL_VERSION_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_SAMPLES, 4);
 
         #ifdef _DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
@@ -112,6 +113,11 @@ namespace RapidGL
     glm::vec2 Window::getCenter()
     {
         return m_window_size / 2.0f;
+    }
+
+    glm::vec2 Window::getSize()
+    {
+        return m_window_size;
     }
 
     float Window::getAspectRatio()

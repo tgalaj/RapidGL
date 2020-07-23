@@ -72,31 +72,34 @@ namespace RapidGL
         m_mesh_data->m_textures.push_back(texture);
     }
 
-    void Mesh::render(std::shared_ptr<Shader> & shader)
+    void Mesh::render(std::shared_ptr<Shader> & shader, bool is_textured)
     {        
-        unsigned int diffuse_nr  = 1;
-        unsigned int specular_nr = 1;
-        unsigned int normal_nr   = 1;
-        unsigned int height_nr   = 1;
-
-        for (unsigned int i = 0; i < m_mesh_data->m_textures.size(); ++i)
+        if (is_textured)
         {
-            glActiveTexture(GL_TEXTURE0 + i);
+            unsigned int diffuse_nr = 1;
+            unsigned int specular_nr = 1;
+            unsigned int normal_nr = 1;
+            unsigned int height_nr = 1;
 
-            std::string number;
-            std::string name = m_mesh_data->m_textures[i].m_type;
+            for (unsigned int i = 0; i < m_mesh_data->m_textures.size(); ++i)
+            {
+                glActiveTexture(GL_TEXTURE0 + i);
 
-            if (name == "texture_diffuse")
-                number = std::to_string(diffuse_nr++);
-            else if (name == "texture_specular")
-                number = std::to_string(specular_nr++);
-            else if (name == "texture_normal")
-                number = std::to_string(normal_nr++);
-            else if (name == "texture_height")
-                number = std::to_string(height_nr++);
+                std::string number;
+                std::string name = m_mesh_data->m_textures[i].m_type;
 
-            shader->setUniform((name + number).c_str(), static_cast<int>(i));
-            glBindTexture(GL_TEXTURE_2D, m_mesh_data->m_textures[i].m_id);
+                if (name == "texture_diffuse")
+                    number = std::to_string(diffuse_nr++);
+                else if (name == "texture_specular")
+                    number = std::to_string(specular_nr++);
+                else if (name == "texture_normal")
+                    number = std::to_string(normal_nr++);
+                else if (name == "texture_height")
+                    number = std::to_string(height_nr++);
+
+                shader->setUniform((name + number).c_str(), static_cast<int>(i));
+                glBindTexture(GL_TEXTURE_2D, m_mesh_data->m_textures[i].m_id);
+            }
         }
 
         glBindVertexArray(m_mesh_data->m_vao_id);

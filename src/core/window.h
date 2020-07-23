@@ -23,6 +23,7 @@ namespace RapidGL
         static int       getWidth();
         static int       getHeight();
         static glm::vec2 getCenter();
+        static glm::vec2 getSize();
         static float     getAspectRatio();
 
         static const std::string & getTitle();

@@ -58,7 +58,7 @@ namespace RapidGL
         GLuint getIndicesCount()  const { return m_mesh_data->m_indices_count; }
         GLuint getTexturesCount() const { return m_mesh_data->m_textures.size(); }
 
-        void render(std::shared_ptr<Shader> & shader);
+        void render(std::shared_ptr<Shader> & shader, bool is_textured = true);
 
     private:
         std::shared_ptr<MeshData> m_mesh_data;

@@ -19,6 +19,7 @@ SimpleTriangle::~SimpleTriangle()
 void SimpleTriangle::init_app()
 {
     glClearColor(0.5, 0.5, 0.5, 1.0);
+    glEnable(GL_MULTISAMPLE);
 
     float vertices[] = { 
                          -0.5f, -0.5f, 0.0f, 

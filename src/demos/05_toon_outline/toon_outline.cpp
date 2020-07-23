@@ -27,7 +27,7 @@ ToonOutline::ToonOutline()
       m_twin_shade_light_shade_cutoff     (0.6),
       m_twin_shade_dark_shade_cutoff      (0.15),
       m_outline_color                     (0.0),
-      m_outline_width                     (1.0)
+      m_outline_width                     (20.0)
 {
     m_light_direction = calcDirection(m_dir_light_azimuth_elevation_angles);
 }
@@ -42,6 +42,12 @@ void ToonOutline::init_app()
     glClearColor(0.5, 0.5, 0.5, 1.0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+
+    glEnable     (GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilOp  (GL_KEEP, GL_KEEP, GL_REPLACE);
+
+    glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
@@ -104,22 +110,26 @@ void ToonOutline::init_app()
         }
     }
 
-    /* Create shader. */
+    /* Create the toon shaders. */
     std::string dir = "../src/demos/05_toon_outline/";
-    m_simple_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "simple_toon.frag");
+    m_simple_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_simple.frag");
     m_simple_toon_shader->link();
 
-    m_advanced_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "advanced_toon.frag");
+    m_advanced_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_advanced.frag");
     m_advanced_toon_shader->link();
 
-    m_simple_rim_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "simple_toon_rim.frag");
+    m_simple_rim_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_simple_rim.frag");
     m_simple_rim_toon_shader->link();
 
-    m_toon_twin_shade_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "twin_shade_toon.frag");
+    m_toon_twin_shade_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_twin_shade.frag");
     m_toon_twin_shade_shader->link();
 
     m_toon_shading_methods_names = { "Simple", "Advanced", "Simple with Rim", "Toon Twin Shade" };
     m_toon_shaders               = { m_simple_toon_shader, m_advanced_toon_shader, m_simple_rim_toon_shader, m_toon_twin_shade_shader };
+
+    /* Create the outline shaders. */
+    m_simple_outline_shader = std::make_shared<RapidGL::Shader>(dir + "outline_simple.vert", dir + "outline_simple.frag");
+    m_simple_outline_shader->link();
 }
 
 void ToonOutline::input()
@@ -172,25 +182,62 @@ void ToonOutline::update(double delta_time)
 
 void ToonOutline::render()
 {
+    /* 1st pass */
+    glClear(GL_STENCIL_BUFFER_BIT);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+
+    render_toon_shaded_objects();
+
+    /* 2nd pass */
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+    glDisable(GL_DEPTH_TEST);
+
+    /* render outline */
+    m_simple_outline_shader->bind();
+    m_simple_outline_shader->setUniform("outline_width", 0.1f * m_outline_width);
+    m_simple_outline_shader->setUniform("outline_color", m_outline_color);
+    m_simple_outline_shader->setUniform("screen_resolution", RapidGL::Window::getSize());
+
+    auto view_projection = m_camera->m_projection * m_camera->m_view;
+
+    for (unsigned i = 0; i < m_objects.size(); ++i)
+    {
+        auto normal_matrix = glm::transpose(glm::inverse(m_objects_model_matrices[i]));
+
+        m_simple_outline_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        m_simple_outline_shader->setUniform("mvp_normal", glm::mat3(view_projection * normal_matrix));
+
+        m_objects[i]->render(m_simple_outline_shader, false);
+    }
+
+    glStencilMask(0xFF);
+    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+    glEnable     (GL_DEPTH_TEST);
+}
+
+void ToonOutline::render_toon_shaded_objects()
+{
     /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int toon_shader_id = int(m_toon_shading_method);
 
     m_toon_shaders[toon_shader_id]->bind();
-    m_toon_shaders[toon_shader_id]->setUniform("light_color",     m_light_color);
+    m_toon_shaders[toon_shader_id]->setUniform("light_color", m_light_color);
     m_toon_shaders[toon_shader_id]->setUniform("light_direction", m_light_direction);
     m_toon_shaders[toon_shader_id]->setUniform("light_intensity", m_light_intensity);
-    m_toon_shaders[toon_shader_id]->setUniform("ambient_factor",  m_ambient_factor);
+    m_toon_shaders[toon_shader_id]->setUniform("ambient_factor", m_ambient_factor);
 
-    m_toon_shaders[toon_shader_id]->setUniform("cam_pos",            m_camera->position());
-    m_toon_shaders[toon_shader_id]->setUniform("specular_power",     m_specular_power);
+    m_toon_shaders[toon_shader_id]->setUniform("cam_pos", m_camera->position());
+    m_toon_shaders[toon_shader_id]->setUniform("specular_power", m_specular_power);
     m_toon_shaders[toon_shader_id]->setUniform("specular_intensity", m_specular_intensity);
-    m_toon_shaders[toon_shader_id]->setUniform("gamma",              m_gamma);
-    
+    m_toon_shaders[toon_shader_id]->setUniform("gamma", m_gamma);
+
     if (m_toon_shading_method == ToonShadingMethod::SIMPLE)
     {
-        m_toon_shaders[toon_shader_id]->setUniform("diffuse_levels",  m_simple_toon_diffuse_levels);
+        m_toon_shaders[toon_shader_id]->setUniform("diffuse_levels", m_simple_toon_diffuse_levels);
         m_toon_shaders[toon_shader_id]->setUniform("specular_levels", m_simple_toon_specular_levels);
     }
 
@@ -204,27 +251,27 @@ void ToonOutline::render()
 
     if (m_toon_shading_method == ToonShadingMethod::SIMPLE_RIM)
     {
-        m_toon_shaders[toon_shader_id]->setUniform("rim_color",     m_rim_color);
+        m_toon_shaders[toon_shader_id]->setUniform("rim_color", m_rim_color);
         m_toon_shaders[toon_shader_id]->setUniform("rim_threshold", m_rim_threshold);
-        m_toon_shaders[toon_shader_id]->setUniform("rim_amount",    m_rim_amount);
+        m_toon_shaders[toon_shader_id]->setUniform("rim_amount", m_rim_amount);
     }
 
     if (m_toon_shading_method == ToonShadingMethod::TWIN_SHADE)
     {
-        m_toon_shaders[toon_shader_id]->setUniform("diffuse_levels",     m_twin_shade_toon_diffuse_levels);
-        m_toon_shaders[toon_shader_id]->setUniform("specular_levels",    m_twin_shade_toon_specular_levels);
+        m_toon_shaders[toon_shader_id]->setUniform("diffuse_levels", m_twin_shade_toon_diffuse_levels);
+        m_toon_shaders[toon_shader_id]->setUniform("specular_levels", m_twin_shade_toon_specular_levels);
         m_toon_shaders[toon_shader_id]->setUniform("light_shade_cutoff", m_twin_shade_light_shade_cutoff);
-        m_toon_shaders[toon_shader_id]->setUniform("dark_shade_cutoff",  m_twin_shade_dark_shade_cutoff);
+        m_toon_shaders[toon_shader_id]->setUniform("dark_shade_cutoff", m_twin_shade_dark_shade_cutoff);
     }
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
-    
+
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        m_toon_shaders[toon_shader_id]->setUniform("model",         m_objects_model_matrices[i]);
+        m_toon_shaders[toon_shader_id]->setUniform("model", m_objects_model_matrices[i]);
         m_toon_shaders[toon_shader_id]->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
-        m_toon_shaders[toon_shader_id]->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
-        m_toon_shaders[toon_shader_id]->setUniform("object_color",  m_objects_colors[i]);
+        m_toon_shaders[toon_shader_id]->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        m_toon_shaders[toon_shader_id]->setUniform("object_color", m_objects_colors[i]);
         m_objects[i]->render(m_toon_shaders[toon_shader_id]);
     }
 }
@@ -320,7 +367,7 @@ void ToonOutline::render_gui()
         }
 
         ImGui::ColorEdit3 ("Outline color", &m_outline_color[0]);
-        ImGui::SliderFloat("Outline width", &m_outline_width, 0.1, 10.0, "%.1f");
+        ImGui::SliderFloat("Outline width", &m_outline_width, 0.0, 100.0, "%.1f");
         ImGui::SliderFloat("Gamma",         &m_gamma,         0.0, 10.0, "%.1f");
         
         ImGui::Separator();
