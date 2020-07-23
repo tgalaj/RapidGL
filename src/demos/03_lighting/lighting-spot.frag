@@ -5,5 +5,5 @@ uniform SpotLight spot_light;
 
 void main()
 {
-    frag_color = calcSpotLight(spot_light, normalize(normal), world_pos);
+    frag_color = reinhard(calcSpotLight(spot_light, normalize(normal), world_pos));
 } 

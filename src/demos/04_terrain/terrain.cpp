@@ -15,7 +15,8 @@ Terrain::Terrain()
       m_snap_camera_to_ground (true),
       m_texcoord_tiling_factor(40.0f),
       m_grass_slope_threshold (0.2f),
-      m_slope_rock_threshold  (0.7)
+      m_slope_rock_threshold  (0.7),
+      m_gamma                 (1.6)
 {
 }
 
@@ -86,11 +87,11 @@ void Terrain::init_app()
 
     /* Add textures to the objects. */
     RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
+    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", true);
     texture.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", false);
+    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[5]->getMesh(0).addTexture(texture);
@@ -110,7 +111,7 @@ void Terrain::init_app()
     for (auto& tf : m_terrain_textures_filenames)
     {
         RapidGL::Texture texture;
-        texture.m_id   = RapidGL::Util::loadGLTexture(tf.c_str(), "textures", false);
+        texture.m_id   = RapidGL::Util::loadGLTexture(tf.c_str(), "textures", tf != "blendmap.png" ? true : false);
         texture.m_type = "texture_diffuse";
 
         m_terrain_model->getMesh(0).addTexture(texture);
@@ -213,6 +214,7 @@ void Terrain::render()
     /* Render normal objects first */
     m_ambient_light_shader->bind();
     m_ambient_light_shader->setUniform("ambient_factor", m_ambient_factor);
+    m_ambient_light_shader->setUniform("gamma",          m_gamma);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
@@ -228,6 +230,7 @@ void Terrain::render()
     /* Now render terrain - ambient only. */
     m_terrain_ambient_light_shader->bind();
     m_terrain_ambient_light_shader->setUniform("ambient_factor", m_ambient_factor);
+    m_terrain_ambient_light_shader->setUniform("gamma",          m_gamma);
     m_terrain_ambient_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
     m_terrain_ambient_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
     m_terrain_ambient_light_shader->setUniform("texcoord_tiling_factor", m_texcoord_tiling_factor);
@@ -255,6 +258,7 @@ void Terrain::render()
     m_directional_light_shader->setUniform("cam_pos",            m_camera->position());
     m_directional_light_shader->setUniform("specular_intensity", m_specular_intenstiy.x);
     m_directional_light_shader->setUniform("specular_power",     m_specular_power.x);
+    m_directional_light_shader->setUniform("gamma",              m_gamma);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -279,6 +283,7 @@ void Terrain::render()
     m_point_light_shader->setUniform("cam_pos",            m_camera->position());
     m_point_light_shader->setUniform("specular_intensity", m_specular_intenstiy.y);
     m_point_light_shader->setUniform("specular_power",     m_specular_power.y);
+    m_point_light_shader->setUniform("gamma",              m_gamma);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -305,6 +310,7 @@ void Terrain::render()
     m_spot_light_shader->setUniform("cam_pos",            m_camera->position());
     m_spot_light_shader->setUniform("specular_intensity", m_specular_intenstiy.z);
     m_spot_light_shader->setUniform("specular_power",     m_specular_power.z);
+    m_spot_light_shader->setUniform("gamma",              m_gamma);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -338,6 +344,7 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     m_terrain_directional_light_shader->setUniform("cam_pos",            m_camera->position());
     m_terrain_directional_light_shader->setUniform("specular_intensity", m_specular_intenstiy.x);
     m_terrain_directional_light_shader->setUniform("specular_power",     m_specular_power.x);
+    m_terrain_directional_light_shader->setUniform("gamma",              m_gamma);
 
     m_terrain_directional_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
     m_terrain_directional_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
@@ -363,6 +370,7 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     m_terrain_point_light_shader->setUniform("cam_pos",            m_camera->position());
     m_terrain_point_light_shader->setUniform("specular_intensity", m_specular_intenstiy.y);
     m_terrain_point_light_shader->setUniform("specular_power",     m_specular_power.y);
+    m_terrain_point_light_shader->setUniform("gamma",              m_gamma);
 
     m_terrain_point_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
     m_terrain_point_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
@@ -390,6 +398,7 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     m_terrain_spot_light_shader->setUniform("cam_pos",            m_camera->position());
     m_terrain_spot_light_shader->setUniform("specular_intensity", m_specular_intenstiy.z);
     m_terrain_spot_light_shader->setUniform("specular_power",     m_specular_power.z);
+    m_terrain_spot_light_shader->setUniform("gamma",              m_gamma);
 
     m_terrain_spot_light_shader->setUniform("grass_slope_threshold",  m_grass_slope_threshold);
     m_terrain_spot_light_shader->setUniform("slope_rock_threshold",   m_slope_rock_threshold);
@@ -515,8 +524,10 @@ void Terrain::render_gui()
 
             if (ImGui::BeginTabItem("Lights"))
             {
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-                ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0, "%.2f");
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0,  "%.2f");
+                ImGui::SliderFloat("Gamma",         &m_gamma,          0.0, 10.0, "%.1f");
+                ImGui::PopItemWidth();
 
                 ImGui::Spacing();
 

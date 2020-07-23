@@ -10,7 +10,7 @@ ToonOutline::ToonOutline()
       m_light_intensity                   (1.0),
       m_ambient_factor                    (0.18),
       m_specular_power                    (120.0),
-      m_specular_intensity                (1.0),
+      m_specular_intensity                (2.0),
       m_gamma                             (2.2),
       m_advanced_toon_A                   (0.1),
       m_advanced_toon_B                   (0.3),
@@ -333,7 +333,7 @@ void ToonOutline::render_gui()
         ImGui::Spacing();
 
         ImGui::ColorEdit3 ("Light color",        &m_light_color[0]);
-        ImGui::SliderFloat("Light intensity",    &m_light_intensity,    0.0, 1.0,   "%.1f");
+        ImGui::SliderFloat("Light intensity",    &m_light_intensity,    0.0, 10.0,  "%.1f");
         ImGui::SliderFloat("Specular power",     &m_specular_power,     1.0, 120.0, "%.0f");
         ImGui::SliderFloat("Specular intensity", &m_specular_intensity, 0.0, 1.0,   "%.2f");
 

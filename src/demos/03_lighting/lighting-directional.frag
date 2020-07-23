@@ -5,5 +5,5 @@ uniform DirectionalLight directional_light;
 
 void main()
 {
-    frag_color = calcDirectionalLight(directional_light, normalize(normal), world_pos);
+    frag_color = reinhard(calcDirectionalLight(directional_light, normalize(normal), world_pos));
 } 

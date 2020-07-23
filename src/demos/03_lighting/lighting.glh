@@ -11,6 +11,8 @@ uniform vec3 cam_pos;
 uniform float specular_intensity;
 uniform float specular_power;
 
+uniform float gamma;
+
 struct BaseLight
 {
     vec3 color;
@@ -98,4 +100,15 @@ vec4 calcSpotLight(SpotLight light, vec3 normal, vec3 world_pos)
     }
 
     return color;
+}
+
+vec4 reinhard(vec4 hdr_color)
+{
+    // reinhard tonemapping
+    vec3 ldr_color = hdr_color.rgb / (hdr_color.rgb + 1.0);
+
+    // gamma correction
+    ldr_color = pow(ldr_color, vec3(1.0 / gamma));
+
+    return vec4(ldr_color, 1.0);
 }

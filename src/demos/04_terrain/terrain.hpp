@@ -116,6 +116,7 @@ private:
     glm::vec2 m_spot_light_angles;  /* azimuth and elevation angles */
 
     float m_ambient_factor;
+    float m_gamma;
 
     bool m_snap_camera_to_ground;
 };

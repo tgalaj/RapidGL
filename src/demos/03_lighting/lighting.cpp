@@ -10,6 +10,7 @@ Lighting::Lighting()
     : m_specular_power    (120.0f),
       m_specular_intenstiy(0.2f),
       m_ambient_factor    (0.18f),
+      m_gamma             (0.8),
       m_dir_light_angles  (0.0f, 0.0f),
       m_spot_light_angles (0.0f, 0.0f)
 {
@@ -79,11 +80,11 @@ void Lighting::init_app()
 
     /* Add textures to the objects. */
     RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
+    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", true);
     texture.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", false);
+    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[5]->getMesh(0).addTexture(texture);
@@ -166,6 +167,7 @@ void Lighting::render()
 
     m_ambient_light_shader->bind();
     m_ambient_light_shader->setUniform("ambient_factor", m_ambient_factor);
+    m_ambient_light_shader->setUniform("gamma",          m_gamma);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
@@ -197,6 +199,7 @@ void Lighting::render()
     m_directional_light_shader->setUniform("cam_pos",            m_camera->position());
     m_directional_light_shader->setUniform("specular_intensity", m_specular_intenstiy.x);
     m_directional_light_shader->setUniform("specular_power",     m_specular_power.x);
+    m_directional_light_shader->setUniform("gamma",              m_gamma);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -221,6 +224,7 @@ void Lighting::render()
     m_point_light_shader->setUniform("cam_pos",            m_camera->position());
     m_point_light_shader->setUniform("specular_intensity", m_specular_intenstiy.y);
     m_point_light_shader->setUniform("specular_power",     m_specular_power.y);
+    m_point_light_shader->setUniform("gamma",              m_gamma);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -247,6 +251,7 @@ void Lighting::render()
     m_spot_light_shader->setUniform("cam_pos",            m_camera->position());
     m_spot_light_shader->setUniform("specular_intensity", m_specular_intenstiy.z);
     m_spot_light_shader->setUniform("specular_power",     m_specular_power.z);
+    m_spot_light_shader->setUniform("gamma",              m_gamma);
 
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
@@ -295,7 +300,8 @@ void Lighting::render_gui()
         ImGui::Spacing();
 
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-        ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0, "%.2f");
+        ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0,  "%.2f");
+        ImGui::SliderFloat("Gamma",         &m_gamma,          0.0, 10.0, "%.1f");
 
         ImGui::Spacing();
 

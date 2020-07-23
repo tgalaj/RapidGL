@@ -5,5 +5,5 @@ uniform PointLight point_light;
 
 void main()
 {
-    frag_color = calcPointLight(point_light, normalize(normal), world_pos);
+    frag_color = reinhard(calcPointLight(point_light, normalize(normal), world_pos));
 } 
