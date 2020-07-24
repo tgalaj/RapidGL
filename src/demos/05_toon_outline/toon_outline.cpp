@@ -236,7 +236,7 @@ void ToonOutline::input()
     {
         /* Specify filename of the screenshot. */
         std::string filename = "05_toon_outline";
-        if (take_screenshot_png(filename, 400, 300))
+        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
             std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;

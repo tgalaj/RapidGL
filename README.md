@@ -36,27 +36,27 @@ To begin creating a new demo using RapidGL framework follow these steps:
 All of the demos are available in ```src/demos```.
 
 ### Template Project
-![Template Project](screenshots/00_template_project.png)
+<img src="screenshots/00_template_project.png" width="50%" height="50%" alt="Template Project" />
 
 ### Simple Triangle
-![Simple Triangle](screenshots/01_simple_triangle.png)
+<img src="screenshots/01_simple_triangle.png" width="50%" height="50%" alt="Simple Triangle" />
 
 ### Simple 3D
 This demo shows how to create camera, load models, generate primitives using built-in functions and add textures for specific objects.
 
-![Simple 3D](screenshots/02_simple_3d.png)
+<img src="screenshots/02_simple_3d.png" width="50%" height="50%" alt="Simple 3D" />
 
 ### Lighting
 This demo presents implementation of Blinn-Phong shading model for directional, point and spot lights.
 
-![Lighting](screenshots/03_lighting.png)
+<img src="screenshots/03_lighting.png" width="50%" height="50%" alt="Lighting" />
 
 ### Multitextured terrain
 This demo presents implementation of multitextured terrain. It uses a blend map (for varying X-Z texturing) and slope based texturing (for texturing the slopes).
 
-![Multitextured-terrain](screenshots/04_terrain.png)
+<img src="screenshots/04_terrain.png" width="50%" height="50%" alt="Multitextured terrain" />
 
 ### Toon shading
 This demo presents implementation of various toon shading methods (Simple, Advanced, Simple with Rim, Twin Shade) with different outline rendering methods (Stencil, Post-Process).
 
-![Toon shading](screenshots/05_toon_outline.png)
+<img src="screenshots/05_toon_outline.png" width="50%" height="50%" alt="Toon shading" />

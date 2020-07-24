@@ -52,7 +52,7 @@ void SimpleTriangle::input()
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         std::string filename = "01_simple_triangle";
-        if (take_screenshot_png(filename, 400, 300))
+        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
         {
             std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
