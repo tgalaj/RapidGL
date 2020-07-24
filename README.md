@@ -55,3 +55,8 @@ This demo presents implementation of Blinn-Phong shading model for directional, 
 This demo presents implementation of multitextured terrain. It uses a blend map (for varying X-Z texturing) and slope based texturing (for texturing the slopes).
 
 ![Multitextured-terrain](screenshots/04_terrain.png)
+
+### Toon shading
+This demo presents implementation of various toon shading methods (Simple, Advanced, Simple with Rim, Twin Shade) with different outline rendering methods (Stencil, Post-Process).
+
+![Toon shading](screenshots/05_toon_outline.png)

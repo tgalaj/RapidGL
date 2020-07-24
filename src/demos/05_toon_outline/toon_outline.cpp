@@ -26,14 +26,55 @@ ToonOutline::ToonOutline()
       m_twin_shade_toon_specular_levels   (1),
       m_twin_shade_light_shade_cutoff     (0.6),
       m_twin_shade_dark_shade_cutoff      (0.15),
+      m_outline_method                    (OutlineMethod::STENCIL),
       m_outline_color                     (0.0),
-      m_outline_width                     (20.0)
+      m_stencil_outline_width             (20.0),
+      m_depth_threshold                   (0.8),
+      m_depth_normal_threshold            (0.5),
+      m_depth_normal_threshold_scale      (7.0),
+      m_normal_threshold                  (0.4),
+      m_ps_outline_width                  (1.0)
 {
     m_light_direction = calcDirection(m_dir_light_azimuth_elevation_angles);
 }
 
 ToonOutline::~ToonOutline()
 {
+    if (m_ps_vao_id != 0)
+    {
+        glDeleteVertexArrays(1, &m_ps_vao_id);
+        m_ps_vao_id = 0;
+    }
+
+    if (m_fbo_normal_depth != 0)
+    {
+        glDeleteFramebuffers(1, &m_fbo_normal_depth);
+        m_fbo_normal_depth = 0;
+    }
+
+    if (m_fbo_shading != 0)
+    {
+        glDeleteFramebuffers(1, &m_fbo_shading);
+        m_fbo_shading = 0;
+    }
+
+    if (m_rbo != 0)
+    {
+        glDeleteRenderbuffers(1, &m_rbo);
+        m_rbo = 0;
+    }
+
+    if (m_normals_depth_tex_buffer != 0)
+    {
+        glDeleteTextures(1, &m_normals_depth_tex_buffer);
+        m_normals_depth_tex_buffer = 0;
+    }
+
+    if (m_shading_tex_buffer != 0)
+    {
+        glDeleteTextures(1, &m_shading_tex_buffer);
+        m_shading_tex_buffer = 0;
+    }
 }
 
 void ToonOutline::init_app()
@@ -46,8 +87,6 @@ void ToonOutline::init_app()
     glEnable     (GL_STENCIL_TEST);
     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
     glStencilOp  (GL_KEEP, GL_KEEP, GL_REPLACE);
-
-    glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
@@ -127,9 +166,61 @@ void ToonOutline::init_app()
     m_toon_shading_methods_names = { "Simple", "Advanced", "Simple with Rim", "Toon Twin Shade" };
     m_toon_shaders               = { m_simple_toon_shader, m_advanced_toon_shader, m_simple_rim_toon_shader, m_toon_twin_shade_shader };
 
+    /* Init GL objects for outline postprocess */
+    glGenVertexArrays(1, &m_ps_vao_id);
+
+    /* Create framebuffer for normals and depth rendering */
+    glGenFramebuffers(1, &m_fbo_normal_depth);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_normal_depth);
+
+    glGenTextures(1, &m_normals_depth_tex_buffer);
+    glBindTexture(GL_TEXTURE_2D, m_normals_depth_tex_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RapidGL::Window::getWidth(), RapidGL::Window::getHeight(), 0 /* border */, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_normals_depth_tex_buffer, 0 /* level */);
+
+    glGenRenderbuffers(1, &m_rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, RapidGL::Window::getWidth(), RapidGL::Window::getHeight());
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    /* Create framebuffer for shading rendering */
+    glGenFramebuffers(1, &m_fbo_shading);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_shading);
+
+    glGenTextures(1, &m_shading_tex_buffer);
+    glBindTexture(GL_TEXTURE_2D, m_shading_tex_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RapidGL::Window::getWidth(), RapidGL::Window::getHeight(), 0 /* border */, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_shading_tex_buffer, 0 /* level */);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     /* Create the outline shaders. */
-    m_simple_outline_shader = std::make_shared<RapidGL::Shader>(dir + "outline_simple.vert", dir + "outline_simple.frag");
-    m_simple_outline_shader->link();
+    m_outline_methods_names = { "Stencil", "Post-Process" };
+
+    m_stencil_outline_shader = std::make_shared<RapidGL::Shader>(dir + "outline_stencil.vert", dir + "outline_stencil.frag");
+    m_stencil_outline_shader->link();
+
+    m_generate_data_outline_shader = std::make_shared<RapidGL::Shader>(dir + "outline_ps_gen_data.vert", dir + "outline_ps_gen_data.frag");
+    m_generate_data_outline_shader->link();
+
+    m_outline_ps_shader = std::make_shared<RapidGL::Shader>(dir + "outline_ps.vert", dir + "outline_ps.frag");
+    m_outline_ps_shader->link();
 }
 
 void ToonOutline::input()
@@ -138,23 +229,6 @@ void ToonOutline::input()
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
     {
         stop();
-    }
-
-    /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
-    {
-        static bool toggle_wireframe = false;
-
-        toggle_wireframe = !toggle_wireframe;
-
-        if (toggle_wireframe)
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
-        else
-        {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
     }
 
     /* It's also possible to take a screenshot. */
@@ -182,6 +256,19 @@ void ToonOutline::update(double delta_time)
 
 void ToonOutline::render()
 {
+    if (m_outline_method == OutlineMethod::STENCIL)
+    {
+        stencil_outline();
+    }
+
+    if (m_outline_method == OutlineMethod::POSTPROCESS)
+    {
+        ps_outline();
+    }
+}
+
+void ToonOutline::stencil_outline()
+{
     /* 1st pass */
     glClear(GL_STENCIL_BUFFER_BIT);
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -195,10 +282,10 @@ void ToonOutline::render()
     glDisable(GL_DEPTH_TEST);
 
     /* render outline */
-    m_simple_outline_shader->bind();
-    m_simple_outline_shader->setUniform("outline_width", 0.1f * m_outline_width);
-    m_simple_outline_shader->setUniform("outline_color", m_outline_color);
-    m_simple_outline_shader->setUniform("screen_resolution", RapidGL::Window::getSize());
+    m_stencil_outline_shader->bind();
+    m_stencil_outline_shader->setUniform("outline_width", 0.1f * m_stencil_outline_width);
+    m_stencil_outline_shader->setUniform("outline_color", m_outline_color);
+    m_stencil_outline_shader->setUniform("screen_resolution", RapidGL::Window::getSize());
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
@@ -206,20 +293,72 @@ void ToonOutline::render()
     {
         auto normal_matrix = glm::transpose(glm::inverse(m_objects_model_matrices[i]));
 
-        m_simple_outline_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
-        m_simple_outline_shader->setUniform("mvp_normal", glm::mat3(view_projection * normal_matrix));
+        m_stencil_outline_shader->setUniform("mvp",        view_projection * m_objects_model_matrices[i]);
+        m_stencil_outline_shader->setUniform("mvp_normal", glm::mat3(view_projection * normal_matrix));
 
-        m_objects[i]->render(m_simple_outline_shader, false);
+        m_objects[i]->render(m_stencil_outline_shader, false);
     }
 
     glStencilMask(0xFF);
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
-    glEnable     (GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
+}
+
+void ToonOutline::ps_outline()
+{
+    /* Render normals and depth to a RGBA texture */
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_normal_depth);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_generate_data_outline_shader->bind();
+
+    auto view       = m_camera->m_view;
+    auto projection = m_camera->m_projection;
+
+    m_generate_data_outline_shader->setUniform("projection", projection);
+
+    for (unsigned i = 0; i < m_objects.size(); ++i)
+    {
+        auto normal_matrix = glm::transpose(glm::inverse(view * m_objects_model_matrices[i]));
+
+        m_generate_data_outline_shader->setUniform("view_model",               view * m_objects_model_matrices[i]);
+        m_generate_data_outline_shader->setUniform("normal_matrix_view_space", glm::mat3(normal_matrix));
+
+        m_objects[i]->render(m_generate_data_outline_shader, false);
+    }
+
+    /* Render shading to a RGBA texture */
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_shading);
+    glClearColor(0.5, 0.5, 0.5, 1.0);
+    render_toon_shaded_objects();
+
+    /* Compose outlines and shading */
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_outline_ps_shader->bind();
+    m_outline_ps_shader->setUniform("clip_to_view", glm::inverse(projection));
+    m_outline_ps_shader->setUniform("outline_width", m_ps_outline_width);
+    m_outline_ps_shader->setUniform("outline_color", m_outline_color);
+
+    m_outline_ps_shader->setUniform("depth_threshold",              m_depth_threshold);
+    m_outline_ps_shader->setUniform("depth_normal_threshold",       m_depth_normal_threshold);
+    m_outline_ps_shader->setUniform("depth_normal_threshold_scale", m_depth_normal_threshold);
+    m_outline_ps_shader->setUniform("normal_threshold",             m_normal_threshold);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_normals_depth_tex_buffer);
+
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D, m_shading_tex_buffer);
+
+    glBindVertexArray(m_ps_vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void ToonOutline::render_toon_shaded_objects()
 {
-    /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     int toon_shader_id = int(m_toon_shading_method);
@@ -299,7 +438,6 @@ void ToonOutline::render_gui()
         {
             ImGui::Text("Controls info: \n\n"
                         "F1     - take a screenshot\n"
-                        "F2     - toggle wireframe rendering\n"
                         "WASDQE - control camera movement\n"
                         "RMB    - toggle cursor lock and rotate camera\n"
                         "Esc    - close the app\n\n");
@@ -317,6 +455,34 @@ void ToonOutline::render_gui()
                 if (ImGui::Selectable(m_toon_shading_methods_names[i].c_str(), is_selected))
                 {
                     m_toon_shading_method = ToonShadingMethod(i);
+                }
+
+                if (is_selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        if (ImGui::BeginCombo("Outline rendering method", m_outline_methods_names[int(m_outline_method)].c_str()))
+        {
+            for (int i = 0; i < m_outline_methods_names.size(); ++i)
+            {
+                bool is_selected = (m_outline_method == OutlineMethod(i));
+                if (ImGui::Selectable(m_outline_methods_names[i].c_str(), is_selected))
+                {
+                    m_outline_method = OutlineMethod(i);
+
+                    switch (m_outline_method)
+                    {
+                        case OutlineMethod::STENCIL:
+                            glEnable(GL_STENCIL_TEST);
+                            break;
+                        case OutlineMethod::POSTPROCESS:
+                            glDisable(GL_STENCIL_TEST);
+                            break;
+                    }
                 }
 
                 if (is_selected)
@@ -366,9 +532,22 @@ void ToonOutline::render_gui()
             ImGui::SliderFloat("Dark shade cutoff",  &m_twin_shade_dark_shade_cutoff,    0.0, 1.0,  "%.2f");
         }
 
+        ImGui::SliderFloat("Gamma",         &m_gamma, 0.0, 10.0, "%.1f");
         ImGui::ColorEdit3 ("Outline color", &m_outline_color[0]);
-        ImGui::SliderFloat("Outline width", &m_outline_width, 0.0, 100.0, "%.1f");
-        ImGui::SliderFloat("Gamma",         &m_gamma,         0.0, 10.0, "%.1f");
+
+        if (m_outline_method == OutlineMethod::STENCIL)
+        {
+            ImGui::SliderFloat("Outline width", &m_stencil_outline_width, 0.0, 100.0, "%.1f");
+        }
+
+        if (m_outline_method == OutlineMethod::POSTPROCESS)
+        {
+            ImGui::SliderFloat("Outline width",                &m_ps_outline_width,             0.0, 10.0, "%.0f");
+            ImGui::SliderFloat("Depth threshold",              &m_depth_threshold,              0.0, 10.0, "%.1f");
+            ImGui::SliderFloat("Depth-Normal threshold",       &m_depth_normal_threshold,       0.0, 1.0,  "%.2f");
+            ImGui::SliderFloat("Depth-Normal threshold scale", &m_depth_normal_threshold_scale, 0.0, 10.0, "%.1f");
+            ImGui::SliderFloat("Normal threshold",             &m_normal_threshold,             0.0, 1.0,  "%.2f");
+        }
         
         ImGui::Separator();
 

@@ -22,6 +22,8 @@ public:
 
 private:
     void render_toon_shaded_objects();
+    void stencil_outline();
+    void ps_outline();
 
     glm::vec3 calcDirection(const glm::vec2 & azimuth_elevation_angles)
     {
@@ -84,9 +86,29 @@ private:
     float m_twin_shade_light_shade_cutoff;
     float m_twin_shade_dark_shade_cutoff;
 
-    /* Outline properties */
-    glm::vec3 m_outline_color;
-    float m_outline_width;
+    /* Stencil outline properties */
+    enum class OutlineMethod { STENCIL, POSTPROCESS} m_outline_method;
+    std::vector<std::string> m_outline_methods_names;
 
-    std::shared_ptr<RapidGL::Shader> m_simple_outline_shader;
+    glm::vec3 m_outline_color;
+    float m_stencil_outline_width;
+
+    std::shared_ptr<RapidGL::Shader> m_stencil_outline_shader;
+
+    /* GL objects for outlines as a postprocess effect */
+    GLuint m_fbo_normal_depth;
+    GLuint m_fbo_shading;
+    GLuint m_rbo;
+    GLuint m_normals_depth_tex_buffer;
+    GLuint m_shading_tex_buffer;
+    GLuint m_ps_vao_id;
+
+    std::shared_ptr<RapidGL::Shader> m_generate_data_outline_shader;
+    std::shared_ptr<RapidGL::Shader> m_outline_ps_shader;
+
+    float m_depth_threshold;
+    float m_depth_normal_threshold;
+    float m_depth_normal_threshold_scale;
+    float m_normal_threshold;
+    float m_ps_outline_width;
 };
