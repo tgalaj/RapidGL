@@ -577,4 +577,86 @@ namespace RapidGL
             }
         }
     }
+
+    /* Code courtesy of: https://prideout.net/blog/old/blog/index.html@tag=toon-shader.html */
+    void GeomPrimitive::genTrefoilKnot(VertexBuffers& buffers, unsigned int slices, unsigned int stacks)
+    {
+        auto evaluate_trefoil = [](float s, float t)
+        {
+            const float a = 0.5f;
+            const float b = 0.3f;
+            const float c = 0.5f;
+            const float d = 0.1f;
+            const float u = (1 - s) * 2 * glm::two_pi<float>();
+            const float v = t * glm::two_pi<float>();
+            const float r = a + b * cos(1.5f * u);
+            const float x = r * cos(u);
+            const float y = r * sin(u);
+            const float z = c * sin(1.5f * u);
+
+            glm::vec3 dv;
+            dv.x = -1.5f * b * sin(1.5f * u) * cos(u) -
+                    (a + b * cos(1.5f * u)) * sin(u);
+            dv.y = -1.5f * b * sin(1.5f * u) * sin(u) +
+                    (a + b * cos(1.5f * u)) * cos(u);
+            dv.z =  1.5f * c * cos(1.5f * u);
+
+            glm::vec3 q   = glm::normalize(dv);
+            glm::vec3 qvn = glm::normalize(glm::vec3(q.y, -q.x, 0));
+            glm::vec3 ww  = glm::cross(qvn, q);
+
+            glm::vec3 range;
+            range.x = x + d * (qvn.x * cos(v) + ww.x * sin(v));
+            range.y = y + d * (qvn.y * cos(v) + ww.y * sin(v));
+            range.z = z + d * ww.z * sin(v);
+
+            return range;
+        };
+
+        float ds = 1.0 / slices;
+        float dt = 1.0 / stacks;
+
+        const float E = 0.01f;
+
+        // The upper bounds in these loops are tweaked to reduce the
+        // chance of precision error causing an incorrect # of iterations.
+    
+        for (float s = 0; s < 1.0 - ds / 2.0; s += ds)
+        {
+            for (float t = 0; t < 1.0 - dt / 2.0; t += dt)
+            {
+                glm::vec3 p = evaluate_trefoil(s, t);
+                glm::vec3 u = evaluate_trefoil(s + E, t) - p;
+                glm::vec3 v = evaluate_trefoil(s, t + E) - p;
+                glm::vec3 n = glm::normalize(glm::cross(v, u));
+
+                VertexBuffers::Vertex vert;
+                vert.m_position = p;
+                vert.m_normal   = n;
+                vert.m_texcoord = glm::vec3(s, t, 0.0f);
+                vert.m_tangent  = glm::vec3(0.0f);
+
+                buffers.m_vertices.push_back(vert);
+            }
+        }
+
+        GLuint n            = 0;
+        GLuint vertex_count = buffers.m_vertices.size();
+
+        for (GLushort i = 0; i < slices; ++i)
+        {
+            for (GLushort j = 0; j < stacks; ++j)
+            {
+                buffers.m_indices.push_back(n + j);
+                buffers.m_indices.push_back(n + (j + 1) % stacks);
+                buffers.m_indices.push_back((n + j + stacks) % vertex_count);
+
+                buffers.m_indices.push_back((n + j + stacks) % vertex_count);
+                buffers.m_indices.push_back((n + (j + 1) % stacks) % vertex_count);
+                buffers.m_indices.push_back((n + (j + 1) % stacks + stacks) % vertex_count);
+            }
+
+            n += stacks;
+        }
+    }
 }

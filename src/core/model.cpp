@@ -247,6 +247,14 @@ namespace RapidGL
         genPrimitive(buffers);
     }
 
+    void Model::genTrefoilKnot(unsigned int slices, unsigned int stacks)
+    {
+        VertexBuffers buffers;
+        GeomPrimitive::genTrefoilKnot(buffers, slices, stacks);
+
+        genPrimitive(buffers);
+    }
+
     void Model::genQuad(float width, float height)
     {
         VertexBuffers buffers;

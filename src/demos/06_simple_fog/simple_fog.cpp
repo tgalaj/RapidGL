@@ -5,6 +5,7 @@
 #include "gui/gui.h"
 
 #include <glm/gtc/matrix_inverse.hpp>
+#include <random>
 
 SimpleFog::SimpleFog()
     : m_specular_power    (120.0f),
@@ -28,7 +29,7 @@ SimpleFog::~SimpleFog()
 void SimpleFog::init_app()
 {
     /* Initialize all the variables, buffers, etc. here. */
-    glClearColor(0.5, 0.5, 0.5, 1.0);
+    glClearColor(m_fog_color.r, m_fog_color.g, m_fog_color.b, 1.0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
@@ -36,7 +37,7 @@ void SimpleFog::init_app()
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(1.5, 0.0, 10.0);
+    m_camera->setPosition(1.5, 0.0, 3.0);
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
@@ -44,43 +45,30 @@ void SimpleFog::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    for (unsigned i = 0; i < 9; ++i)
-    {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
-    }
-
-    /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/bunny.obj"));
-    m_objects[1]->genCone(1.0, 0.5);
-    m_objects[2]->genCube();
-    m_objects[3]->genCylinder(1.0, 0.5);
-    m_objects[4]->genPlane();
-    m_objects[5]->genSphere(0.5);
-    m_objects[6]->genTorus(0.5, 1.0);
-    m_objects[7]->genQuad();
-    m_objects[8]->genPlane(50, 50);
+    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+    m_objects[0]->genTrefoilKnot();
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, -1.0, -5)));                                                                         // bunny
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0,  0.5, -5)));                                                                         // cone
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5,  0.0, -5)));                                                                         // cube
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0,  0.0, -5)));                                                                         // cylinder
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 2.5,  0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // plane
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 5.0,  0.0, -5)));                                                                         // sphere
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 7.5,  0.0, -5)));                                                                         // torus
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0,  0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, -1.0, -5)));                                                                         // ground plane
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dist(0.0, 1.0);
+
+    float step = 2.0;
+    for (unsigned i = 0; i < 20; ++i)
+    {
+        m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(step * i, 0.0, -step * i)));
+        m_objects_colors.emplace_back(dist(gen), dist(gen), dist(gen));
+    }
+   
 
     /* Add textures to the objects. */
-    RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", true);
-    texture.m_type = "texture_diffuse";
+    //RapidGL::Texture texture;
+    //texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", true);
+    //texture.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
     default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
-
-    m_objects[5]->getMesh(0).addTexture(texture);
 
     for (auto& model : m_objects)
     {
@@ -186,13 +174,14 @@ void SimpleFog::render()
         m_directional_light_shader->setUniform("fog_density", m_fog_density_exp2);
     }
 
-    for (unsigned i = 0; i < m_objects.size(); ++i)
+    for (unsigned i = 0; i < m_objects_model_matrices.size(); ++i)
     {
-        m_directional_light_shader->setUniform("model", m_objects_model_matrices[i]);
+        m_directional_light_shader->setUniform("model",         m_objects_model_matrices[i]);
         m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
-        m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
+        m_directional_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
+        m_directional_light_shader->setUniform("object_color",  m_objects_colors[i]);
 
-        m_objects[i]->render(m_directional_light_shader);
+        m_objects[0]->render(m_directional_light_shader);
     }
 }
 
@@ -276,12 +265,12 @@ void SimpleFog::render_gui()
 
                     if (m_fog_equation == FogEquation::EXP)
                     {
-                        ImGui::SliderFloat("Density", &m_fog_density_exp, 0.0, 1.0, "%.2f");
+                        ImGui::SliderFloat("Density", &m_fog_density_exp, 0.0, 1.0, "%.3f");
                     }
 
                     if (m_fog_equation == FogEquation::EXP2)
                     {
-                        ImGui::SliderFloat("Density", &m_fog_density_exp2, 0.0, 1.0, "%.2f");
+                        ImGui::SliderFloat("Density", &m_fog_density_exp2, 0.0, 1.0, "%.3f");
                     }
                 }
                 ImGui::PopItemWidth();

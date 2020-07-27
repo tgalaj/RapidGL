@@ -60,3 +60,8 @@ This demo presents implementation of multitextured terrain. It uses a blend map 
 This demo presents implementation of various toon shading methods (Simple, Advanced, Simple with Rim, Twin Shade) with different outline rendering methods (Stencil, Post-Process).
 
 <img src="screenshots/05_toon_outline.png" width="50%" height="50%" alt="Toon shading" />
+
+### Simple Fog
+Implementation of a simple fog rendering. Three modes are available: linear, exp, exp2.
+
+<img src="screenshots/06_simple_fog.png" width="50%" height="50%" alt="Simple Fog" />

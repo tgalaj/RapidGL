@@ -4,6 +4,7 @@
 uniform DirectionalLight directional_light;
 
 uniform float ambient_factor;
+uniform vec3 object_color;
 
 uniform float fog_min_distance;
 uniform float fog_max_distance;
@@ -38,7 +39,7 @@ void main()
     float fog_factor = fog_equation(distance_to_cam);
           fog_factor = clamp(fog_factor, 0.0, 1.0);
 
-    vec4 light_color = reinhard(ambient + directional_light_contribution);
+    vec4 light_color = reinhard((ambient + directional_light_contribution) * vec4(object_color, 1.0));
     vec3 color = mix(fog_color, light_color.rgb, fog_factor);
 
     frag_color = vec4(color, 1.0);

@@ -49,6 +49,7 @@ private:
 
     std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
+    std::vector<glm::vec3> m_objects_colors;
 
     /* Light properties */
     DirectionalLight m_dir_light_properties;

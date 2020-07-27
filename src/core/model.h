@@ -17,13 +17,14 @@ namespace RapidGL
         virtual ~Model();
 
         /* Primitives */
-        void genCone    (float height = 3.0f, float r = 1.5f, unsigned int slices = 10, unsigned int stacks = 10);
-        void genCube    (float radius = 1.0f);
-        void genCylinder(float height = 3.0f, float radius = 1.5f, unsigned int slices = 10);
-        void genPlane   (float width  = 1.0f, float height = 1.0f, unsigned int slices = 5, unsigned int stacks = 5);
-        void genSphere  (float radius = 1.5f, unsigned int slices = 12);
-        void genTorus   (float innerRadius = 1.0f, float outerRadius = 2.0f, unsigned int slices = 10, unsigned int stacks = 10);
-        void genQuad    (float width = 1.0f, float height = 1.0f);
+        void genCone       (float height = 3.0f, float r = 1.5f, unsigned int slices = 10, unsigned int stacks = 10);
+        void genCube       (float radius = 1.0f);
+        void genCylinder   (float height = 3.0f, float radius = 1.5f, unsigned int slices = 10);
+        void genPlane      (float width  = 1.0f, float height = 1.0f, unsigned int slices = 5, unsigned int stacks = 5);
+        void genSphere     (float radius = 1.5f, unsigned int slices = 12);
+        void genTorus      (float innerRadius = 1.0f, float outerRadius = 2.0f, unsigned int slices = 10, unsigned int stacks = 10);
+        void genTrefoilKnot(unsigned int slices = 100, unsigned int stacks = 20);
+        void genQuad       (float width = 1.0f, float height = 1.0f);
 
         void load(const std::string & filename);
         void render(std::shared_ptr<Shader> & shader, bool is_textured = true);
