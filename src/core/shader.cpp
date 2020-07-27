@@ -159,6 +159,8 @@ namespace RapidGL
         else
         {
             m_is_linked = true;
+
+            addAllSubroutines();
         }
 
         return m_is_linked;
@@ -368,8 +370,47 @@ namespace RapidGL
         }
     }
 
-    void Shader::setSubroutine(Type shader_type, const std::string & subroutine_name)
+    void Shader::setSubroutine(ShaderType shader_type, const std::string & subroutine_name)
     {
         glUniformSubroutinesuiv(GLenum(shader_type), m_active_subroutine_uniform_locations[GLenum(shader_type)], &m_subroutine_indices[subroutine_name]);
+    }
+
+    void Shader::addAllSubroutines()
+    {
+        GLenum interfaces[]    = { GL_VERTEX_SUBROUTINE, GL_FRAGMENT_SUBROUTINE };
+        GLenum shader_stages[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
+
+        GLint interfaces_count = std::size(interfaces);
+
+        for(GLint i = 0; i < interfaces_count; ++i)
+        {
+            /* Get all active subroutines */
+            GLenum program_interface = interfaces[i];
+
+            GLint num_subroutines = 0;
+            glGetProgramInterfaceiv(m_program_id, program_interface, GL_ACTIVE_RESOURCES, &num_subroutines);
+
+            const GLenum properties[] = { GL_NAME_LENGTH };
+            const GLint properties_size = sizeof(properties) / sizeof(properties[0]);
+
+            GLint count_subroutine_locations = 0;
+            glGetProgramStageiv(m_program_id, shader_stages[i], GL_ACTIVE_SUBROUTINE_UNIFORM_LOCATIONS, &count_subroutine_locations);
+            m_active_subroutine_uniform_locations[shader_stages[i]] = count_subroutine_locations;
+
+            for (GLint j = 0; j < num_subroutines; ++j)
+            {
+                GLint values[properties_size];
+                GLint length = 0;
+                glGetProgramResourceiv(m_program_id, program_interface, j, properties_size, properties, properties_size, &length, values);
+
+                std::vector<char> name_data(values[0]);
+                glGetProgramResourceName(m_program_id, program_interface, j, name_data.size(), nullptr, &name_data[0]);
+                std::string subroutine_name(name_data.begin(), name_data.end() - 1);
+
+                GLuint subroutine_index = glGetSubroutineIndex(m_program_id, shader_stages[i], subroutine_name.c_str());
+
+                m_subroutine_indices[subroutine_name] = subroutine_index;
+            }
+        }
     }
 }

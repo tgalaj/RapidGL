@@ -15,7 +15,7 @@ namespace RapidGL
     class Shader final
     {
     public:
-        enum class Type 
+        enum class ShaderType 
         { 
             VERTEX                 = GL_VERTEX_SHADER, 
             FRAGMENT               = GL_FRAGMENT_SHADER,
@@ -64,12 +64,13 @@ namespace RapidGL
         void setUniform(const std::string & uniformName, const glm::mat4 & matrix);
         void setUniform(const std::string & uniformName, glm::mat4 * matrices, unsigned count);
 
+        void setSubroutine(ShaderType shader_type, const std::string& subroutine_name);
+
     private:
+        void addAllSubroutines();
+
         void addShader(std::string const & file_name, GLuint type) const;
         bool getUniformLocation(const std::string & uniform_name);
-
-        /* Temporairly private */
-        void setSubroutine(Type shader_type, const std::string& subroutine_name);
 
         std::map<std::string, GLuint> m_subroutine_indices;
         std::map<GLenum, GLuint> m_active_subroutine_uniform_locations;
