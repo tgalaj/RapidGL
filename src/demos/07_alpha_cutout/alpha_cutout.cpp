@@ -14,7 +14,7 @@ AlphaCutout::AlphaCutout()
       m_specular_intenstiy     (0.0f),
       m_ambient_factor         (0.18f),
       m_gamma                  (2.2),
-      m_dir_light_angles       (0.0f, 0.0f),
+      m_dir_light_angles       (0.0f, 50.0f),
       m_alpha_cutout_threshold (0.15)
 {
 }
@@ -42,7 +42,7 @@ void AlphaCutout::init_app()
 
     /* Create models. */
     m_objects.emplace_back(std::make_shared<RapidGL::Model>());
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/pine/snow_pine_tree.fbx"));
+    m_objects[0]->load(RapidGL::FileSystem::getPath("models/pine/snow_pine_tree.obj"));
 
     constexpr auto kRadius    = 2.5f;
     constexpr float area_size = 15.0f;
