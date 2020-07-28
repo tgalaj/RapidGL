@@ -67,6 +67,45 @@ Implementation of a simple fog rendering. Three modes are available: linear, exp
 <img src="screenshots/06_simple_fog.png" width="50%" height="50%" alt="Simple Fog" />
 
 ### Alpha Cutout
-This demo shows implementation of alpha cutout using fragments discarding.
+This demo shows implementation of an alpha cutout using fragments discarding.
 
 <img src="screenshots/07_alpha_cutout.png" width="50%" height="50%" alt="Alpha Cutout" />
+
+### Image based lighting
+TODO
+
+### Projected texture
+TODO
+
+### Postprocessing filters
+TODO: Edge detection and Gaussian blur filters.
+
+### Bloom
+TODO
+
+### Geometry Shader: Point Sprites
+TODO
+
+### Geometry Shader: Wireframe on top of a shaded model
+TODO
+
+### Tessellation
+TODO: Curve, 2D quad, 3D surface, depth based tessellation.
+
+### Shadow Mapping
+TODO: Shadow Mapping with PCF, random sampling
+
+### Prebaked ambient occlusion
+TODO
+
+### Procedural noise textures
+TODO
+
+### Surface animation with vertex displacement
+TODO
+
+### Particle Fountain
+TODO: Transform Feedback, Instanced particles
+
+### Fire and Smoke
+TODO
