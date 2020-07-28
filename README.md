@@ -93,7 +93,7 @@ TODO
 TODO: Curve, 2D quad, 3D surface, depth based tessellation.
 
 ### Shadow Mapping
-TODO: Shadow Mapping with PCF, random sampling
+TODO: Shadow Mapping with PCF, random sampling.
 
 ### Prebaked ambient occlusion
 TODO
@@ -105,7 +105,16 @@ TODO
 TODO
 
 ### Particle Fountain
-TODO: Transform Feedback, Instanced particles
+TODO: Transform Feedback, Instanced particles.
 
 ### Fire and Smoke
 TODO
+
+### PBR
+TODO
+
+### Mesh skinning
+TODO: LBS, DQS.
+
+### Environment mapping
+TODO: dynamic and static (reflection + refraction).
