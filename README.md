@@ -65,3 +65,8 @@ This demo presents implementation of various toon shading methods (Simple, Advan
 Implementation of a simple fog rendering. Three modes are available: linear, exp, exp2.
 
 <img src="screenshots/06_simple_fog.png" width="50%" height="50%" alt="Simple Fog" />
+
+### Alpha Cutout
+This demo shows implementation of alpha cutout using fragments discarding.
+
+<img src="screenshots/07_alpha_cutout.png" width="50%" height="50%" alt="Alpha Cutout" />
