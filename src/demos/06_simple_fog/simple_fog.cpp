@@ -46,7 +46,7 @@ void SimpleFog::init_app()
 
     /* Create models. */
     m_objects.emplace_back(std::make_shared<RapidGL::Model>());
-    m_objects[0]->genTrefoilKnot();
+    m_objects[0]->genPQTorusKnot(256, 16, 2, 3, 0.75, 0.15);
 
     /* Set model matrices for each model. */
     std::random_device rd;
@@ -59,13 +59,8 @@ void SimpleFog::init_app()
         m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(step * i, 0.0, -step * i)));
         m_objects_colors.emplace_back(dist(gen), dist(gen), dist(gen));
     }
-   
 
     /* Add textures to the objects. */
-    //RapidGL::Texture texture;
-    //texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", true);
-    //texture.m_type = "texture_diffuse";
-
     RapidGL::Texture default_diffuse_texture;
     default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";

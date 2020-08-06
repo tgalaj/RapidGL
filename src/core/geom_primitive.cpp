@@ -659,4 +659,74 @@ namespace RapidGL
             n += stacks;
         }
     }
+
+    /* Implementation inspired by: https://blackpawn.com/texts/pqtorus/default.html */
+    void GeomPrimitive::genPQTorusKnot(VertexBuffers& buffers, unsigned int slices, unsigned int stacks, int p, int q, float knot_r, float tube_r)
+    {
+        float theta      = 0.0;
+        float theta_step = glm::two_pi<float>() / slices;
+
+        float phi      = -3.14 / 4.0;
+        float phi_step = glm::two_pi<float>() / stacks;
+
+        if (p < 1)
+        {
+            p = 1;
+        }
+
+        if (q < 0)
+        {
+            q = 0;
+        }
+
+        for (unsigned int slice = 0; slice <= slices; ++slice, theta += theta_step)
+        {
+            phi = -3.14 / 4.0;
+
+            float r = knot_r * (0.5 * (2.0 + glm::sin(q * theta)));
+            auto  P = glm::vec3(glm::cos(p * theta), glm::cos(q * theta), glm::sin(p * theta)) * r;
+
+            auto theta_next = theta + theta_step * 1.0;
+                      r     = knot_r * (0.5 * (2.0 + glm::sin(q * theta_next)));
+            auto P_next     = glm::vec3(glm::cos(p * theta_next), glm::cos(q * theta_next), glm::sin(p * theta_next)) * r;
+
+            auto T = P_next - P;
+            auto N = P_next + P;
+            auto B = glm::normalize(glm::cross(T, N));
+                 N = glm::normalize(glm::cross(B, T)); /* corrected normal */
+
+            for (unsigned int stack = 0; stack <= stacks; ++stack, phi += phi_step)
+            {
+                VertexBuffers::Vertex vertex;
+
+                glm::vec2 circle_vertex_position = glm::vec2(glm::cos(phi), glm::sin(phi)) * tube_r;
+
+                vertex.m_position = N * circle_vertex_position.x + B * circle_vertex_position.y + P;
+                vertex.m_normal   = glm::normalize(vertex.m_position - P);
+                vertex.m_texcoord = glm::vec3(slice / float(slices), 1.0 - stack / float(stacks), 0.0f);
+                vertex.m_tangent  = glm::vec3(0.0f);
+
+                buffers.m_vertices.push_back(vertex);
+            }
+        }
+
+        for (unsigned int slice = 0; slice < slices; ++slice)
+        {
+            for (unsigned int stack = 0; stack < stacks; ++stack)
+            {
+                GLuint v0 = slice * (stacks + 1) + stack;
+                GLuint v1 = (slice + 1) * (stacks + 1) + stack;
+                GLuint v2 = (slice + 1) * (stacks + 1) + (stack + 1);
+                GLuint v3 = slice * (stacks + 1) + (stack + 1);
+                
+                buffers.m_indices.push_back(v0);
+                buffers.m_indices.push_back(v1);
+                buffers.m_indices.push_back(v2);
+                
+                buffers.m_indices.push_back(v0);
+                buffers.m_indices.push_back(v2);
+                buffers.m_indices.push_back(v3);
+            }
+        }
+    }
 }

@@ -71,6 +71,9 @@ This demo shows implementation of an alpha cutout using fragments discarding.
 
 <img src="screenshots/07_alpha_cutout.png" width="50%" height="50%" alt="Alpha Cutout" />
 
+### Environment mapping
+TODO: dynamic and static (reflection + refraction).
+
 ### Image based lighting
 TODO
 
@@ -115,6 +118,3 @@ TODO
 
 ### Mesh skinning
 TODO: LBS, DQS.
-
-### Environment mapping
-TODO: dynamic and static (reflection + refraction).

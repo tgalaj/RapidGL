@@ -255,6 +255,14 @@ namespace RapidGL
         genPrimitive(buffers);
     }
 
+    void Model::genPQTorusKnot(unsigned int slices, unsigned int stacks, int p, int q, float knot_r, float tube_r)
+    {
+        VertexBuffers buffers;
+        GeomPrimitive::genPQTorusKnot(buffers, slices, stacks, p, q, knot_r, tube_r);
+
+        genPrimitive(buffers);
+    }
+
     void Model::genQuad(float width, float height)
     {
         VertexBuffers buffers;

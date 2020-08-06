@@ -24,6 +24,7 @@ namespace RapidGL
         void genSphere     (float radius = 1.5f, unsigned int slices = 12);
         void genTorus      (float innerRadius = 1.0f, float outerRadius = 2.0f, unsigned int slices = 10, unsigned int stacks = 10);
         void genTrefoilKnot(unsigned int slices = 100, unsigned int stacks = 20);
+        void genPQTorusKnot(unsigned int slices = 256, unsigned int stacks = 16, int p = 2, int q = 3, float knot_r = 0.75, float tube_r = 0.15);
         void genQuad       (float width = 1.0f, float height = 1.0f);
 
         void load(const std::string & filename);
