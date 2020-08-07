@@ -719,13 +719,13 @@ namespace RapidGL
                 GLuint v2 = (slice + 1) * (stacks + 1) + (stack + 1);
                 GLuint v3 = slice * (stacks + 1) + (stack + 1);
                 
-                buffers.m_indices.push_back(v0);
+                buffers.m_indices.push_back(v2);
                 buffers.m_indices.push_back(v1);
-                buffers.m_indices.push_back(v2);
-                
                 buffers.m_indices.push_back(v0);
-                buffers.m_indices.push_back(v2);
+                
                 buffers.m_indices.push_back(v3);
+                buffers.m_indices.push_back(v2);
+                buffers.m_indices.push_back(v0);
             }
         }
     }
