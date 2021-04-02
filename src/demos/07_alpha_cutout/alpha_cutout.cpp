@@ -67,7 +67,7 @@ void AlphaCutout::init_app()
 
     /* Add textures to the objects. */
     RapidGL::Texture pine_texture;
-    pine_texture.m_id = RapidGL::Util::loadGLTexture("diffuse_half.tga", "models/pine", true);
+    pine_texture.m_id = RapidGL::Util::loadGLTexture2D("diffuse_half.tga", "models/pine", true);
     pine_texture.m_type = "texture_diffuse";
 
     if (m_objects[0]->getMesh(0).getTexturesCount() == 0)
@@ -76,7 +76,7 @@ void AlphaCutout::init_app()
     }
 
     RapidGL::Texture ground_texture;
-    ground_texture.m_id = RapidGL::Util::loadGLTexture("grass_green_d.jpg", "textures", true);
+    ground_texture.m_id = RapidGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
     ground_texture.m_type = "texture_diffuse";
 
     m_objects[1]->getMesh(0).addTexture(ground_texture);

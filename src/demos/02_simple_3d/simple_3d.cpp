@@ -64,11 +64,11 @@ void Simple3d::init_app()
 
     /* Add texture to the monkey and sphere models only. */
     RapidGL::Texture texture_spot;
-    texture_spot.m_id   = RapidGL::Util::loadGLTexture("spot.png", "models/spot", false);
+    texture_spot.m_id   = RapidGL::Util::loadGLTexture2D("spot.png", "models/spot", false);
     texture_spot.m_type = "texture_diffuse";
 
     RapidGL::Texture texture;
-    texture.m_id   = RapidGL::Util::loadGLTexture("bricks.png", "textures", false);
+    texture.m_id   = RapidGL::Util::loadGLTexture2D("bricks.png", "textures", false);
     texture.m_type = "texture_diffuse";
 
     m_objects[0]->getMesh(0).addTexture(texture_spot);

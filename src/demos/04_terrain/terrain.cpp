@@ -89,11 +89,11 @@ void Terrain::init_app()
 
     /* Add textures to the objects. */
     RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture("bricks.png", "textures", true);
+    texture.m_id = RapidGL::Util::loadGLTexture2D("bricks.png", "textures", true);
     texture.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
+    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[5]->getMesh(0).addTexture(texture);
@@ -113,7 +113,7 @@ void Terrain::init_app()
     for (auto& tf : m_terrain_textures_filenames)
     {
         RapidGL::Texture texture;
-        texture.m_id   = RapidGL::Util::loadGLTexture(tf.c_str(), "textures", tf != "blendmap.png" ? true : false);
+        texture.m_id   = RapidGL::Util::loadGLTexture2D(tf.c_str(), "textures", tf != "blendmap.png" ? true : false);
         texture.m_type = "texture_diffuse";
 
         m_terrain_model->getMesh(0).addTexture(texture);
@@ -499,7 +499,7 @@ void Terrain::render_gui()
                         for (auto& tf : m_terrain_textures_filenames)
                         {
                             RapidGL::Texture texture;
-                            texture.m_id   = RapidGL::Util::loadGLTexture(tf.c_str(), "textures", false);
+                            texture.m_id   = RapidGL::Util::loadGLTexture2D(tf.c_str(), "textures", false);
                             texture.m_type = "texture_diffuse";
 
                             m_terrain_model->getMesh(0).addTexture(texture);

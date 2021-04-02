@@ -54,13 +54,22 @@ namespace RapidGL
         /*
          * Set orientation using Euler Angles in degrees
          */
-
         void setOrientation(float x, float y, float z)
         {
             m_orientation = glm::angleAxis(glm::radians(x), glm::vec3(1.0f, 0.0f, 0.0f)) *
                             glm::angleAxis(glm::radians(y), glm::vec3(0.0f, 1.0f, 0.0f)) *
                             glm::angleAxis(glm::radians(z), glm::vec3(0.0f, 0.0f, 1.0f));
             
+            m_direction = glm::normalize(glm::conjugate(m_orientation) * glm::vec3(0.0f, 0.0f, 1.0f));
+            m_is_dirty  = true;
+        }
+
+        /*
+         * Set orientation using explicit direction vector
+         */
+        void setOrientation(const glm::vec3 & direction)
+        {
+            m_orientation = glm::quatLookAt(glm::normalize(direction), glm::vec3(0.0, 1.0, 0.0));
             m_direction = glm::normalize(glm::conjugate(m_orientation) * glm::vec3(0.0f, 0.0f, 1.0f));
             m_is_dirty  = true;
         }

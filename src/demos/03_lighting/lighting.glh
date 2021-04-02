@@ -10,6 +10,7 @@ uniform vec3 cam_pos;
 
 uniform float specular_intensity;
 uniform float specular_power;
+uniform vec3 color_tint = vec3(1.0);
 
 uniform float gamma;
 
@@ -55,7 +56,7 @@ vec4 blinnPhong(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
     vec3 half_vector = normalize(dir_to_eye - direction);
     float specular   = pow(max(dot(half_vector, normal), 0.0f), specular_power);
 
-    vec4 diffuse_color  = vec4(base.color, 1.0f) * base.intensity * diffuse * texture(texture_diffuse1, texcoord);
+    vec4 diffuse_color  = vec4(base.color, 1.0f) * base.intensity * diffuse * texture(texture_diffuse1, texcoord) * vec4(color_tint, 1.0);
     vec4 specular_color = vec4(1.0) * specular * specular_intensity;
 
     return diffuse_color + specular_color;

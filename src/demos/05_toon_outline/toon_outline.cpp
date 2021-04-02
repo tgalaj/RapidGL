@@ -132,11 +132,11 @@ void ToonOutline::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
 
     RapidGL::Texture texture_spot;
-    texture_spot.m_id   = RapidGL::Util::loadGLTexture("spot.png", "models/spot", true);
+    texture_spot.m_id   = RapidGL::Util::loadGLTexture2D("spot.png", "models/spot", true);
     texture_spot.m_type = "texture_diffuse";
 
     RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id   = RapidGL::Util::loadGLTexture("default_diffuse.png", "textures", true);
+    default_diffuse_texture.m_id   = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[0]->getMesh(0).addTexture(texture_spot);

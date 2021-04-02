@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <random>
 #include <string>
 #include <stb_image.h>
 #include <glad/glad.h>
@@ -44,6 +45,27 @@ namespace RapidGL
         */
         static unsigned char* loadTextureData(const std::string & filename, ImageData & image_data, int desired_number_of_channels = 0);
         
-        static unsigned int loadGLTexture(const char* path, const std::string& directory, bool gamma);
+        static unsigned int loadGLTexture2D(const char* path, const std::string& directory, bool gamma);
+        static unsigned int loadGLTextureCube(const std::string* filenames, const std::string& directory, GLuint num_mipmaps = 1u, bool gamma = false);
+
+        static double randomDouble()
+        {
+            // Returns a random real in [0,1).
+            static std::uniform_real_distribution<double> distribution(0.0, 1.0);
+            static std::mt19937 generator;
+            return distribution(generator);
+        }
+
+        static double randomDouble(double min, double max)
+        {
+            // Returns a random real in [min,max).
+            return min + (max - min) * randomDouble();
+        }
+
+        static int randomInt(int min, int max)
+        {
+            // Returns a random integer in [min, max].
+            return static_cast<int>(randomDouble(min, max + 1));
+        }
     };
 }
