@@ -51,6 +51,8 @@ private:
     std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
     std::vector<glm::vec3> m_color_tints;
+    std::vector<glm::vec3> m_spheres_positions;
+    std::vector<float> m_random_spheres_rotation_speeds;
 
     std::shared_ptr<RapidGL::Model> m_xyzrgb_dragon;
     std::shared_ptr<RapidGL::Model> m_lucy;
@@ -58,6 +60,8 @@ private:
 
     /* Environment mapping */
     std::shared_ptr<Skybox> m_skybox;
+    std::shared_ptr<RapidGL::Shader> m_enviro_mapping_shader;
+    float m_ior; /* index of refraction */
 
     std::string m_current_skybox_name;
     std::string m_skybox_names_list[3] = { "calm_sea", "distant_sunset", "heaven" };

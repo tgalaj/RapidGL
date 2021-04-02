@@ -13,7 +13,8 @@ EnvironmentMapping::EnvironmentMapping()
       m_ambient_factor         (0.18f),
       m_gamma                  (2.2),
       m_dir_light_angles       (45.0f, 50.0f),
-      m_alpha_cutout_threshold (0.15)
+      m_alpha_cutout_threshold (0.15),
+      m_ior                    (1.52f)
 {
 }
 
@@ -57,10 +58,10 @@ void EnvironmentMapping::init_app()
 
     /* Set model matrices for each model. */
     /* xyzrgb dragon */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-4.0f, 0.31f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-45.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.02)));
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-4.0f, 1.11f, -1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-45.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.04)));
 
     /* lucy */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(4.0f, 0.71f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(135.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.002)));
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(4.0f, 1.81f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(135.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.004)));
 
     /* plane */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(0.0, -0.5, 0.0)));
@@ -102,11 +103,17 @@ void EnvironmentMapping::init_app()
         m_objects[3 + i]->genSphere(rand_radius, 20);
         m_objects[3 + i]->getMesh(0).addTexture(default_diffuse_texture);
 
-        glm::vec3 random_position(0.0f);
-        while(random_position.y - rand_radius < 0.0f)
-            random_position = glm::sphericalRand(12.0f);
+        glm::vec3 random_position = glm::sphericalRand(16.0f);
+        if (random_position.y < -0.5f)
+        {
+            auto offset = glm::abs(-0.5f - random_position.y) + rand_radius;
+            random_position.y += offset;
+        }
 
         glm::vec3 random_color = glm::linearRand(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 1.0, 1.0));
+
+        m_spheres_positions.emplace_back(random_position);
+        m_random_spheres_rotation_speeds.emplace_back(RapidGL::Util::randomDouble(0.1, 0.7));
 
         m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), random_position));
         m_color_tints.emplace_back(random_color);
@@ -118,6 +125,9 @@ void EnvironmentMapping::init_app()
 
     m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional.frag");
     m_directional_light_shader->link();
+
+    m_enviro_mapping_shader = std::make_shared<RapidGL::Shader>(dir + "enviro_mapping.vert", dir + "enviro_mapping.frag");
+    m_enviro_mapping_shader->link();
 
     /* Create skybox. */
     m_current_skybox_name = m_skybox_names_list[0];
@@ -176,6 +186,20 @@ void EnvironmentMapping::update(double delta_time)
 {
     /* Update variables here. */
     m_camera->update(delta_time);
+
+    /* Update model matrices of the spheres */
+    static float rotation_angle = 0.0f;
+
+    rotation_angle += delta_time;
+
+    for (int i = 3; i < m_objects_model_matrices.size(); ++i)
+    {
+        auto translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f));
+        auto inv_translate = glm::inverse(translate);
+        auto transform = translate * glm::rotate(glm::mat4(1.0f), rotation_angle * m_random_spheres_rotation_speeds[i - 3], glm::vec3(0.0, 1.0, 0.0)) * inv_translate;
+
+        m_objects_model_matrices[i] = transform * glm::translate(glm::mat4(1.0f), m_spheres_positions[i - 3]);
+    }
 }
 
 void EnvironmentMapping::render()
@@ -198,7 +222,7 @@ void EnvironmentMapping::render()
     m_directional_light_shader->setUniform("gamma",                  m_gamma);
     m_directional_light_shader->setUniform("ambient_factor",         m_ambient_factor);
 
-    for (unsigned i = 0; i < m_objects_model_matrices.size(); ++i)
+    for (unsigned i = 2; i < m_objects_model_matrices.size(); ++i)
     {
         m_directional_light_shader->setUniform("model",         m_objects_model_matrices[i]);
         m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
@@ -207,6 +231,25 @@ void EnvironmentMapping::render()
 
         m_objects[i]->render(m_directional_light_shader);
     }
+
+    /* Render reflective / refractive models */
+    m_enviro_mapping_shader->bind();
+    m_enviro_mapping_shader->setUniform("cam_pos", m_camera->position());
+
+    m_skybox->bindSkyboxTexture();
+
+    m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "reflection");
+    m_enviro_mapping_shader->setUniform("model",         m_objects_model_matrices[0]);
+    m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[0]))));
+    m_enviro_mapping_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[0]);
+    m_xyzrgb_dragon->render(m_enviro_mapping_shader, false);
+
+    m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "refraction");
+    m_enviro_mapping_shader->setUniform("ior",           m_ior);
+    m_enviro_mapping_shader->setUniform("model",         m_objects_model_matrices[1]);
+    m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[1]))));
+    m_enviro_mapping_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[1]);
+    m_lucy->render(m_enviro_mapping_shader, false);
 
     /* Render skybox */
     m_skybox->render(m_camera->m_projection, m_camera->m_view);
@@ -274,6 +317,8 @@ void EnvironmentMapping::render_gui()
             }
             ImGui::EndCombo();
         }
+
+        ImGui::SliderFloat("Index of Refraction", &m_ior, 1.0, 2.417, "%.3f");
 
         ImGui::PopItemWidth();
         ImGui::Spacing();
