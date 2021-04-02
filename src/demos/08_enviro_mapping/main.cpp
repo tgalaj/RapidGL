@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#include "enviro_mapping.h."
+#include "enviro_mapping.h"
 
 using namespace RapidGL;
 
