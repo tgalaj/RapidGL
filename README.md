@@ -72,7 +72,9 @@ This demo shows implementation of an alpha cutout using fragments discarding.
 <img src="screenshots/07_alpha_cutout.png" width="50%" height="50%" alt="Alpha Cutout" />
 
 ### Environment mapping
-TODO: dynamic and static (reflection + refraction).
+Implementation of dynamic and static environment mapping (light reflection and refraction).
+
+<img src="screenshots/08_enviro_mapping.png" width="50%" height="50%" alt="Environment mapping" />
 
 ### Image based lighting
 TODO
@@ -113,8 +115,11 @@ TODO: Transform Feedback, Instanced particles.
 ### Fire and Smoke
 TODO
 
-### PBR
-TODO
-
 ### Mesh skinning
 TODO: LBS, DQS.
+
+### OIT
+TODO
+
+### PBR
+TODO

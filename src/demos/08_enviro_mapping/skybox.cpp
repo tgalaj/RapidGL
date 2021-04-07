@@ -114,7 +114,6 @@ void Skybox::render(const glm::mat4& projection, const glm::mat4& view)
     m_skybox_shader->bind();
     m_skybox_shader->setUniform("view_projection", projection * glm::mat4(glm::mat3(view)));
 
-    //m_cube_map_texture->bind();
     glBindTextureUnit(0, m_cube_map_id);
     glBindVertexArray(m_vao_id);
 

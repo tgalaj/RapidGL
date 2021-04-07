@@ -45,6 +45,55 @@ public:
     void render_gui()              override;
 
 private:
+    struct CubeMapRenderTarget
+    {
+        glm::mat4 m_view_transforms[6];
+
+        GLuint    m_cubemap_texture_id = 0;
+        GLuint    m_fbo_id             = 0;
+        GLuint    m_rbo_id             = 0;
+        glm::vec3 m_position           = glm::vec3(0.0f);
+
+        void set_position(const glm::vec3 pos)
+        {
+            m_position = pos;
+            m_view_transforms[0] = glm::lookAt(pos, pos + glm::vec3( 1,  0,  0), glm::vec3(0, -1,  0));
+            m_view_transforms[1] = glm::lookAt(pos, pos + glm::vec3(-1,  0,  0), glm::vec3(0, -1,  0));
+            m_view_transforms[2] = glm::lookAt(pos, pos + glm::vec3( 0,  1,  0), glm::vec3(0,  0,  1));
+            m_view_transforms[3] = glm::lookAt(pos, pos + glm::vec3( 0, -1,  0), glm::vec3(0,  0, -1));
+            m_view_transforms[4] = glm::lookAt(pos, pos + glm::vec3( 0,  0,  1), glm::vec3(0, -1,  0));
+            m_view_transforms[5] = glm::lookAt(pos, pos + glm::vec3( 0,  0, -1), glm::vec3(0, -1,  0));
+        }
+
+        void bindTexture(GLuint unit = 0)
+        {
+            glBindTextureUnit(unit, m_cubemap_texture_id);
+        }
+
+        void cleanup()
+        {
+            if (m_cubemap_texture_id != 0)
+            {
+                glDeleteTextures(1, &m_cubemap_texture_id);
+            }
+
+            if (m_fbo_id != 0)
+            {
+                glDeleteFramebuffers(1, &m_fbo_id);
+            }
+
+            if (m_rbo_id != 0)
+            {
+                glDeleteRenderbuffers(1, &m_rbo_id);
+            }
+        }
+
+    } m_cubemap_rts[2];
+
+    void                render_objects(const glm::mat4& camera_view, const glm::mat4& camera_projection, const glm::vec3 & camera_position);
+    CubeMapRenderTarget generate_cubemap_rt() const;
+    void                render_to_cubemap_rt(CubeMapRenderTarget & rt);
+
     std::shared_ptr<RapidGL::Camera> m_camera;
     std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
 
@@ -65,7 +114,12 @@ private:
 
     std::string m_current_skybox_name;
     std::string m_skybox_names_list[3] = { "calm_sea", "distant_sunset", "heaven" };
-    
+
+    /* Dynamic Environment mapping */
+    glm::ivec2 m_enviro_cubemap_size;
+    glm::mat4 m_enviro_projection;
+    bool m_dynamic_enviro_mapping_toggle;
+
     /* Light properties */
     DirectionalLight m_dir_light_properties;
     
@@ -75,5 +129,4 @@ private:
 
     float m_ambient_factor;
     float m_gamma;
-    float m_alpha_cutout_threshold;
 };
