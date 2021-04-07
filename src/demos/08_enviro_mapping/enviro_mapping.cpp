@@ -19,7 +19,7 @@ EnvironmentMapping::EnvironmentMapping()
     m_enviro_cubemap_size = glm::vec2(2048);
 
     float half_size = m_enviro_cubemap_size.x * 0.5f;
-    m_enviro_projection = glm::perspective(2.0f * glm::atan(half_size / (half_size - 0.5f)), 1.0f, 3.41f, 1000.0f);
+    m_enviro_projection = glm::perspective(2.0f * glm::atan(half_size / (half_size - 0.5f)), 1.0f, 0.01f, 200.0f);
 }
 
 EnvironmentMapping::~EnvironmentMapping()
@@ -225,8 +225,8 @@ void EnvironmentMapping::render()
     if (m_dynamic_enviro_mapping_toggle)
     {
         glEnable(GL_CULL_FACE);
-        render_to_cubemap_rt(m_cubemap_rts[0]);
-        render_to_cubemap_rt(m_cubemap_rts[1]);
+        render_to_cubemap_rt(m_cubemap_rts[0], 0);
+        render_to_cubemap_rt(m_cubemap_rts[1], 1);
         glDisable(GL_CULL_FACE);
     }
 
@@ -237,7 +237,7 @@ void EnvironmentMapping::render()
     render_objects(m_camera->m_view, m_camera->m_projection, m_camera->position());
 }
 
-void EnvironmentMapping::render_objects(const glm::mat4& camera_view, const glm::mat4& camera_projection, const glm::vec3& camera_position)
+void EnvironmentMapping::render_objects(const glm::mat4& camera_view, const glm::mat4& camera_projection, const glm::vec3& camera_position, int ignore_obj_id)
 {
     auto view_projection = camera_projection * camera_view;
 
@@ -271,23 +271,29 @@ void EnvironmentMapping::render_objects(const glm::mat4& camera_view, const glm:
     if(!m_dynamic_enviro_mapping_toggle) m_skybox->bindSkyboxTexture();
 
     /* xyzrgb dragon */
-    if(m_dynamic_enviro_mapping_toggle) m_cubemap_rts[0].bindTexture();
+    if (ignore_obj_id != 0)
+    {
+        if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[0].bindTexture();
 
-    m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "reflection");
-    m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[0]);
-    m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[0]))));
-    m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[0]);
-    m_xyzrgb_dragon->render(m_enviro_mapping_shader, false);
+        m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "reflection");
+        m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[0]);
+        m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[0]))));
+        m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[0]);
+        m_xyzrgb_dragon->render(m_enviro_mapping_shader, false);
+    }
 
     /* lucy */
-    if(m_dynamic_enviro_mapping_toggle) m_cubemap_rts[1].bindTexture();
+    if (ignore_obj_id != 1)
+    {
+        if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[1].bindTexture();
 
-    m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "refraction");
-    m_enviro_mapping_shader->setUniform("ior", m_ior);
-    m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[1]);
-    m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[1]))));
-    m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[1]);
-    m_lucy->render(m_enviro_mapping_shader, false);
+        m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "refraction");
+        m_enviro_mapping_shader->setUniform("ior", m_ior);
+        m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[1]);
+        m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[1]))));
+        m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[1]);
+        m_lucy->render(m_enviro_mapping_shader, false);
+    }
 
     /* Render skybox */
     m_skybox->render(camera_projection, camera_view);
@@ -420,7 +426,7 @@ EnvironmentMapping::CubeMapRenderTarget EnvironmentMapping::generate_cubemap_rt(
     return rt;
 }
 
-void EnvironmentMapping::render_to_cubemap_rt(CubeMapRenderTarget & rt)
+void EnvironmentMapping::render_to_cubemap_rt(CubeMapRenderTarget & rt, int ignore_obj_id)
 {
     /* Update all faces per frame */
     glViewport(0, 0, m_enviro_cubemap_size.x, m_enviro_cubemap_size.y);
@@ -429,7 +435,7 @@ void EnvironmentMapping::render_to_cubemap_rt(CubeMapRenderTarget & rt)
         {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, rt.m_cubemap_texture_id, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            render_objects(rt.m_view_transforms[side], m_enviro_projection, rt.m_position);
+            render_objects(rt.m_view_transforms[side], m_enviro_projection, rt.m_position, ignore_obj_id);
         }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

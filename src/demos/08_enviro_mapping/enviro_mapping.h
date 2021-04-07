@@ -90,9 +90,9 @@ private:
 
     } m_cubemap_rts[2];
 
-    void                render_objects(const glm::mat4& camera_view, const glm::mat4& camera_projection, const glm::vec3 & camera_position);
+    void                render_objects(const glm::mat4& camera_view, const glm::mat4& camera_projection, const glm::vec3 & camera_position, int ignore_obj_id = -1);
     CubeMapRenderTarget generate_cubemap_rt() const;
-    void                render_to_cubemap_rt(CubeMapRenderTarget & rt);
+    void                render_to_cubemap_rt(CubeMapRenderTarget & rt, int ignore_obj_id = -1);
 
     std::shared_ptr<RapidGL::Camera> m_camera;
     std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
