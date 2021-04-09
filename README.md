@@ -76,11 +76,10 @@ Implementation of dynamic and static environment mapping (light reflection and r
 
 <img src="screenshots/08_enviro_mapping.png" width="50%" height="50%" alt="Environment mapping" />
 
-### Image based lighting
-TODO
-
 ### Projected texture
-TODO
+Demo presents projecting a texture onto a surface.
+
+<img src="screenshots/09_projected_texture.png" width="50%" height="50%" alt="Projected texture" />
 
 ### Postprocessing filters
 TODO: Edge detection and Gaussian blur filters.
