@@ -82,10 +82,9 @@ Demo presents projecting a texture onto a surface.
 <img src="screenshots/09_projected_texture.png" width="50%" height="50%" alt="Projected texture" />
 
 ### Postprocessing filters
-TODO: Edge detection and Gaussian blur filters.
+Negative, edge detection (Sobel operator) and Gaussian blur filters demo.
 
-### Bloom
-TODO
+<img src="screenshots/10_postprocessing_filters.png" width="50%" height="50%" alt="Postprocessing filters" />
 
 ### Geometry Shader: Point Sprites
 TODO
