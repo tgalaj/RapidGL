@@ -6,7 +6,7 @@
 
 #include <glm/gtc/matrix_inverse.hpp>
 
-Lighting::Lighting()
+PostprocessingFilters::PostprocessingFilters()
     : m_specular_power    (120.0f),
       m_specular_intenstiy(0.0f),
       m_ambient_factor    (0.5f),
@@ -14,11 +14,11 @@ Lighting::Lighting()
 {
 }
 
-Lighting::~Lighting()
+PostprocessingFilters::~PostprocessingFilters()
 {
 }
 
-void Lighting::init_app()
+void PostprocessingFilters::init_app()
 {
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.5, 0.5, 0.5, 1.0);
@@ -87,7 +87,7 @@ void Lighting::init_app()
     m_current_ps_filter_name = m_ps_filter_names_list[0];
 }
 
-void Lighting::input()
+void PostprocessingFilters::input()
 {
     /* Close the application when Esc is released. */
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
@@ -129,13 +129,13 @@ void Lighting::input()
     }
 }
 
-void Lighting::update(double delta_time)
+void PostprocessingFilters::update(double delta_time)
 {
     /* Update variables here. */
     m_camera->update(delta_time);
 }
 
-void Lighting::render()
+void PostprocessingFilters::render()
 {
     /* First pass - render to offscreen FBO */
     m_postprocess_filter->bindFilterFBO();
@@ -193,7 +193,7 @@ void Lighting::render()
     m_postprocess_filter->render(m_current_ps_filter_name);
 }
 
-void Lighting::render_gui()
+void PostprocessingFilters::render_gui()
 {
     /* This method is responsible for rendering GUI using ImGUI. */
 

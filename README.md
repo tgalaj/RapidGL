@@ -87,16 +87,15 @@ Negative, edge detection (Sobel operator) and Gaussian blur filters demo.
 <img src="screenshots/10_postprocessing_filters.png" width="50%" height="50%" alt="Postprocessing filters" />
 
 ### Geometry Shader: Point Sprites
-TODO
+Demo presents generation of quad sprites from points data using Geometry Shader.
+
+<img src="screenshots/11_gs_point_sprites.png" width="50%" height="50%" alt="Geometry Shader: Point Sprites" />
 
 ### Geometry Shader: Wireframe on top of a shaded model
 TODO
 
 ### Tessellation
 TODO: Curve, 2D quad, 3D surface, depth based tessellation.
-
-### Shadow Mapping
-TODO: Shadow Mapping with PCF, random sampling.
 
 ### Prebaked ambient occlusion
 TODO
@@ -115,6 +114,9 @@ TODO
 
 ### Mesh skinning
 TODO: LBS, DQS.
+
+### Shadow Mapping
+TODO: Shadow Mapping with PCF, random sampling.
 
 ### OIT
 TODO

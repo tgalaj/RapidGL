@@ -115,11 +115,11 @@ struct PostprocessFilter
     }
 };
 
-class Lighting : public RapidGL::CoreApp
+class PostprocessingFilters : public RapidGL::CoreApp
 {
 public:
-    Lighting();
-    ~Lighting();
+    PostprocessingFilters();
+    ~PostprocessingFilters();
 
     void init_app()                override;
     void input()                   override;
