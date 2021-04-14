@@ -9,6 +9,7 @@ namespace RapidGL
     GLFWwindow * Window::m_window = nullptr;
     std::string  Window::m_title = "";
     glm::vec2    Window::m_window_size = glm::vec2(0);
+    glm::mat4    Window::m_viewport_matrix = glm::mat4(1.0);
 
     Window::Window()
     {
@@ -80,7 +81,8 @@ namespace RapidGL
 
         /* Set the viewport */
         glViewport(0, 0, width, height);
-        
+        setViewportMatrix(width, height);
+
         setVSync(false);
         glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback);
 
@@ -125,6 +127,11 @@ namespace RapidGL
         return (m_window_size.x / m_window_size.y);
     }
 
+    glm::mat4 Window::getViewportMatrix()
+    {
+        return m_viewport_matrix;
+    }
+
     const std::string& Window::getTitle()
     {
         return m_title;
@@ -143,13 +150,27 @@ namespace RapidGL
         glViewport(0, 0, m_window_size.x, m_window_size.y);
     }
 
+    void Window::setViewportMatrix(int width, int height)
+    {
+        float w2 = width  / 2.0f;
+        float h2 = height / 2.0f;
+
+        m_viewport_matrix = glm::mat4(glm::vec4(w2,  0.0, 0.0, 0.0), 
+                                      glm::vec4(0.0, h2,  0.0, 0.0), 
+                                      glm::vec4(0.0, 0.0, 1.0, 0.0), 
+                                      glm::vec4(w2,  h2,  0.0, 1.0));
+    }
+
     void Window::framebuffer_size_callback(GLFWwindow * window, int width, int height)
     {
         glViewport(0, 0, width, height);
+        setViewportMatrix(width, height);
 
         m_window_size.x = float(width);
         m_window_size.y = float(height);
 
         GUI::updateWindowSize(float(width), float(height));
+
+        
     }
 }

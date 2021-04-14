@@ -92,7 +92,7 @@ Demo presents generation of quad sprites from points data using Geometry Shader.
 <img src="screenshots/11_gs_point_sprites.png" width="50%" height="50%" alt="Geometry Shader: Point Sprites" />
 
 ### Geometry Shader: Wireframe on top of a shaded model
-TODO
+<img src="screenshots/12_gs_wireframe.png" width="50%" height="50%" alt="Geometry Shader: Wireframe on top of a shaded model" />
 
 ### Tessellation
 TODO: Curve, 2D quad, 3D surface, depth based tessellation.

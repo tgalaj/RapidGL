@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace RapidGL
 {
@@ -25,6 +26,7 @@ namespace RapidGL
         static glm::vec2 getCenter();
         static glm::vec2 getSize();
         static float     getAspectRatio();
+        static glm::mat4 getViewportMatrix();
 
         static const std::string & getTitle();
 
@@ -34,7 +36,10 @@ namespace RapidGL
     private:
         static GLFWwindow * m_window;
         static std::string  m_title;
+        static glm::mat4    m_viewport_matrix;
         static glm::vec2    m_window_size;
+
+        static void setViewportMatrix(int width, int height);
 
         static void error_callback(int error, const char* description)
         {
