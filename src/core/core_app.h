@@ -12,7 +12,7 @@ namespace RapidGL
     {
     public:
         CoreApp();
-        ~CoreApp();
+        virtual ~CoreApp();
 
         CoreApp(const CoreApp&)            = delete;
         CoreApp& operator=(const CoreApp&) = delete;

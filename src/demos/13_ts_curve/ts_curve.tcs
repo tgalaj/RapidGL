@@ -1,0 +1,15 @@
+#version 460 core
+layout (vertices = 4) out;
+
+uniform int num_segments;
+uniform int num_strips;
+
+void main()
+{
+	// Pass along unmodified vertex positions
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+
+	// Define the tessellation levels
+	gl_TessLevelOuter[0] = float(num_strips);
+	gl_TessLevelOuter[1] = float(num_segments);
+}
