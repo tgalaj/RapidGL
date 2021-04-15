@@ -1,0 +1,20 @@
+#version 460 core
+layout (vertices = 4) out;
+
+uniform int outer;
+uniform int inner;
+
+void main()
+{
+	// Pass along unmodified vertex positions
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+
+	// Define the tessellation levels
+	gl_TessLevelOuter[0] = float(outer);
+	gl_TessLevelOuter[1] = float(outer);
+	gl_TessLevelOuter[2] = float(outer);
+	gl_TessLevelOuter[3] = float(outer);
+
+	gl_TessLevelInner[0] = float(inner);
+	gl_TessLevelInner[1] = float(inner);
+}

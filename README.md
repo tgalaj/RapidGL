@@ -98,7 +98,7 @@ Demo presents generation of quad sprites from points data using Geometry Shader.
 <img src="screenshots/13_ts_curve.png" width="50%" height="50%" alt="Tessellation - 1D" />
 
 ### Tessellation - 2D
-2D quad
+<img src="screenshots/14_ts_quad.png" width="50%" height="50%" alt="Tessellation - 2D" />
 
 ### Tessellation - 3D
 3D surface

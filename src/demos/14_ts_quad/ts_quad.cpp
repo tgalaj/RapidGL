@@ -1,4 +1,4 @@
-#include "ts_curve.h"
+#include "ts_quad.h"
 
 #include "filesystem.h"
 #include "input.h"
@@ -7,31 +7,32 @@
 
 #include <glm/gtc/random.hpp>
 
-Tessellation1D::Tessellation1D()
-    : m_curve_points_vao_id(0),
-      m_curve_points_vbo_id(0),
-      m_no_curve_points(4),
-      m_points_color(1.0, 0.0, 0.0),
-      m_line_color(1.0, 1.0, 0.0),
-      m_no_segments(50),
-      m_no_strips(1)
+Tessellation2D::Tessellation2D()
+    : m_quad_points_vao_id(0),
+      m_quad_points_vbo_id(0),
+      m_no_quad_points(4),
+      m_quad_color(180 / 255.0f),
+      m_line_color(0.0, 0.0, 0.0),
+      m_line_width(0.5),
+      m_outer(2),
+      m_inner(2)
 {
 }
 
-Tessellation1D::~Tessellation1D()
+Tessellation2D::~Tessellation2D()
 {
-    if(m_curve_points_vao_id != 0)
+    if(m_quad_points_vao_id != 0)
     {
-        glDeleteVertexArrays(1, &m_curve_points_vao_id);
+        glDeleteVertexArrays(1, &m_quad_points_vao_id);
     }
 
-    if(m_curve_points_vbo_id != 0)
+    if(m_quad_points_vbo_id != 0)
     {
-        glDeleteBuffers(1, &m_curve_points_vbo_id);
+        glDeleteBuffers(1, &m_quad_points_vbo_id);
     }
 }
 
-void Tessellation1D::init_app()
+void Tessellation2D::init_app()
 {
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.5, 0.5, 0.5, 1.0);
@@ -47,38 +48,35 @@ void Tessellation1D::init_app()
 
     /* Create virtual camera. */
     const float c = 3.5f;
-    m_camera = std::make_shared<RapidGL::Camera>(-0.5f * c, 0.5f * c, -0.3f * c, 0.45f * c, 0.1f, 100.0f);
+    m_camera = std::make_shared<RapidGL::Camera>(-0.4f * c, 0.7f * c, -0.35f * c, 0.4f * c, 0.1f, 100.0f);
     m_camera->setPosition(0.0, 0.0, 1.5);
 
     /* Create shader. */
-    std::string dir  = "../src/demos/13_ts_curve/";
-    m_curve_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_curve.vert", dir + "ts_curve.frag", dir + "ts_curve.tcs", dir + "ts_curve.tes");
-    m_curve_tessellation_shader->link();
-
-    m_solid_points_color_shader = std::make_shared<RapidGL::Shader>(dir + "solid.vert", dir + "solid.frag");
-    m_solid_points_color_shader->link();
+    std::string dir  = "../src/demos/14_ts_quad/";
+    m_quad_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_quad.vert", dir + "ts_quad.frag", dir + "ts_quad.geom", dir + "ts_quad.tcs", dir + "ts_quad.tes");
+    m_quad_tessellation_shader->link();
 
     /* Create VAO and VBO for curve points in 2D - NDC */
     std::vector<glm::vec2> curve_points = { glm::vec2(-1.0, -1.0),
-                                            glm::vec2(-0.5,  1.0),
-                                            glm::vec2( 0.5, -1.0),
-                                            glm::vec2( 1.0,  1.0) };
+                                            glm::vec2( 1.0,  -1.0),
+                                            glm::vec2( 1.0,  1.0),
+                                            glm::vec2(-1.0,  1.0) };
 
-    glCreateVertexArrays(1, &m_curve_points_vao_id);
+    glCreateVertexArrays(1, &m_quad_points_vao_id);
 
-    glCreateBuffers(1, &m_curve_points_vbo_id);
-    glNamedBufferStorage(m_curve_points_vbo_id, curve_points.size() * sizeof(curve_points[0]), curve_points.data(), 0 /*flags*/);
+    glCreateBuffers(1, &m_quad_points_vbo_id);
+    glNamedBufferStorage(m_quad_points_vbo_id, curve_points.size() * sizeof(curve_points[0]), curve_points.data(), 0 /*flags*/);
 
     /* Set up VAO */
-    glEnableVertexArrayAttrib(m_curve_points_vao_id, 0 /*index*/);
+    glEnableVertexArrayAttrib(m_quad_points_vao_id, 0 /*index*/);
 
     /* Separate attribute format */
-    glVertexArrayAttribFormat (m_curve_points_vao_id, 0 /*index*/, 2 /*size*/, GL_FLOAT, GL_FALSE, 0 /*relativeoffset*/);
-    glVertexArrayAttribBinding(m_curve_points_vao_id, 0 /*index*/, 0 /*bindingindex*/);
-    glVertexArrayVertexBuffer (m_curve_points_vao_id, 0 /*bindingindex*/, m_curve_points_vbo_id, 0 /*offset*/, sizeof(curve_points[0]) /*stride*/);
+    glVertexArrayAttribFormat (m_quad_points_vao_id, 0 /*index*/, 2 /*size*/, GL_FLOAT, GL_FALSE, 0 /*relativeoffset*/);
+    glVertexArrayAttribBinding(m_quad_points_vao_id, 0 /*index*/, 0 /*bindingindex*/);
+    glVertexArrayVertexBuffer (m_quad_points_vao_id, 0 /*bindingindex*/, m_quad_points_vbo_id, 0 /*offset*/, sizeof(curve_points[0]) /*stride*/);
 }
 
-void Tessellation1D::input()
+void Tessellation2D::input()
 {
     /* Close the application when Esc is released. */
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
@@ -107,7 +105,7 @@ void Tessellation1D::input()
     if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
-        std::string filename = "13_ts_curve";
+        std::string filename = "14_ts_quad";
         if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
@@ -120,36 +118,33 @@ void Tessellation1D::input()
     }
 }
 
-void Tessellation1D::update(double delta_time)
+void Tessellation2D::update(double delta_time)
 {
     /* Update variables here. */
     m_camera->update(delta_time);
 }
 
-void Tessellation1D::render()
+void Tessellation2D::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindVertexArray(m_curve_points_vao_id);
+    glBindVertexArray(m_quad_points_vao_id);
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* Draw curve */
-    m_curve_tessellation_shader->bind();
-    m_curve_tessellation_shader->setUniform("num_segments", m_no_segments);
-    m_curve_tessellation_shader->setUniform("num_strips", m_no_strips);
-    m_curve_tessellation_shader->setUniform("line_color", m_line_color);
-    m_curve_tessellation_shader->setUniform("mvp", view_projection);
-    glDrawArrays(GL_PATCHES, 0, m_no_curve_points);
+    m_quad_tessellation_shader->bind();
+    m_quad_tessellation_shader->setUniform("outer", m_outer);
+    m_quad_tessellation_shader->setUniform("inner", m_inner);
+    m_quad_tessellation_shader->setUniform("quad_color", m_quad_color);
+    m_quad_tessellation_shader->setUniform("line_color", m_line_color);
+    m_quad_tessellation_shader->setUniform("line_width", m_line_width * 0.5f);
+    m_quad_tessellation_shader->setUniform("mvp", view_projection);
+    m_quad_tessellation_shader->setUniform("viewport_matrix", RapidGL::Window::getViewportMatrix());
 
-    /* Draw control points */
-    m_solid_points_color_shader->bind();
-    m_solid_points_color_shader->setUniform("view_projection", view_projection);
-    m_solid_points_color_shader->setUniform("point_color", m_points_color);
-
-    glDrawArrays(GL_POINTS, 0, m_no_curve_points);
+    glDrawArrays(GL_PATCHES, 0, m_no_quad_points);
 }
 
-void Tessellation1D::render_gui()
+void Tessellation2D::render_gui()
 {
     /* This method is responsible for rendering GUI using ImGUI. */
 
@@ -181,9 +176,11 @@ void Tessellation1D::render_gui()
         ImGui::Spacing();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-        ImGui::ColorEdit4("Points color", &m_points_color[0]);
-        ImGui::ColorEdit4("Line color",   &m_line_color[0]);
-        ImGui::SliderInt("No. segments",  &m_no_segments, 1, 50);
+        ImGui::ColorEdit4("Quad color", &m_quad_color[0]);
+        ImGui::ColorEdit4("Line color", &m_line_color[0]);
+        ImGui::SliderFloat("Line width", &m_line_width, 0.0f, 10.0f, "%.1f");
+        ImGui::SliderInt("Outer", &m_outer, 1, 32);
+        ImGui::SliderInt("Inner", &m_inner, 2, 32);
         ImGui::PopItemWidth();
         ImGui::Spacing();
     }
