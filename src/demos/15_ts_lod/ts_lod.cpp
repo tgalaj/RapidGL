@@ -46,14 +46,14 @@ void TessellationLoD::init_app()
 
     /* Create object model */
     m_model = std::make_shared<RapidGL::Model>();
-    //m_model->load(RapidGL::FileSystem::getPath("models/spot/spot.obj"));
-    m_model->genSphere(2.0, 8);
+    m_model->load(RapidGL::FileSystem::getPath("models/lowpolytree.fbx"));
+    //m_model->genSphere(2.0, 8);
     m_model->setDrawMode(GL_PATCHES);
 
     /* Create shader. */
     std::string dir  = "../src/demos/15_ts_lod/";
-    m_quad_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.tcs", dir + "ts_lod.tes");
-    m_quad_tessellation_shader->link();
+    m_pn_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.tcs", dir + "ts_lod.tes");
+    m_pn_tessellation_shader->link();
 }
 
 void TessellationLoD::input()
@@ -108,24 +108,24 @@ void TessellationLoD::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    auto model = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0));
+    auto model = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.2));
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* Draw curve */
-    m_quad_tessellation_shader->bind();
-    m_quad_tessellation_shader->setUniform("model",                            model);
-    m_quad_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(glm::transpose(glm::inverse(model))));
-    m_quad_tessellation_shader->setUniform("cam_pos",                          m_camera->position());
-    m_quad_tessellation_shader->setUniform("view_projection",                  view_projection);
-    m_quad_tessellation_shader->setUniform("tessellation_level",               static_cast<float>(m_tessellation_level));
-    m_quad_tessellation_shader->setUniform("directional_light.base.color",     m_dir_light_properties.color);
-    m_quad_tessellation_shader->setUniform("directional_light.base.intensity", m_dir_light_properties.intensity);
-    m_quad_tessellation_shader->setUniform("directional_light.direction",      m_dir_light_properties.direction);
-    m_quad_tessellation_shader->setUniform("ambient",                          m_ambient_color);
-    m_quad_tessellation_shader->setUniform("specular_intensity",               m_specular_intenstiy.x);
-    m_quad_tessellation_shader->setUniform("specular_power",                   m_specular_power.x);
+    m_pn_tessellation_shader->bind();
+    m_pn_tessellation_shader->setUniform("model",                            model);
+    m_pn_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(glm::transpose(glm::inverse(model))));
+    m_pn_tessellation_shader->setUniform("cam_pos",                          m_camera->position());
+    m_pn_tessellation_shader->setUniform("view_projection",                  view_projection);
+    m_pn_tessellation_shader->setUniform("tessellation_level",               static_cast<float>(m_tessellation_level));
+    m_pn_tessellation_shader->setUniform("directional_light.base.color",     m_dir_light_properties.color);
+    m_pn_tessellation_shader->setUniform("directional_light.base.intensity", m_dir_light_properties.intensity);
+    m_pn_tessellation_shader->setUniform("directional_light.direction",      m_dir_light_properties.direction);
+    m_pn_tessellation_shader->setUniform("ambient",                          m_ambient_color);
+    m_pn_tessellation_shader->setUniform("specular_intensity",               m_specular_intenstiy.x);
+    m_pn_tessellation_shader->setUniform("specular_power",                   m_specular_power.x);
 
-    m_model->render(m_quad_tessellation_shader, false);
+    m_model->render(m_pn_tessellation_shader, false);
 }
 
 void TessellationLoD::render_gui()

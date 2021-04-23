@@ -44,7 +44,7 @@ public:
 
 private:
     std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_quad_tessellation_shader;
+    std::shared_ptr<RapidGL::Shader> m_pn_tessellation_shader;
     std::shared_ptr<RapidGL::Model> m_model;
 
     DirectionalLight m_dir_light_properties;
