@@ -115,7 +115,7 @@ void GSWireframe::render()
     m_directional_light_shader->setUniform("specular_intensity",               m_specular_intenstiy.x);
     m_directional_light_shader->setUniform("specular_power",                   m_specular_power.x);
     m_directional_light_shader->setUniform("viewport_matrix",                  RapidGL::Window::getViewportMatrix());
-    m_directional_light_shader->setUniform("line_info.width",             m_line_width * 0.5f);
+    m_directional_light_shader->setUniform("line_info.width",                  m_line_width * 0.5f);
     m_directional_light_shader->setUniform("line_info.color",                  m_line_color);
 
     const auto view_projection = m_camera->m_projection * m_camera->m_view;

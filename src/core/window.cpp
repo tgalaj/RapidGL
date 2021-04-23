@@ -170,7 +170,5 @@ namespace RapidGL
         m_window_size.y = float(height);
 
         GUI::updateWindowSize(float(width), float(height));
-
-        
     }
 }

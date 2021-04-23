@@ -100,10 +100,7 @@ Demo presents generation of quad sprites from points data using Geometry Shader.
 ### Tessellation - 2D
 <img src="screenshots/14_ts_quad.png" width="50%" height="50%" alt="Tessellation - 2D" />
 
-### Tessellation - 3D
-3D surface
-
-### Tessellation - Level of Detail
+### Tessellation - 3D and Level of Detail
 Depth based tessellation
 
 ### Prebaked ambient occlusion

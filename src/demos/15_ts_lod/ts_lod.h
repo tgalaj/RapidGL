@@ -6,7 +6,6 @@
 #include "shader.h"
 
 #include <memory>
-#include <vector>
 
 struct BaseLight
 {
@@ -31,11 +30,11 @@ struct DirectionalLight : BaseLight
     }
 };
 
-class GSWireframe : public RapidGL::CoreApp
+class TessellationLoD : public RapidGL::CoreApp
 {
 public:
-    GSWireframe();
-    ~GSWireframe();
+    TessellationLoD();
+    ~TessellationLoD();
 
     void init_app()                override;
     void input()                   override;
@@ -45,19 +44,16 @@ public:
 
 private:
     std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
-
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
-    std::vector<glm::mat4> m_objects_model_matrices;
+    std::shared_ptr<RapidGL::Shader> m_quad_tessellation_shader;
+    std::shared_ptr<RapidGL::Model> m_model;
 
     DirectionalLight m_dir_light_properties;
 
+    glm::vec3 m_ambient_color;
     glm::vec3 m_specular_power;     /* specular powers for directional, point and spot lights respectively */
     glm::vec3 m_specular_intenstiy; /* specular intensities for directional, point and spot lights respectively */
     glm::vec2 m_dir_light_angles;   /* azimuth and elevation angles */
 
     glm::vec4 m_line_color;
     float m_line_width;
-
-    glm::vec3 m_ambient_color;
 };

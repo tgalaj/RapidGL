@@ -1,0 +1,51 @@
+/* This shader is executed once per control point in the output patch */
+
+#version 460 core
+/* Define the number of control points in the output patch */
+layout (vertices = 3) out;
+
+uniform vec3 cam_pos;
+
+in vec3 world_pos_TCS_in[];
+in vec3 world_normal_TCS_in[];
+in vec2 texcoord_TCS_in[];
+
+out vec3 world_pos_TES_in[];
+out vec3 world_normal_TES_in[];
+out vec2 texcoord_TES_in[];
+
+float get_tess_level(float distance0, float distance1)
+{
+    float avg_distance = (distance0 + distance1) / 2.0;
+
+    if (avg_distance <= 5.0) 
+    {
+        return 10.0;
+    }
+    else if (avg_distance <= 10.0) 
+    {
+        return 4.0;
+    }
+    else 
+    {
+        return 1.0;
+    }
+}
+
+void main()
+{
+	world_pos_TES_in[gl_InvocationID]    = world_pos_TCS_in[gl_InvocationID];
+	world_normal_TES_in[gl_InvocationID] = world_normal_TCS_in[gl_InvocationID];
+	texcoord_TES_in[gl_InvocationID]     = texcoord_TCS_in[gl_InvocationID];
+
+	// Calculate the distance from the camera to the three control points
+    float cam_to_vertex_dist0 = distance(cam_pos, world_pos_TES_in[0]);
+    float cam_to_vertex_dist1 = distance(cam_pos, world_pos_TES_in[1]);
+    float cam_to_vertex_dist2 = distance(cam_pos, world_pos_TES_in[2]);
+
+    // Calculate the tessellation levels
+    gl_TessLevelOuter[0] = get_tess_level(cam_to_vertex_dist1, cam_to_vertex_dist2);
+    gl_TessLevelOuter[1] = get_tess_level(cam_to_vertex_dist2, cam_to_vertex_dist0);
+    gl_TessLevelOuter[2] = get_tess_level(cam_to_vertex_dist0, cam_to_vertex_dist1);
+    gl_TessLevelInner[0] = gl_TessLevelOuter[2];
+}
