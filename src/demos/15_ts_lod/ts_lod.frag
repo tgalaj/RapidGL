@@ -5,19 +5,12 @@ layout(location = 0) out vec4 frag_color;
 in vec3 world_pos_FS_in;
 in vec3 world_normal_FS_in;
 in vec2 texcoord_FS_in;
-noperspective in vec3 edge_distance_FS_in;
 
 uniform vec3 cam_pos;
 uniform vec3 ambient;
 
 uniform float specular_intensity;
 uniform float specular_power;
-
-struct LineInfo
-{
-    float width;
-    vec4 color;
-};
 
 struct BaseLight
 {
@@ -52,17 +45,10 @@ vec4 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 world_pos)
 }
 
 uniform DirectionalLight directional_light;
-uniform LineInfo line_info;
 
 void main()
 {
-    vec4 color = calcDirectionalLight(directional_light, normalize(world_normal_FS_in), world_pos_FS_in);
+    vec4 radiance = calcDirectionalLight(directional_light, normalize(world_normal_FS_in), world_pos_FS_in);
 
-    // Find the smallest distance
-    float min_d = min(min(edge_distance_FS_in.x, edge_distance_FS_in.y), edge_distance_FS_in.z);
-
-    // Determine the mix factor with the line color
-    float mix_value = smoothstep(line_info.width - 1, line_info.width + 1, min_d);
-
-    frag_color = mix(line_info.color, color, mix_value);
+    frag_color = radiance;
 }

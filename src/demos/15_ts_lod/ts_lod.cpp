@@ -13,7 +13,8 @@ TessellationLoD::TessellationLoD()
       m_dir_light_angles  (40.0f, 18.0f),
       m_line_color        (glm::vec4(107, 205, 96, 255) / 255.0f),
       m_line_width        (0.5f),
-      m_ambient_color     (0.18f)
+      m_ambient_color     (0.18f),
+      m_tessellation_level(10)
 {
 }
 
@@ -51,7 +52,7 @@ void TessellationLoD::init_app()
 
     /* Create shader. */
     std::string dir  = "../src/demos/15_ts_lod/";
-    m_quad_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.geom", dir + "ts_lod.tcs", dir + "ts_lod.tes");
+    m_quad_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.tcs", dir + "ts_lod.tes");
     m_quad_tessellation_shader->link();
 }
 
@@ -113,12 +114,10 @@ void TessellationLoD::render()
     /* Draw curve */
     m_quad_tessellation_shader->bind();
     m_quad_tessellation_shader->setUniform("model",                            model);
-    m_quad_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(model));
+    m_quad_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(glm::transpose(glm::inverse(model))));
     m_quad_tessellation_shader->setUniform("cam_pos",                          m_camera->position());
     m_quad_tessellation_shader->setUniform("view_projection",                  view_projection);
-    m_quad_tessellation_shader->setUniform("viewport_matrix",                  RapidGL::Window::getViewportMatrix());
-    m_quad_tessellation_shader->setUniform("line_info.width",                  m_line_width);
-    m_quad_tessellation_shader->setUniform("line_info.color",                  m_line_color);
+    m_quad_tessellation_shader->setUniform("tessellation_level",               static_cast<float>(m_tessellation_level));
     m_quad_tessellation_shader->setUniform("directional_light.base.color",     m_dir_light_properties.color);
     m_quad_tessellation_shader->setUniform("directional_light.base.intensity", m_dir_light_properties.intensity);
     m_quad_tessellation_shader->setUniform("directional_light.direction",      m_dir_light_properties.direction);
@@ -161,8 +160,7 @@ void TessellationLoD::render_gui()
         ImGui::Spacing();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-        ImGui::ColorEdit4("Line color",  &m_line_color[0]);
-        ImGui::SliderFloat("Line width", &m_line_width, 0.0f, 10.0f, "%.1f");
+        ImGui::SliderInt("Tessellation level", &m_tessellation_level, 1, 64);
         ImGui::PopItemWidth();
         ImGui::Spacing();
 

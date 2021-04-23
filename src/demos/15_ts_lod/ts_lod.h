@@ -56,4 +56,5 @@ private:
 
     glm::vec4 m_line_color;
     float m_line_width;
+    int m_tessellation_level;
 };

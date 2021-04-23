@@ -13,6 +13,6 @@ out vec2 texcoord_TCS_in;
 void main()
 {
 	world_pos_TCS_in    = vec3(model * vec4(in_pos, 1.0));
-	world_normal_TCS_in = normal_matrix * in_normal;
+	world_normal_TCS_in = normalize(normal_matrix * in_normal);
 	texcoord_TCS_in     = in_texcoord.xy;
 }
