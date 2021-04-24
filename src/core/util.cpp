@@ -76,7 +76,12 @@ namespace RapidGL
 
     unsigned int Util::loadGLTexture2D(const char* path, const std::string & directory, bool gamma)
     {
-        std::string filename(directory + "/" + path);
+        std::string slash = "";
+        
+        if(!directory.empty())
+            directory[directory.size() - 1] == '/' ? "" : "/";
+
+        std::string filename(directory + slash + path);
 
         unsigned int texture_id;
         glGenTextures(1, &texture_id);

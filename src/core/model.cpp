@@ -133,7 +133,7 @@ namespace RapidGL
                 fullPath.Append(str.C_Str());
 
                 Texture texture;
-                texture.m_id   = Util::loadGLTexture2D(fullPath.C_Str(), "models/", m_gamma_correction);
+                texture.m_id   = Util::loadGLTexture2D(fullPath.C_Str(), "", m_gamma_correction);
                 texture.m_type = type_name;
                 texture.m_path = str.C_Str();
 

@@ -30,6 +30,7 @@ namespace RapidGL
 
     Mesh::Mesh()
     {
+        m_mesh_data = std::make_shared<MeshData>();
     }
 
     Mesh::~Mesh()
@@ -38,7 +39,6 @@ namespace RapidGL
 
     void Mesh::setBuffers(const VertexBuffers & buffers)
     {
-        m_mesh_data = std::make_shared<MeshData>();
         m_mesh_data->m_indices_count = buffers.m_indices.size();
 
         /* Set up buffer objects */

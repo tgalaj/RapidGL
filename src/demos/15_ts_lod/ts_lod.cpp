@@ -46,8 +46,7 @@ void TessellationLoD::init_app()
 
     /* Create object model */
     m_model = std::make_shared<RapidGL::Model>();
-    m_model->load(RapidGL::FileSystem::getPath("models/lowpolytree.fbx"));
-    //m_model->genSphere(2.0, 8);
+    m_model->genSphere(2.0, 8);
     m_model->setDrawMode(GL_PATCHES);
 
     /* Create shader. */
