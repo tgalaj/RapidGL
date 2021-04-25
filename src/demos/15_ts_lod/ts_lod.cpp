@@ -10,7 +10,7 @@
 TessellationLoD::TessellationLoD()
     : m_specular_power    (120.0f),
       m_specular_intenstiy(0.0f),
-      m_dir_light_angles  (40.0f, 18.0f),
+      m_dir_light_angles  (67.5f),
       m_line_color        (glm::vec4(107, 205, 96, 255) / 255.0f),
       m_line_width        (0.5f),
       m_ambient_color     (0.18f),
@@ -46,8 +46,10 @@ void TessellationLoD::init_app()
 
     /* Create object model */
     m_model = std::make_shared<RapidGL::Model>();
-    m_model->genSphere(2.0, 8);
+    m_model->load(RapidGL::FileSystem::getPath("models/suzanne.obj"));
     m_model->setDrawMode(GL_PATCHES);
+
+    m_world_matrix = glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.2));
 
     /* Create shader. */
     std::string dir  = "../src/demos/15_ts_lod/";
@@ -107,13 +109,12 @@ void TessellationLoD::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    auto model = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.2));
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* Draw curve */
     m_pn_tessellation_shader->bind();
-    m_pn_tessellation_shader->setUniform("model",                            model);
-    m_pn_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(glm::transpose(glm::inverse(model))));
+    m_pn_tessellation_shader->setUniform("model",                            m_world_matrix);
+    m_pn_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(glm::transpose(glm::inverse(m_world_matrix))));
     m_pn_tessellation_shader->setUniform("cam_pos",                          m_camera->position());
     m_pn_tessellation_shader->setUniform("view_projection",                  view_projection);
     m_pn_tessellation_shader->setUniform("tessellation_level",               static_cast<float>(m_tessellation_level));
