@@ -14,7 +14,11 @@ TessellationLoD::TessellationLoD()
       m_line_color        (glm::vec4(107, 205, 96, 255) / 255.0f),
       m_line_width        (0.5f),
       m_ambient_color     (0.18f),
-      m_tessellation_level(10)
+      m_min_tess_level    (1),
+      m_max_tess_level    (10),
+      m_min_depth         (2.0),
+      m_max_depth         (20.0)
+
 {
 }
 
@@ -38,6 +42,7 @@ void TessellationLoD::init_app()
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(0.0, 0.0, 10.5);
+    m_camera->setOrientation(-5.0f, 20.0f, 0.0f);
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
@@ -49,7 +54,10 @@ void TessellationLoD::init_app()
     m_model->load(RapidGL::FileSystem::getPath("models/suzanne.obj"));
     m_model->setDrawMode(GL_PATCHES);
 
-    m_world_matrix = glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.2));
+    for (int i = 0; i < 5; ++i)
+    {
+        m_world_matrices[i] = glm::translate(glm::mat4(1.0f), glm::vec3(i * 10, 0.0, -i * 10)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.2));
+    }
 
     /* Create shader. */
     std::string dir  = "../src/demos/15_ts_lod/";
@@ -113,11 +121,13 @@ void TessellationLoD::render()
 
     /* Draw curve */
     m_pn_tessellation_shader->bind();
-    m_pn_tessellation_shader->setUniform("model",                            m_world_matrix);
-    m_pn_tessellation_shader->setUniform("normal_matrix",                    glm::mat3(glm::transpose(glm::inverse(m_world_matrix))));
     m_pn_tessellation_shader->setUniform("cam_pos",                          m_camera->position());
     m_pn_tessellation_shader->setUniform("view_projection",                  view_projection);
-    m_pn_tessellation_shader->setUniform("tessellation_level",               static_cast<float>(m_tessellation_level));
+    m_pn_tessellation_shader->setUniform("min_tess_level",                   m_min_tess_level);
+    m_pn_tessellation_shader->setUniform("max_tess_level",                   m_max_tess_level);
+    m_pn_tessellation_shader->setUniform("min_depth",                        m_min_depth);
+    m_pn_tessellation_shader->setUniform("max_depth",                        m_max_depth);
+    m_pn_tessellation_shader->setUniform("view_matrix",                      m_camera->m_view);
     m_pn_tessellation_shader->setUniform("directional_light.base.color",     m_dir_light_properties.color);
     m_pn_tessellation_shader->setUniform("directional_light.base.intensity", m_dir_light_properties.intensity);
     m_pn_tessellation_shader->setUniform("directional_light.direction",      m_dir_light_properties.direction);
@@ -125,7 +135,12 @@ void TessellationLoD::render()
     m_pn_tessellation_shader->setUniform("specular_intensity",               m_specular_intenstiy.x);
     m_pn_tessellation_shader->setUniform("specular_power",                   m_specular_power.x);
 
-    m_model->render(m_pn_tessellation_shader, false);
+    for (auto& world_matrix : m_world_matrices)
+    {
+        m_pn_tessellation_shader->setUniform("model", world_matrix);
+        m_pn_tessellation_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(world_matrix))));
+        m_model->render(m_pn_tessellation_shader, false);
+    }
 }
 
 void TessellationLoD::render_gui()
@@ -160,7 +175,10 @@ void TessellationLoD::render_gui()
         ImGui::Spacing();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-        ImGui::SliderInt("Tessellation level", &m_tessellation_level, 1, 64);
+        ImGui::SliderInt  ("Min tessellation level", &m_min_tess_level, 1,    20);
+        ImGui::SliderInt  ("Max tessellation level", &m_max_tess_level, 1,    20);
+        ImGui::SliderFloat("Min depth",              &m_min_depth,      0.0f, 20.0f, "%.1f");
+        ImGui::SliderFloat("Max depth",              &m_max_depth,      0.0f, 20.0f, "%.1f");
         ImGui::PopItemWidth();
         ImGui::Spacing();
 

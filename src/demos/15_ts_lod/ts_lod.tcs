@@ -4,8 +4,11 @@
 /* Define the number of control points in the output patch */
 layout (vertices = 1) out;
 
-// uniform vec3 cam_pos;
-uniform float tessellation_level;
+uniform int min_tess_level;
+uniform int max_tess_level;
+uniform float max_depth;
+uniform float min_depth;
+uniform mat4 view_matrix;
 
 in vec3 world_pos_TCS_in[];
 in vec3 world_normal_TCS_in[];
@@ -30,22 +33,14 @@ struct OutputPatch
 // attributes of the output CPs
 out patch OutputPatch out_patch;
 
-float get_tess_level(float distance0, float distance1)
+float get_tess_level(vec3 view_space_position)
 {
-    float avg_distance = (distance0 + distance1) / 2.0;
+    float depth = clamp((abs(view_space_position.z) - min_depth) / (max_depth - min_depth), 0.0, 1.0);
+    
+    // The closer the point is to the camera, the better the mesh quality
+    float tess_level = mix(max_tess_level, min_tess_level, depth);
 
-    if (avg_distance <= 5.0) 
-    {
-        return 10.0;
-    }
-    else if (avg_distance <= 10.0) 
-    {
-        return 4.0;
-    }
-    else 
-    {
-        return 1.0;
-    }
+    return tess_level;
 }
 
 vec3 project_to_plane(vec3 Point, vec3 PlanePoint, vec3 PlaneNormal)
@@ -103,6 +98,9 @@ void main()
     calc_positions();
 
     // Calculate the tessellation levels
+    vec4  view_space_position = view_matrix * vec4(out_patch.world_pos_B111, 1.0);
+    float tessellation_level  = get_tess_level(vec3(view_space_position));
+
     gl_TessLevelOuter[0] = tessellation_level;
     gl_TessLevelOuter[1] = tessellation_level;
     gl_TessLevelOuter[2] = tessellation_level;

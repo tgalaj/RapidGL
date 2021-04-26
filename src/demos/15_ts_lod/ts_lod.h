@@ -46,7 +46,7 @@ private:
     std::shared_ptr<RapidGL::Camera> m_camera;
     std::shared_ptr<RapidGL::Shader> m_pn_tessellation_shader;
     std::shared_ptr<RapidGL::Model> m_model;
-    glm::mat4 m_world_matrix;
+    glm::mat4 m_world_matrices[5];
 
     DirectionalLight m_dir_light_properties;
 
@@ -56,6 +56,9 @@ private:
     glm::vec2 m_dir_light_angles;   /* azimuth and elevation angles */
 
     glm::vec4 m_line_color;
-    float m_line_width;
-    int m_tessellation_level;
+    float     m_line_width;
+    int       m_min_tess_level;
+    int       m_max_tess_level;
+    float     m_max_depth;
+    float     m_min_depth;
 };
