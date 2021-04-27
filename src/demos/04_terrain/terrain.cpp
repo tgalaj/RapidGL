@@ -78,7 +78,7 @@ void Terrain::init_app()
     m_objects[7]->genQuad();
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.3)));                            // teapot
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.5 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.08)));                           // teapot
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0, 1.0 + m_terrain_model->getHeightOfTerrain(-5.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5)));                                                                         // cone
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5, 1.0 + m_terrain_model->getHeightOfTerrain(-2.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)));                                                                         // cube
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, 1.0 + m_terrain_model->getHeightOfTerrain( 0.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5)));                                                                         // cylinder

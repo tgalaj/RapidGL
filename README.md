@@ -109,7 +109,7 @@ This demo implements Point-Normal tessellation algorithm (see *main.cpp* for ref
 <img src="screenshots/16_noise.png" width="50%" height="50%" alt="Procedural noise textures" />
 
 ### Surface animation with vertex displacement
-TODO
+<img src="screenshots/17_vertex_displacement.png" width="50%" height="50%" alt="Surface animation with vertex displacement" />
 
 ### Particle Fountain
 TODO: Transform Feedback, Instanced particles, Compute shader.
