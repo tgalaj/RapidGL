@@ -105,26 +105,23 @@ This demo implements Point-Normal tessellation algorithm (see *main.cpp* for ref
 
 <img src="screenshots/15_ts_lod.png" width="50%" height="50%" alt="PN Triangles Tessellation with Level of Detail" />
 
-### Prebaked ambient occlusion
-TODO
-
 ### Procedural noise textures
-TODO
+<img src="screenshots/16_noise.png" width="50%" height="50%" alt="Procedural noise textures" />
 
 ### Surface animation with vertex displacement
 TODO
 
 ### Particle Fountain
-TODO: Transform Feedback, Instanced particles.
+TODO: Transform Feedback, Instanced particles, Compute shader.
 
 ### Fire and Smoke
 TODO
 
-### Mesh skinning
-TODO: LBS, DQS.
-
 ### Shadow Mapping
 TODO: Shadow Mapping with PCF, random sampling.
+
+### Mesh skinning
+TODO: LBS, DQS.
 
 ### OIT
 TODO
