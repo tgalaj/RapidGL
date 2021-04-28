@@ -166,6 +166,11 @@ namespace RapidGL
         return m_is_linked;
     }
 
+    void Shader::setTransformFeedbackVaryings(const std::vector<const char*>& output_names, GLenum buffer_mode) const
+    {
+        glTransformFeedbackVaryings(m_program_id, output_names.size(), output_names.data(), buffer_mode);
+    }
+
     void Shader::bind() const
     {
         if (m_program_id != 0 && m_is_linked)

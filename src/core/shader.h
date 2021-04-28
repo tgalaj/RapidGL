@@ -49,6 +49,7 @@ namespace RapidGL
         ~Shader();
 
         bool link();
+        void setTransformFeedbackVaryings(const std::vector<const char*>& output_names, GLenum buffer_mode) const;
         void bind() const;
 
         void setUniform(const std::string & uniformName, float value);
