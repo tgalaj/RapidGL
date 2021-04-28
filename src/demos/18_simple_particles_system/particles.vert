@@ -6,9 +6,9 @@ layout (location = 1) in vec3  in_velocity;
 layout (location = 2) in float in_age;
 
 /* Output to transform feedback buffers - update pass only */
-/*layout( xfb_buffer = 0, xfb_offset=0 )*/ out vec3  tf_pos;
-/*layout( xfb_buffer = 1, xfb_offset=0 )*/ out vec3  tf_velocity;
-/*layout( xfb_buffer = 2, xfb_offset=0 )*/ out float tf_age;
+layout( xfb_buffer = 0, xfb_offset=0 ) out vec3  tf_pos;
+layout( xfb_buffer = 1, xfb_offset=0 ) out vec3  tf_velocity;
+layout( xfb_buffer = 2, xfb_offset=0 ) out float tf_age;
 
 /* Outputs to fragment shader */
 out float transparency_FS_in;
@@ -44,15 +44,15 @@ vec3 random_initial_velocity()
     return normalize(emitter_basis * v) * velocity;
 }
 
-subroutine void render_pass();
-layout(location = 0) subroutine uniform render_pass render_pass_func;
+subroutine void render_pass_type();
+layout(location = 0) subroutine uniform render_pass_type render_pass;
 
-layout(index = 0) subroutine(render_pass) void update()
+layout(index = 0) subroutine(render_pass_type) void update()
 {
     if (in_age < 0 || in_age > particle_lifetime)
     {
         /* Particle is past it's lifetime - recycle */
-        tf_pos = emitter_world_pos;
+        tf_pos      = emitter_world_pos;
         tf_velocity = random_initial_velocity();
     
         if (in_age < 0) 
@@ -63,13 +63,13 @@ layout(index = 0) subroutine(render_pass) void update()
     else
     {
         /* Particle is alive - update it */
-        tf_pos = in_pos + in_velocity * delta_t;
+        tf_pos      = in_pos + in_velocity * delta_t;
         tf_velocity = in_velocity + acceleration * delta_t;
-        tf_age = in_age + delta_t;
+        tf_age      = in_age + delta_t;
     }
 }
 
-layout(index = 1) subroutine(render_pass) void render()
+layout(index = 1) subroutine(render_pass_type) void render()
 {
     transparency_FS_in = 0.0;
     vec3 pos_view_space = vec3(0.0);
@@ -87,5 +87,5 @@ layout(index = 1) subroutine(render_pass) void render()
 
 void main()
 {
-	render_pass_func();
+	render_pass();
 }

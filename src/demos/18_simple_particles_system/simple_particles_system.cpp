@@ -9,19 +9,18 @@
 #include <glm/gtc/random.hpp>
 
 SimpleParticlesSystem::SimpleParticlesSystem()
-    : m_draw_buffer_idx(1),
-      m_emitter_pos(1, 0, 0),
-      m_emitter_dir(-1, 2, 0),
-      m_acceleration(0, -0.5, 0),
-      m_no_particles      (4000),
-      m_particle_lifetime (0.6f),
-      m_particle_size(2.05),
-      m_delta_time(0.0f),
+    : m_draw_buffer_idx   (1),
+      m_emitter_pos       (0.0,  0.0, 0.0),
+      m_emitter_dir       (0.0,  1.0, 0.0),
+      m_acceleration      (0.0, -0.5, 0.0),
+      m_no_particles      (10000),
+      m_particle_lifetime (10.6f),
+      m_particle_size     (0.05f),
+      m_delta_time        (0.0f),
       m_specular_power    (120.0f),
       m_specular_intenstiy(0.0f),
       m_dir_light_angles  (67.5f),
       m_ambient_color     (0.18f)
-
 {
 }
 
@@ -48,8 +47,8 @@ void SimpleParticlesSystem::init_app()
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(-3.0, 1.5, 10.0);
-    m_camera->setOrientation(5.0f, 20.0f, 0.0f);
+    m_camera->setPosition(0.0, 1.5, 5.0);
+    m_camera->setOrientation(5.0f, 0.0f, 0.0f);
 
     /* Initialize lights' properties */
     m_dir_light_properties.color = glm::vec3(1.0f);
@@ -59,10 +58,6 @@ void SimpleParticlesSystem::init_app()
     /* Create shader. */
     std::string dir = "../src/demos/18_simple_particles_system/";
     m_particles_shader = std::make_shared<RapidGL::Shader>(dir + "particles.vert", dir + "particles.frag");
-
-    const std::vector<const char*> tf_output_names = { "tf_pos", "tf_velocity", "tf_age" };
-    m_particles_shader->setTransformFeedbackVaryings(tf_output_names, GL_SEPARATE_ATTRIBS);
-
     m_particles_shader->link();
 
     /* Create and allocate all the buffers for the particle system */
@@ -72,19 +67,19 @@ void SimpleParticlesSystem::init_app()
 
     uint64_t size = m_no_particles * 3 * sizeof(GLfloat);
     glBindBuffer(GL_ARRAY_BUFFER, m_pos_vbo_ids[0]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, m_pos_vbo_ids[1]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_velocity_vbo_ids[0]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, m_velocity_vbo_ids[1]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
-    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(float), 0, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(float), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[1]);
-    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(float), 0, GL_DYNAMIC_COPY);
+    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(float), 0, GL_DYNAMIC_DRAW);
 
     /* Fill the first age buffer */
     std::vector<GLfloat> particle_ages(m_no_particles);
@@ -94,6 +89,7 @@ void SimpleParticlesSystem::init_app()
     {
         particle_ages[i] = rate * (i - m_no_particles);
     }
+
     glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
     glBufferSubData(GL_ARRAY_BUFFER, 0, m_no_particles * sizeof(float), particle_ages.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -220,32 +216,29 @@ void SimpleParticlesSystem::update(double delta_time)
 {
     /* Update variables here. */
     m_camera->update(delta_time);
-    m_delta_time += delta_time;
+    m_delta_time = delta_time;
 }
 
 void SimpleParticlesSystem::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    /* Update pass */
     m_particles_shader->bind();
-    m_particles_shader->setSubroutine(RapidGL::Shader::ShaderType::VERTEX, "update");
 
-    glBindTexture(GL_TEXTURE_1D, m_random_texture_1d);
+    glBindTextureUnit(0, m_particle_texture);
     glBindTextureUnit(1, m_random_texture_1d);
 
-    glBindTexture(GL_TEXTURE_2D, m_particle_texture);
-    glBindTextureUnit(0, m_particle_texture);
-
-    m_particles_shader->setUniform("delta_t", m_delta_time);
-    m_particles_shader->setUniform("acceleration", m_acceleration);
     m_particles_shader->setUniform("particle_lifetime", m_particle_lifetime);
     m_particles_shader->setUniform("emitter_world_pos", m_emitter_pos);
     m_particles_shader->setUniform("emitter_basis", make_arbitrary_basis(m_emitter_dir));
-    m_particles_shader->setUniform("model_view", m_camera->m_view * glm::mat4(1.0f));
+    m_particles_shader->setUniform("delta_t", m_delta_time);
+    m_particles_shader->setUniform("acceleration", m_acceleration);
+    m_particles_shader->setUniform("model_view", m_camera->m_view);
     m_particles_shader->setUniform("projection", m_camera->m_projection);
     m_particles_shader->setUniform("particle_size", m_particle_size);
-    m_particles_shader->setUniform("particle_lifetime", m_particle_lifetime);
+
+    /* Update pass */
+    m_particles_shader->setSubroutine(RapidGL::Shader::ShaderType::VERTEX, "update");
 
     glEnable(GL_RASTERIZER_DISCARD); // Turn off rasterization
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_tfo_ids[m_draw_buffer_idx]);
@@ -263,7 +256,7 @@ void SimpleParticlesSystem::render()
 
     /* Render pass */
     m_particles_shader->setSubroutine(RapidGL::Shader::ShaderType::VERTEX, "render");
-
+    
     glDepthMask(GL_FALSE);
     glBindVertexArray(m_vao_ids[m_draw_buffer_idx]);
     glVertexAttribDivisor(0, 1);
@@ -309,7 +302,7 @@ void SimpleParticlesSystem::render_gui()
         ImGui::Spacing();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-
+        // TODO: emitter paramters
         ImGui::PopItemWidth();
         ImGui::Spacing();
 

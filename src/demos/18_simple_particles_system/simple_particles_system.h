@@ -80,7 +80,7 @@ private:
 
     glm::vec3 m_emitter_pos, m_emitter_dir;
     glm::vec3 m_acceleration;
-    uint32_t m_no_particles;
+    int m_no_particles;
     float m_particle_lifetime;
     float m_particle_size;
     float m_delta_time;
