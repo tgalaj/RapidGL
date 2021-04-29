@@ -13,7 +13,7 @@ SimpleParticlesSystem::SimpleParticlesSystem()
       m_emitter_pos       (0.0,  0.0, 0.0),
       m_emitter_dir       (0.0,  1.0, 0.0),
       m_acceleration      (0.0, -0.5, 0.0),
-      m_no_particles      (10000),
+      m_no_particles      (8000),
       m_particle_lifetime (10.6f),
       m_particle_size     (0.05f),
       m_delta_time        (0.0f),
@@ -44,6 +44,17 @@ void SimpleParticlesSystem::init_app()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    GLint max_width;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_width);
+    max_width = max_width / 3;
+
+    if(m_no_particles > max_width)
+    {
+        m_no_particles = max_width;
+    }
+
+    std::cout << "TF no. particles: " << m_no_particles << std::endl;
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
@@ -302,7 +313,23 @@ void SimpleParticlesSystem::render_gui()
         ImGui::Spacing();
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-        // TODO: emitter paramters
+        {
+            static glm::vec2 emitter_dir_angles = { 0.0, 0.0 };
+            if (ImGui::SliderFloat2("Emitter azimuth and elevation", &emitter_dir_angles[0], -180.0, 180.0, "%.1f"))
+            {
+                float az = glm::radians(emitter_dir_angles.x);
+                float el = glm::radians(emitter_dir_angles.y);
+
+                m_emitter_dir.x = glm::sin(el) * glm::cos(az);
+                m_emitter_dir.y = glm::cos(el);
+                m_emitter_dir.z = glm::sin(el) * glm::sin(az);
+
+                m_emitter_dir = glm::normalize(m_emitter_dir);
+            }
+            ImGui::SliderFloat3("Particles acceleration", &m_acceleration[0],   -10,  10,    "%.1f");
+            ImGui::SliderFloat ("Particle lifetime",      &m_particle_lifetime, 0.1,  20.0f, "%.1f");
+            ImGui::SliderFloat ("Particle size",          &m_particle_size,     0.01, 10.0f, "%.1f");
+        }
         ImGui::PopItemWidth();
         ImGui::Spacing();
 
