@@ -326,9 +326,24 @@ void SimpleParticlesSystem::render_gui()
 
                 m_emitter_dir = glm::normalize(m_emitter_dir);
             }
-            ImGui::SliderFloat3("Particles acceleration", &m_acceleration[0],   -10,  10,    "%.1f");
-            ImGui::SliderFloat ("Particle lifetime",      &m_particle_lifetime, 0.1,  20.0f, "%.1f");
-            ImGui::SliderFloat ("Particle size",          &m_particle_size,     0.01, 10.0f, "%.1f");
+            ImGui::SliderFloat3("Particles acceleration", &m_acceleration[0],   -10.0f, 10.0f, "%.1f");
+            ImGui::SliderFloat ("Particle lifetime",      &m_particle_lifetime,  0.1f,  20.0f, "%.1f");
+            ImGui::SliderFloat ("Particle size",          &m_particle_size,      0.01f, 0.1f,  "%.2f");
+            if(ImGui::Button("Reset particles buffers"))
+            {
+                // TODO: separate function
+                std::vector<GLfloat> particle_ages(m_no_particles);
+                float rate = m_particle_lifetime / m_no_particles;
+
+                for (int i = 0; i < m_no_particles; ++i)
+                {
+                    particle_ages[i] = rate * (i - m_no_particles);
+                }
+
+                glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, m_no_particles * sizeof(float), particle_ages.data());
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+            }
         }
         ImGui::PopItemWidth();
         ImGui::Spacing();
