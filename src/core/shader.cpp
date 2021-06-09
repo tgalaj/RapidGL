@@ -4,7 +4,7 @@
 #include "shader.h"
 #include "util.h"
 
-namespace RapidGL
+namespace RGL
 {
     Shader::Shader()
         : m_program_id(0),

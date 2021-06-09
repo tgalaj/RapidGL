@@ -1,6 +1,6 @@
 #include "input.h"
 
-namespace RapidGL
+namespace RGL
 {
     GLFWwindow * Input::m_window = nullptr;
 

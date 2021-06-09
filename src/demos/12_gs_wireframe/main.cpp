@@ -2,7 +2,7 @@
 
 #include "gs_wireframe.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

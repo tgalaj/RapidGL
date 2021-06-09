@@ -38,27 +38,27 @@ void SimpleTriangle::init_app()
     glEnableVertexAttribArray(0);
 
     std::string dir = "../src/demos/01_simple_triangle/";
-    m_shader = std::make_shared<RapidGL::Shader>(dir + "simple_triangle.vert", dir + "simple_triangle.frag");
+    m_shader = std::make_shared<RGL::Shader>(dir + "simple_triangle.vert", dir + "simple_triangle.frag");
     m_shader->link();
 }
 
 void SimpleTriangle::input()
 {
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         std::string filename = "01_simple_triangle";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }

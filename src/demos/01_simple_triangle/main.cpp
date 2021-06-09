@@ -2,7 +2,7 @@
 
 #include "simple_triangle.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

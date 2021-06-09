@@ -3,7 +3,7 @@
 
 #include "template_project.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

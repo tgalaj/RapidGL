@@ -30,7 +30,7 @@ void Lighting::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Initialize lights' properties */
@@ -55,11 +55,11 @@ void Lighting::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 9; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/bunny.obj"));
+    m_objects[0]->load(RGL::FileSystem::getPath("models/bunny.obj"));
     m_objects[1]->genCone(1.0, 0.5);
     m_objects[2]->genCube();
     m_objects[3]->genCylinder(1.0, 0.5);
@@ -81,12 +81,12 @@ void Lighting::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, -1.0, -5)));                                                                         // ground plane
 
     /* Add textures to the objects. */
-    RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture2D("bricks.png", "textures", true);
+    RGL::Texture texture;
+    texture.m_id = RGL::Util::loadGLTexture2D("bricks.png", "textures", true);
     texture.m_type = "texture_diffuse";
 
-    RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
+    RGL::Texture default_diffuse_texture;
+    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[5]->getMesh(0).addTexture(texture);
@@ -101,29 +101,29 @@ void Lighting::init_app()
 
     /* Create shader. */
     std::string dir = "../src/demos/03_lighting/";
-    m_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
+    m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-directional.frag");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-directional.frag");
     m_directional_light_shader->link();
 
-    m_point_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-point.frag");
+    m_point_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-point.frag");
     m_point_light_shader->link();
 
-    m_spot_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-spot.frag");
+    m_spot_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-spot.frag");
     m_spot_light_shader->link();
 }
 
 void Lighting::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -140,18 +140,18 @@ void Lighting::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "03_lighting";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -281,7 +281,7 @@ void Lighting::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

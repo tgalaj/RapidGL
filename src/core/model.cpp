@@ -6,7 +6,7 @@
 #include "geom_primitive.h"
 #include "util.h"
 
-namespace RapidGL
+namespace RGL
 {
     Model::Model(bool enable_gamma_correction)
         : m_gamma_correction(enable_gamma_correction)

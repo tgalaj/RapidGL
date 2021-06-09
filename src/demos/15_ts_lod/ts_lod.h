@@ -30,7 +30,7 @@ struct DirectionalLight : BaseLight
     }
 };
 
-class TessellationLoD : public RapidGL::CoreApp
+class TessellationLoD : public RGL::CoreApp
 {
 public:
     TessellationLoD();
@@ -43,9 +43,9 @@ public:
     void render_gui()              override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_pn_tessellation_shader;
-    std::shared_ptr<RapidGL::Model> m_model;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_pn_tessellation_shader;
+    std::shared_ptr<RGL::Model> m_model;
     glm::mat4 m_world_matrices[5];
 
     DirectionalLight m_dir_light_properties;

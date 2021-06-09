@@ -7,7 +7,7 @@
 
 #include <memory>
 
-class Tessellation2D : public RapidGL::CoreApp
+class Tessellation2D : public RGL::CoreApp
 {
 public:
     Tessellation2D();
@@ -20,8 +20,8 @@ public:
     void render_gui()               override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_quad_tessellation_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_quad_tessellation_shader;
 
     GLuint m_no_quad_points;
     GLuint m_quad_points_vao_id;

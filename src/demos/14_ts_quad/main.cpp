@@ -2,7 +2,7 @@
 
 #include "ts_quad.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

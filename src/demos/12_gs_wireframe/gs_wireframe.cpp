@@ -29,7 +29,7 @@ void GSWireframe::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(-1, 1.0, 2.0);
     m_camera->setOrientation(0.0f, 35.0f, 0.0f);
 
@@ -39,30 +39,30 @@ void GSWireframe::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/armadillo.obj"));
+    m_objects[0]->load(RGL::FileSystem::getPath("models/armadillo.obj"));
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.02)));
 
     /* Create shader. */
     std::string dir = "../src/demos/12_gs_wireframe/";
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "gs_wireframe.vert", dir + "gs_wireframe.frag", dir + "gs_wireframe.geom");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "gs_wireframe.vert", dir + "gs_wireframe.frag", dir + "gs_wireframe.geom");
     m_directional_light_shader->link();
 }
 
 void GSWireframe::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -79,18 +79,18 @@ void GSWireframe::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "12_gs_wireframe";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -114,7 +114,7 @@ void GSWireframe::render()
     m_directional_light_shader->setUniform("ambient",                          m_ambient_color);
     m_directional_light_shader->setUniform("specular_intensity",               m_specular_intenstiy.x);
     m_directional_light_shader->setUniform("specular_power",                   m_specular_power.x);
-    m_directional_light_shader->setUniform("viewport_matrix",                  RapidGL::Window::getViewportMatrix());
+    m_directional_light_shader->setUniform("viewport_matrix",                  RGL::Window::getViewportMatrix());
     m_directional_light_shader->setUniform("line_info.width",                  m_line_width * 0.5f);
     m_directional_light_shader->setUniform("line_info.color",                  m_line_color);
 
@@ -141,7 +141,7 @@ void GSWireframe::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

@@ -3,7 +3,7 @@
 
 #include "toon_outline.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

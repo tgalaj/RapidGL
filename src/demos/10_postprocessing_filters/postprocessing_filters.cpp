@@ -28,7 +28,7 @@ void PostprocessingFilters::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(-6, 5.0, 10.0);
     m_camera->setOrientation(20.0f, 30.0f, 0.0f);
 
@@ -40,7 +40,7 @@ void PostprocessingFilters::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 5; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
@@ -60,12 +60,12 @@ void PostprocessingFilters::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, -1.0, -5))); // ground plane
 
     /* Add textures to the objects. */
-    RapidGL::Texture crate_texture;
-    crate_texture.m_id = RapidGL::Util::loadGLTexture2D("crate0_diffuse.png", "textures/crate", true);
+    RGL::Texture crate_texture;
+    crate_texture.m_id = RGL::Util::loadGLTexture2D("crate0_diffuse.png", "textures/crate", true);
     crate_texture.m_type = "texture_diffuse";
 
-    RapidGL::Texture ground_texture;
-    ground_texture.m_id = RapidGL::Util::loadGLTexture2D("ground.png", "textures", true);
+    RGL::Texture ground_texture;
+    ground_texture.m_id = RGL::Util::loadGLTexture2D("ground.png", "textures", true);
     ground_texture.m_type = "texture_diffuse";
 
     m_objects[0]->getMesh(0).addTexture(crate_texture);
@@ -77,26 +77,26 @@ void PostprocessingFilters::init_app()
     /* Create shader. */
     std::string dir  = "../src/demos/03_lighting/";
     std::string dir2 = "../src/demos/10_postprocessing_filters/";
-    m_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir2 + "lighting-ambient.frag");
+    m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir2 + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir2 + "lighting-directional.frag");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir2 + "lighting-directional.frag");
     m_directional_light_shader->link();
 
-    m_postprocess_filter = std::make_shared<PostprocessFilter>(RapidGL::Window::getWidth(), RapidGL::Window::getHeight());
+    m_postprocess_filter = std::make_shared<PostprocessFilter>(RGL::Window::getWidth(), RGL::Window::getHeight());
     m_current_ps_filter_name = m_ps_filter_names_list[0];
 }
 
 void PostprocessingFilters::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -113,18 +113,18 @@ void PostprocessingFilters::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "10_postprocessing_filters";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -204,7 +204,7 @@ void PostprocessingFilters::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

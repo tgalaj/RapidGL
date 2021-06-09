@@ -3,7 +3,7 @@
 #include <model.h>
 #include "util.h"
 
-class TerrainModel : public RapidGL::Model
+class TerrainModel : public RGL::Model
 {
 public:
     TerrainModel(const std::string & heightmap_filename, float size = 200.0f, float max_height = 100.0f);
@@ -13,8 +13,8 @@ public:
 
 protected:
     void genTerrainVertices(const std::string & heightmap_filename);
-    float getHeight(int x, int z, unsigned char* heightmap_data, RapidGL::ImageData & heightmap_metadata);
-    glm::vec3 calculateNormal(int x, int z, unsigned char* heightmap_data, RapidGL::ImageData& heightmap_metadata);
+    float getHeight(int x, int z, unsigned char* heightmap_data, RGL::ImageData & heightmap_metadata);
+    glm::vec3 calculateNormal(int x, int z, unsigned char* heightmap_data, RGL::ImageData& heightmap_metadata);
 
     float barycentricHeight(const glm::vec3 & p1, const glm::vec3 & p2, const glm::vec3 & p3, const glm::vec2 & p);
 

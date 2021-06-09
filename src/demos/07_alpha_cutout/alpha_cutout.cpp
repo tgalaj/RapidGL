@@ -32,7 +32,7 @@ void AlphaCutout::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 3.0);
 
     /* Initialize lights' properties */
@@ -41,13 +41,13 @@ void AlphaCutout::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/pine/snow_pine_tree.obj"));
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
+    m_objects[0]->load(RGL::FileSystem::getPath("models/pine/snow_pine_tree.obj"));
 
     constexpr auto kRadius    = 2.5f;
     constexpr float area_size = 15.0f;
 
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
     m_objects[1]->genPlane(area_size * 2.0 + kRadius, area_size * 2.0 + kRadius, area_size * 2.0, area_size * 2.0);
 
     m_ground_plane_model = glm::translate(glm::mat4(1.0), glm::vec3(0.0, -0.5, 0.0));
@@ -66,8 +66,8 @@ void AlphaCutout::init_app()
    
 
     /* Add textures to the objects. */
-    RapidGL::Texture pine_texture;
-    pine_texture.m_id = RapidGL::Util::loadGLTexture2D("diffuse_half.tga", "models/pine", true);
+    RGL::Texture pine_texture;
+    pine_texture.m_id = RGL::Util::loadGLTexture2D("diffuse_half.tga", "models/pine", true);
     pine_texture.m_type = "texture_diffuse";
 
     if (m_objects[0]->getMesh(0).getTexturesCount() == 0)
@@ -75,8 +75,8 @@ void AlphaCutout::init_app()
         m_objects[0]->getMesh(0).addTexture(pine_texture);
     }
 
-    RapidGL::Texture ground_texture;
-    ground_texture.m_id = RapidGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
+    RGL::Texture ground_texture;
+    ground_texture.m_id = RGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
     ground_texture.m_type = "texture_diffuse";
 
     m_objects[1]->getMesh(0).addTexture(ground_texture);
@@ -85,20 +85,20 @@ void AlphaCutout::init_app()
     std::string dir          = "../src/demos/07_alpha_cutout/";
     std::string dir_lighting = "../src/demos/03_lighting/";
 
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional_alpha_cutout.frag");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional_alpha_cutout.frag");
     m_directional_light_shader->link();
 }
 
 void AlphaCutout::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -115,18 +115,18 @@ void AlphaCutout::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "07_alpha_cutout";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -186,7 +186,7 @@ void AlphaCutout::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

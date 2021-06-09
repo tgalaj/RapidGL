@@ -57,11 +57,11 @@ float TerrainModel::getHeightOfTerrain(float world_x, float world_z, float terra
 
 void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
 {
-    RapidGL::VertexBuffers buffers;
-    RapidGL::ImageData heightmap_metadata;
+    RGL::VertexBuffers buffers;
+    RGL::ImageData heightmap_metadata;
 
     stbi_set_flip_vertically_on_load(1);
-    auto heightmap_image = RapidGL::Util::loadTextureData(heightmap_filename, heightmap_metadata, 1);
+    auto heightmap_image = RGL::Util::loadTextureData(heightmap_filename, heightmap_metadata, 1);
     stbi_set_flip_vertically_on_load(0);
 
     if (heightmap_image)
@@ -79,7 +79,7 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
         {
             for (unsigned int i = 0; i < vertex_count_width; ++i)
             {
-                RapidGL::VertexBuffers::Vertex v;
+                RGL::VertexBuffers::Vertex v;
                 m_heights[j][i] = getHeight(i, j, heightmap_image, heightmap_metadata);
 
                 v.m_position = glm::vec3(-float(i) / float(vertex_count_width - 1) * M_SIZE * aspect_ratio,
@@ -124,7 +124,7 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
     stbi_image_free(heightmap_image);
 }
 
-float TerrainModel::getHeight(int x, int z, unsigned char* heightmap_data, RapidGL::ImageData & heightmap_metadata)
+float TerrainModel::getHeight(int x, int z, unsigned char* heightmap_data, RGL::ImageData & heightmap_metadata)
 {
     x = std::clamp(x, 0, int(heightmap_metadata.width  - 1));
     z = std::clamp(z, 0, int(heightmap_metadata.height - 1));
@@ -138,7 +138,7 @@ float TerrainModel::getHeight(int x, int z, unsigned char* heightmap_data, Rapid
     return height;
 }
 
-glm::vec3 TerrainModel::calculateNormal(int x, int z, unsigned char* heightmap_data, RapidGL::ImageData& heightmap_metadata)
+glm::vec3 TerrainModel::calculateNormal(int x, int z, unsigned char* heightmap_data, RGL::ImageData& heightmap_metadata)
 {
     float height_left  = getHeight(x - 1, z,     heightmap_data, heightmap_metadata);
     float height_right = getHeight(x + 1, z,     heightmap_data, heightmap_metadata);

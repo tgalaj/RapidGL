@@ -11,7 +11,7 @@
 
 #include <memory>
 
-namespace RapidGL
+namespace RGL
 {
     class GUI
     {

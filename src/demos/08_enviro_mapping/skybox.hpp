@@ -41,6 +41,6 @@ private:
     GLuint m_vbo_id;
     GLuint m_cube_map_id;
 
-    std::shared_ptr<RapidGL::Shader>  m_skybox_shader;
+    std::shared_ptr<RGL::Shader>  m_skybox_shader;
 };
 

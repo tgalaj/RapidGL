@@ -3,7 +3,7 @@
 
 #include "terrain.hpp"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

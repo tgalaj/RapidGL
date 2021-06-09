@@ -40,7 +40,7 @@ void TessellationLoD::init_app()
     printf("Max patch vertices: %d\n", maxVerts);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(0.0, 0.0, 10.5);
     m_camera->setOrientation(-5.0f, 20.0f, 0.0f);
 
@@ -50,8 +50,8 @@ void TessellationLoD::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     /* Create object model */
-    m_model = std::make_shared<RapidGL::Model>();
-    m_model->load(RapidGL::FileSystem::getPath("models/suzanne.obj"));
+    m_model = std::make_shared<RGL::Model>();
+    m_model->load(RGL::FileSystem::getPath("models/suzanne.obj"));
     m_model->setDrawMode(GL_PATCHES);
 
     for (int i = 0; i < 5; ++i)
@@ -61,20 +61,20 @@ void TessellationLoD::init_app()
 
     /* Create shader. */
     std::string dir  = "../src/demos/15_ts_lod/";
-    m_pn_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.tcs", dir + "ts_lod.tes");
+    m_pn_tessellation_shader = std::make_shared<RGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.tcs", dir + "ts_lod.tes");
     m_pn_tessellation_shader->link();
 }
 
 void TessellationLoD::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -91,18 +91,18 @@ void TessellationLoD::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "15_ts_lod";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -154,7 +154,7 @@ void TessellationLoD::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

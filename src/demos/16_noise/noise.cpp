@@ -24,9 +24,9 @@ ProceduralNoise::~ProceduralNoise()
 {
 }
 
-RapidGL::Texture ProceduralNoise::gen_perlin_data(uint32_t width, uint32_t height, float base_frequency, float persistance, bool periodic)
+RGL::Texture ProceduralNoise::gen_perlin_data(uint32_t width, uint32_t height, float base_frequency, float persistance, bool periodic)
 {
-    RapidGL::Texture texture;
+    RGL::Texture texture;
     texture.m_type = "texture_diffuse";
 
     float* data = new float[width * height * 4];
@@ -95,17 +95,17 @@ void ProceduralNoise::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(0.0, 0.5, 3.0);
 
     /* Create models. */
     for (unsigned i = 0; i < 3; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[0]->load(RGL::FileSystem::getPath("models/teapot.obj"));
     m_objects[1]->genPlane(3, 3, 2, 2);
     m_objects[2]->genPlane(3, 3, 1, 1);
 
@@ -118,9 +118,9 @@ void ProceduralNoise::init_app()
     uint32_t perlin_tex_width  = 128;
     uint32_t perlin_tex_height = 128;
 
-    RapidGL::Texture cloud_texture      = gen_perlin_data(perlin_tex_width, perlin_tex_height, 3.0f);
-    RapidGL::Texture wood_grain_texture = gen_perlin_data(perlin_tex_width, perlin_tex_height, 4.0f);
-    RapidGL::Texture decal_texture      = gen_perlin_data(perlin_tex_width, perlin_tex_height, 12.0f);
+    RGL::Texture cloud_texture      = gen_perlin_data(perlin_tex_width, perlin_tex_height, 3.0f);
+    RGL::Texture wood_grain_texture = gen_perlin_data(perlin_tex_width, perlin_tex_height, 4.0f);
+    RGL::Texture decal_texture      = gen_perlin_data(perlin_tex_width, perlin_tex_height, 12.0f);
 
     m_objects[0]->getMesh(0).addTexture(decal_texture);
     m_objects[1]->getMesh(0).addTexture(cloud_texture);
@@ -128,20 +128,20 @@ void ProceduralNoise::init_app()
 
     /* Create shader. */
     std::string dir = "../src/demos/16_noise/";
-    m_noise_texturing_shader = std::make_shared<RapidGL::Shader>(dir + "simple.vert", dir + "noise.frag");
+    m_noise_texturing_shader = std::make_shared<RGL::Shader>(dir + "simple.vert", dir + "noise.frag");
     m_noise_texturing_shader->link();
 }
 
 void ProceduralNoise::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -158,18 +158,18 @@ void ProceduralNoise::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "16_noise";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -190,21 +190,21 @@ void ProceduralNoise::render()
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     // Decal
-    m_noise_texturing_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "disintegration");
+    m_noise_texturing_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "disintegration");
     m_noise_texturing_shader->setUniform("low_threshold", m_low_threshold);
     m_noise_texturing_shader->setUniform("high_threshold", m_high_threshold);
     m_noise_texturing_shader->setUniform("mvp", view_projection * m_objects_model_matrices[0]);
     m_objects[0]->render(m_noise_texturing_shader);
 
     // Cloud
-    m_noise_texturing_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "cloud");
+    m_noise_texturing_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "cloud");
     m_noise_texturing_shader->setUniform("sky_color", m_sky_color);
     m_noise_texturing_shader->setUniform("cloud_color", m_cloud_color);
     m_noise_texturing_shader->setUniform("mvp", view_projection * m_objects_model_matrices[1]);
     m_objects[1]->render(m_noise_texturing_shader);
 
     // Wood grain
-    m_noise_texturing_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "wood_grain");
+    m_noise_texturing_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "wood_grain");
     m_noise_texturing_shader->setUniform("dark_wood_color", m_dark_wood_color);
     m_noise_texturing_shader->setUniform("light_wood_color", m_light_wood_color);
     m_noise_texturing_shader->setUniform("slice_matrix", m_slice_matrix);
@@ -223,7 +223,7 @@ void ProceduralNoise::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

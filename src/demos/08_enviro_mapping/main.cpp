@@ -3,7 +3,7 @@
 
 #include "enviro_mapping.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

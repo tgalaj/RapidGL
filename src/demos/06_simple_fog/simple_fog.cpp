@@ -36,7 +36,7 @@ void SimpleFog::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 3.0);
 
     /* Initialize lights' properties */
@@ -45,7 +45,7 @@ void SimpleFog::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
     m_objects[0]->genPQTorusKnot(256, 16, 2, 3, 0.75, 0.15);
 
     /* Set model matrices for each model. */
@@ -61,8 +61,8 @@ void SimpleFog::init_app()
     }
 
     /* Add textures to the objects. */
-    RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
+    RGL::Texture default_diffuse_texture;
+    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     for (auto& model : m_objects)
@@ -77,20 +77,20 @@ void SimpleFog::init_app()
     std::string dir          = "../src/demos/06_simple_fog/";
     std::string dir_lighting = "../src/demos/03_lighting/";
 
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional_w_fog.frag");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional_w_fog.frag");
     m_directional_light_shader->link();
 }
 
 void SimpleFog::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -107,18 +107,18 @@ void SimpleFog::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "06_simple_fog";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -151,7 +151,7 @@ void SimpleFog::render()
 
     m_directional_light_shader->setUniform("fog_color",        m_fog_color);
 
-    m_directional_light_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, m_fog_equation_names[int(m_fog_equation)]);
+    m_directional_light_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, m_fog_equation_names[int(m_fog_equation)]);
 
     if (m_fog_equation == FogEquation::LINEAR)
     {
@@ -191,7 +191,7 @@ void SimpleFog::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

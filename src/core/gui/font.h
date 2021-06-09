@@ -2,7 +2,7 @@
 #include <imgui.h>
 #include <string>
 
-namespace RapidGL
+namespace RGL
 {
     class Font
     {

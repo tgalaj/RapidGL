@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-class Simple3d : public RapidGL::CoreApp
+class Simple3d : public RGL::CoreApp
 {
 public:
     Simple3d();
@@ -21,10 +21,10 @@ public:
     void render_gui()               override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_simple_texturing_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_simple_texturing_shader;
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
     std::vector<glm::vec3> m_objects_colors;
 

@@ -2,7 +2,7 @@
 
 #include "model.h"
 
-namespace RapidGL
+namespace RGL
 {
     class GeomPrimitive
     {

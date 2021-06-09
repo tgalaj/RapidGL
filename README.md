@@ -111,10 +111,15 @@ This demo implements Point-Normal tessellation algorithm (see *main.cpp* for ref
 ### Surface animation with vertex displacement
 <img src="screenshots/17_vertex_displacement.png" width="50%" height="50%" alt="Surface animation with vertex displacement" />
 
-### Simple Particles System
-TODO: Transform Feedback, Instanced particles, Compute shader.
+### Simple particle system using Transform Feedback
+Available presets: fountain, fire and smoke.
 
-### Fire and Smoke
+<img src="screenshots/18_simple_particles_system.png" width="50%" height="50%" alt="Simple particle system using Transform Feedback" />
+
+### Particle system using instanced meshes
+TODO
+
+### Particle system with the Compute Shader
 TODO
 
 ### Shadow Mapping

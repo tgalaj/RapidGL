@@ -34,7 +34,7 @@ void Terrain::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 1000.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 1000.0);
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Create terrain */
@@ -64,11 +64,11 @@ void Terrain::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 8; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[0]->load(RGL::FileSystem::getPath("models/teapot.obj"));
     m_objects[1]->genCone(1.0, 0.5);
     m_objects[2]->genCube();
     m_objects[3]->genCylinder(1.0, 0.5);
@@ -88,12 +88,12 @@ void Terrain::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0, 1.0 + m_terrain_model->getHeightOfTerrain(10.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
 
     /* Add textures to the objects. */
-    RapidGL::Texture texture;
-    texture.m_id = RapidGL::Util::loadGLTexture2D("bricks.png", "textures", true);
+    RGL::Texture texture;
+    texture.m_id = RGL::Util::loadGLTexture2D("bricks.png", "textures", true);
     texture.m_type = "texture_diffuse";
 
-    RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
+    RGL::Texture default_diffuse_texture;
+    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[5]->getMesh(0).addTexture(texture);
@@ -112,8 +112,8 @@ void Terrain::init_app()
 
     for (auto& tf : m_terrain_textures_filenames)
     {
-        RapidGL::Texture texture;
-        texture.m_id   = RapidGL::Util::loadGLTexture2D(tf.c_str(), "textures", tf != "blendmap.png" ? true : false);
+        RGL::Texture texture;
+        texture.m_id   = RGL::Util::loadGLTexture2D(tf.c_str(), "textures", tf != "blendmap.png" ? true : false);
         texture.m_type = "texture_diffuse";
 
         m_terrain_model->getMesh(0).addTexture(texture);
@@ -121,43 +121,43 @@ void Terrain::init_app()
 
     /* Create the shaders... */
     std::string dir = "../src/demos/03_lighting/";
-    m_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
+    m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-directional.frag");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-directional.frag");
     m_directional_light_shader->link();
 
-    m_point_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-point.frag");
+    m_point_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-point.frag");
     m_point_light_shader->link();
 
-    m_spot_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir + "lighting-spot.frag");
+    m_spot_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-spot.frag");
     m_spot_light_shader->link();
 
     /* ... and the terrain specific shaders */
     std::string dir_terrain = "../src/demos/04_terrain/";
-    m_terrain_ambient_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-ambient-terrain.frag");
+    m_terrain_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-ambient-terrain.frag");
     m_terrain_ambient_light_shader->link();
 
-    m_terrain_directional_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-directional-terrain.frag");
+    m_terrain_directional_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-directional-terrain.frag");
     m_terrain_directional_light_shader->link();
 
-    m_terrain_point_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-point-terrain.frag");
+    m_terrain_point_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-point-terrain.frag");
     m_terrain_point_light_shader->link();
 
-    m_terrain_spot_light_shader = std::make_shared<RapidGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-spot-terrain.frag");
+    m_terrain_spot_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-spot-terrain.frag");
     m_terrain_spot_light_shader->link();
 }
 
 void Terrain::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -174,23 +174,23 @@ void Terrain::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "04_terrain";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::T))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::T))
     {
         m_snap_camera_to_ground = !m_snap_camera_to_ground;
     }
@@ -424,7 +424,7 @@ void Terrain::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
@@ -498,8 +498,8 @@ void Terrain::render_gui()
 
                         for (auto& tf : m_terrain_textures_filenames)
                         {
-                            RapidGL::Texture texture;
-                            texture.m_id   = RapidGL::Util::loadGLTexture2D(tf.c_str(), "textures", false);
+                            RGL::Texture texture;
+                            texture.m_id   = RGL::Util::loadGLTexture2D(tf.c_str(), "textures", false);
                             texture.m_type = "texture_diffuse";
 
                             m_terrain_model->getMesh(0).addTexture(texture);

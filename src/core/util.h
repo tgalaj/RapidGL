@@ -5,7 +5,7 @@
 #include <stb_image.h>
 #include <glad/glad.h>
 
-namespace RapidGL
+namespace RGL
 {
     struct ImageData
     {

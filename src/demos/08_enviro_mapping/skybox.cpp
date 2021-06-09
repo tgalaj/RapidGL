@@ -21,12 +21,12 @@ Skybox::Skybox(const std::string& skybox_directory,
         skybox_directory + "/" + back_face
     };
     
-    m_cube_map_id = RapidGL::Util::loadGLTextureCube(filenames, "textures/skyboxes", 1, false);
+    m_cube_map_id = RGL::Util::loadGLTextureCube(filenames, "textures/skyboxes", 1, false);
 
     /* Create skybox shader object */
     std::string dir = "../src/demos/08_enviro_mapping/";
 
-    m_skybox_shader = std::make_shared<RapidGL::Shader>(dir + "skybox.vert", dir + "skybox.frag");
+    m_skybox_shader = std::make_shared<RGL::Shader>(dir + "skybox.vert", dir + "skybox.frag");
     m_skybox_shader->link();
 
     /* Create buffer objects */

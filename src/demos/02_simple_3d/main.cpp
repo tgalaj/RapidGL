@@ -3,7 +3,7 @@
 
 #include "simple_3d.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

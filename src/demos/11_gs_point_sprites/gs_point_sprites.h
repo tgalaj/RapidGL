@@ -7,7 +7,7 @@
 
 #include <memory>
 
-class GSPointSprites : public RapidGL::CoreApp
+class GSPointSprites : public RGL::CoreApp
 {
 public:
     GSPointSprites();
@@ -20,9 +20,9 @@ public:
     void render_gui()               override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_point_sprites_shader;
-    std::shared_ptr<RapidGL::Texture> m_sprite_tex;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_point_sprites_shader;
+    std::shared_ptr<RGL::Texture> m_sprite_tex;
 
     float m_half_quad_width;
     uint32_t m_no_sprites;

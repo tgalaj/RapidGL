@@ -51,7 +51,7 @@ struct Projector
     glm::mat4 m_view_matrix;
     glm::mat4 m_projection_matrix;
     glm::mat4 m_bias_matrix;
-    RapidGL::Texture m_texture;
+    RGL::Texture m_texture;
 
     glm::mat4 transform() const
     {
@@ -59,7 +59,7 @@ struct Projector
     }
 };
 
-class ProjectedTexture : public RapidGL::CoreApp
+class ProjectedTexture : public RGL::CoreApp
 {
 public:
     ProjectedTexture();
@@ -72,11 +72,11 @@ public:
     void render_gui()               override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_ambient_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_spot_light_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_ambient_light_shader;
+    std::shared_ptr<RGL::Shader> m_spot_light_shader;
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
     SpotLight m_spot_light_properties;

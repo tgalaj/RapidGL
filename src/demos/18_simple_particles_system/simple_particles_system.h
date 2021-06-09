@@ -4,33 +4,12 @@
 #include "camera.h"
 #include "model.h"
 #include "shader.h"
+#include "gui/gui.h"
 
 #include <memory>
+#include <imfilebrowser.h>
 
-struct BaseLight
-{
-    glm::vec3 color;
-    float intensity;
-};
-
-struct DirectionalLight : BaseLight
-{
-    glm::vec3 direction;
-
-    void setDirection(float azimuth, float elevation)
-    {
-        float az = glm::radians(azimuth);
-        float el = glm::radians(elevation);
-
-        direction.x = glm::sin(el) * glm::cos(az);
-        direction.y = glm::cos(el);
-        direction.z = glm::sin(el) * glm::sin(az);
-
-        direction = glm::normalize(-direction);
-    }
-};
-
-class SimpleParticlesSystem : public RapidGL::CoreApp
+class SimpleParticlesSystem : public RGL::CoreApp
 {
 public:
     SimpleParticlesSystem();
@@ -65,10 +44,11 @@ private:
         return basis;
     }
 
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_particles_shader;
+    void reset_particles_buffers();
 
-    DirectionalLight m_dir_light_properties;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_simple_shader, m_particles_shader;
+    std::shared_ptr<RGL::Model> m_grid_model;
 
     GLuint m_tfo_ids[2]; // Transform Feedback Objects
     GLuint m_pos_vbo_ids[2];
@@ -82,12 +62,21 @@ private:
     glm::vec3 m_acceleration;
     int m_no_particles;
     float m_particle_lifetime;
-    float m_particle_size;
+    glm::vec2 m_particle_size_min_max;
+    float m_particle_angle;
     float m_delta_time;
     GLuint m_particle_texture;
+    bool m_should_fade_out_with_time;
+    glm::vec2 m_start_position_min_max;
+    glm::vec2 m_start_velocity_min_max;
+    glm::vec3 m_direction_constraints;
+    float m_cone_angle;
 
     glm::vec3 m_ambient_color;
     glm::vec3 m_specular_power;     /* specular powers for directional, point and spot lights respectively */
     glm::vec3 m_specular_intenstiy; /* specular intensities for directional, point and spot lights respectively */
     glm::vec2 m_dir_light_angles;   /* azimuth and elevation angles */
+
+    ImGui::FileBrowser m_file_dialog;
+    std::string m_current_texture_filename;
 };

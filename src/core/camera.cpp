@@ -1,7 +1,7 @@
 #include "camera.h"
 #include "window.h"
 
-namespace RapidGL
+namespace RGL
 {
     void Camera::update(double dt)
     {

@@ -39,7 +39,7 @@ void EnvironmentMapping::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(0.0, 5.0, 9.0);
     m_camera->setOrientation(glm::vec3(0.0, 3.0, -9.0));
 
@@ -49,18 +49,18 @@ void EnvironmentMapping::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/xyzrgb_dragon.obj"));
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
+    m_objects[0]->load(RGL::FileSystem::getPath("models/xyzrgb_dragon.obj"));
     m_xyzrgb_dragon = m_objects[0];
 
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
-    m_objects[1]->load(RapidGL::FileSystem::getPath("models/lucy.obj"));
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
+    m_objects[1]->load(RGL::FileSystem::getPath("models/lucy.obj"));
     m_lucy = m_objects[1];
 
     constexpr auto kRadius    = 2.5f; 
     constexpr float area_size = 15.0f;
 
-    m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+    m_objects.emplace_back(std::make_shared<RGL::Model>());
     m_objects[2]->genPlane(area_size * 2.0 + kRadius, area_size * 2.0 + kRadius, area_size * 2.0, area_size * 2.0);
     m_ground_plane = m_objects[2];
 
@@ -82,8 +82,8 @@ void EnvironmentMapping::init_app()
     m_color_tints.emplace_back(glm::vec3(1.0));
 
     /* Add textures to the objects. */
-    RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
+    RGL::Texture default_diffuse_texture;
+    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     if (m_xyzrgb_dragon->getMesh(0).getTexturesCount() == 0)
@@ -96,8 +96,8 @@ void EnvironmentMapping::init_app()
         m_lucy->getMesh(0).addTexture(default_diffuse_texture);
     }
 
-    RapidGL::Texture ground_texture;
-    ground_texture.m_id = RapidGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
+    RGL::Texture ground_texture;
+    ground_texture.m_id = RGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
     ground_texture.m_type = "texture_diffuse";
 
     m_ground_plane->getMesh(0).addTexture(ground_texture);
@@ -108,8 +108,8 @@ void EnvironmentMapping::init_app()
 
     for (int i = 0; i < no_spheres; ++i)
     {
-        float rand_radius = RapidGL::Util::randomDouble(0.1, max_sphere_radius);
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        float rand_radius = RGL::Util::randomDouble(0.1, max_sphere_radius);
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
         m_objects[3 + i]->genSphere(rand_radius, 20);
         m_objects[3 + i]->getMesh(0).addTexture(default_diffuse_texture);
 
@@ -123,7 +123,7 @@ void EnvironmentMapping::init_app()
         glm::vec3 random_color = glm::linearRand(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 1.0, 1.0));
 
         m_spheres_positions.emplace_back(random_position);
-        m_random_spheres_rotation_speeds.emplace_back(RapidGL::Util::randomDouble(0.1, 0.7));
+        m_random_spheres_rotation_speeds.emplace_back(RGL::Util::randomDouble(0.1, 0.7));
 
         m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), random_position));
         m_color_tints.emplace_back(random_color);
@@ -133,10 +133,10 @@ void EnvironmentMapping::init_app()
     std::string dir          = "../src/demos/08_enviro_mapping/";
     std::string dir_lighting = "../src/demos/03_lighting/";
 
-    m_directional_light_shader = std::make_shared<RapidGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional.frag");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional.frag");
     m_directional_light_shader->link();
 
-    m_enviro_mapping_shader = std::make_shared<RapidGL::Shader>(dir + "enviro_mapping.vert", dir + "enviro_mapping.frag");
+    m_enviro_mapping_shader = std::make_shared<RGL::Shader>(dir + "enviro_mapping.vert", dir + "enviro_mapping.frag");
     m_enviro_mapping_shader->link();
 
     /* Create skybox. */
@@ -160,13 +160,13 @@ void EnvironmentMapping::init_app()
 void EnvironmentMapping::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -183,18 +183,18 @@ void EnvironmentMapping::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "08_enviro_mapping";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -231,7 +231,7 @@ void EnvironmentMapping::render()
     }
 
     /* Second pass: render scene normally */
-    glViewport(0, 0, RapidGL::Window::getWidth(), RapidGL::Window::getHeight());
+    glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     render_objects(m_camera->m_view, m_camera->m_projection, m_camera->position());
@@ -275,7 +275,7 @@ void EnvironmentMapping::render_objects(const glm::mat4& camera_view, const glm:
     {
         if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[0].bindTexture();
 
-        m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "reflection");
+        m_enviro_mapping_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "reflection");
         m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[0]);
         m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[0]))));
         m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[0]);
@@ -287,7 +287,7 @@ void EnvironmentMapping::render_objects(const glm::mat4& camera_view, const glm:
     {
         if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[1].bindTexture();
 
-        m_enviro_mapping_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, "refraction");
+        m_enviro_mapping_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "refraction");
         m_enviro_mapping_shader->setUniform("ior", m_ior);
         m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[1]);
         m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[1]))));
@@ -310,7 +310,7 @@ void EnvironmentMapping::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

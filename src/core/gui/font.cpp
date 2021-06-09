@@ -1,7 +1,7 @@
 ﻿#include "font.h"
 #include "filesystem.h"
 
-namespace RapidGL
+namespace RGL
 {
     Font::Font()
     {

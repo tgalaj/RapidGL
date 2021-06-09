@@ -47,15 +47,15 @@ void Tessellation1D::init_app()
 
     /* Create virtual camera. */
     const float c = 3.5f;
-    m_camera = std::make_shared<RapidGL::Camera>(-0.5f * c, 0.5f * c, -0.3f * c, 0.45f * c, 0.1f, 100.0f);
+    m_camera = std::make_shared<RGL::Camera>(-0.5f * c, 0.5f * c, -0.3f * c, 0.45f * c, 0.1f, 100.0f);
     m_camera->setPosition(0.0, 0.0, 1.5);
 
     /* Create shader. */
     std::string dir  = "../src/demos/13_ts_curve/";
-    m_curve_tessellation_shader = std::make_shared<RapidGL::Shader>(dir + "ts_curve.vert", dir + "ts_curve.frag", dir + "ts_curve.tcs", dir + "ts_curve.tes");
+    m_curve_tessellation_shader = std::make_shared<RGL::Shader>(dir + "ts_curve.vert", dir + "ts_curve.frag", dir + "ts_curve.tcs", dir + "ts_curve.tes");
     m_curve_tessellation_shader->link();
 
-    m_solid_points_color_shader = std::make_shared<RapidGL::Shader>(dir + "solid.vert", dir + "solid.frag");
+    m_solid_points_color_shader = std::make_shared<RGL::Shader>(dir + "solid.vert", dir + "solid.frag");
     m_solid_points_color_shader->link();
 
     /* Create VAO and VBO for curve points in 2D - NDC */
@@ -81,13 +81,13 @@ void Tessellation1D::init_app()
 void Tessellation1D::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -104,18 +104,18 @@ void Tessellation1D::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "13_ts_curve";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -160,7 +160,7 @@ void Tessellation1D::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

@@ -3,36 +3,41 @@
 #include "filesystem.h"
 #include "input.h"
 #include "util.h"
-#include "gui/gui.h"
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/random.hpp>
 
 SimpleParticlesSystem::SimpleParticlesSystem()
-    : m_draw_buffer_idx   (1),
-      m_emitter_pos       (0.0,  0.0, 0.0),
-      m_emitter_dir       (0.0,  1.0, 0.0),
-      m_acceleration      (0.0, -0.5, 0.0),
-      m_no_particles      (8000),
-      m_particle_lifetime (10.6f),
-      m_particle_size     (0.05f),
-      m_delta_time        (0.0f),
-      m_specular_power    (120.0f),
-      m_specular_intenstiy(0.0f),
-      m_dir_light_angles  (67.5f),
-      m_ambient_color     (0.18f)
+    : m_draw_buffer_idx           (1),
+      m_emitter_pos               (0.0,  0.0, 0.0),
+      m_emitter_dir               (0.0,  1.0, 0.0),
+      m_acceleration              (0.0, -0.5, 0.0),
+      m_no_particles              (8000),
+      m_particle_lifetime         (10.0f),
+      m_particle_size_min_max     (0.05f),
+      m_particle_angle            (glm::half_pi<float>()),
+      m_delta_time                (0.0f),
+      m_specular_power            (120.0f),
+      m_specular_intenstiy        (0.0f),
+      m_dir_light_angles          (67.5f),
+      m_ambient_color             (0.18f),
+      m_should_fade_out_with_time (false),
+      m_start_position_min_max    (0.0f),
+      m_start_velocity_min_max    (1.25, 1.5),
+      m_direction_constraints     (1, 1, 1),
+      m_cone_angle                (glm::degrees(glm::pi<float>() / 8.0f))
 {
 }
 
 SimpleParticlesSystem::~SimpleParticlesSystem()
 {
-    glDeleteBuffers(2, m_pos_vbo_ids);
-    glDeleteBuffers(2, m_velocity_vbo_ids);
-    glDeleteBuffers(2, m_age_vbo_ids);
-    glDeleteVertexArrays(2, m_vao_ids);
+    glDeleteBuffers           (2, m_pos_vbo_ids);
+    glDeleteBuffers           (2, m_velocity_vbo_ids);
+    glDeleteBuffers           (2, m_age_vbo_ids);
+    glDeleteVertexArrays      (2, m_vao_ids);
     glDeleteTransformFeedbacks(2, m_tfo_ids);
-    glDeleteTextures(1, &m_random_texture_1d);
-    glDeleteTextures(1, &m_particle_texture);
+    glDeleteTextures          (1, &m_random_texture_1d);
+    glDeleteTextures          (1, &m_particle_texture);
 }
 
 void SimpleParticlesSystem::init_app()
@@ -56,19 +61,29 @@ void SimpleParticlesSystem::init_app()
 
     std::cout << "TF no. particles: " << m_no_particles << std::endl;
 
-    /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(0.0, 1.5, 5.0);
-    m_camera->setOrientation(5.0f, 0.0f, 0.0f);
+    /* Set file browser properties */
+    m_file_dialog.SetTitle("Load texture");
+    m_file_dialog.SetTypeFilters({ ".png" });
+    m_file_dialog.SetPwd(RGL::FileSystem::getPath("textures/particles"));
 
-    /* Initialize lights' properties */
-    m_dir_light_properties.color = glm::vec3(1.0f);
-    m_dir_light_properties.intensity = 0.8f;
-    m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+    /* Create virtual camera. */
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera->setPosition(4.0, 1.5, -4.0);
+    m_camera->setOrientation(5.0f, 225.0f, 0.0f);
+    m_camera->update(0.0);
+
+    /* Create objects */
+    m_grid_model = std::make_shared<RGL::Model>();
+    m_grid_model->genPlane(20, 20, 20, 20);
+    m_grid_model->setDrawMode(GL_LINES);
 
     /* Create shader. */
-    std::string dir = "../src/demos/18_simple_particles_system/";
-    m_particles_shader = std::make_shared<RapidGL::Shader>(dir + "particles.vert", dir + "particles.frag");
+    std::string dir = "../src/demos/02_simple_3d/";
+    m_simple_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
+    m_simple_shader->link();
+
+    dir = "../src/demos/18_simple_particles_system/";
+    m_particles_shader = std::make_shared<RGL::Shader>(dir + "particles.vert", dir + "particles.frag");
     m_particles_shader->link();
 
     /* Create and allocate all the buffers for the particle system */
@@ -88,21 +103,24 @@ void SimpleParticlesSystem::init_app()
     glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
-    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(float), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[1]);
-    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(float), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, m_no_particles * sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
 
     /* Fill the first age buffer */
-    std::vector<GLfloat> particle_ages(m_no_particles);
+    std::vector<GLfloat> initial_particle_ages(m_no_particles);
     float rate = m_particle_lifetime / m_no_particles;
 
     for (int i = 0; i < m_no_particles; ++i)
     {
-        particle_ages[i] = rate * (i - m_no_particles);
+        initial_particle_ages[i] = rate * (i - m_no_particles);
     }
 
+    auto rng = std::default_random_engine{};
+    std::shuffle(initial_particle_ages.begin(), initial_particle_ages.end(), rng);
+
     glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, m_no_particles * sizeof(float), particle_ages.data());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, m_no_particles * sizeof(float), initial_particle_ages.data());
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     /* Create VAOs for each set of buffers */
@@ -163,7 +181,7 @@ void SimpleParticlesSystem::init_app()
 
     for(int i = 0; i < rand_velocities.size(); ++i)
     {
-        rand_velocities[i] = RapidGL::Util::randomDouble(0.0, 1.0);
+        rand_velocities[i] = RGL::Util::randomDouble(0.0, 1.0);
     }
 
     glGenTextures(1, &m_random_texture_1d);
@@ -177,20 +195,22 @@ void SimpleParticlesSystem::init_app()
     glBindTexture(GL_TEXTURE_1D, 0);
 
     /* Create particle texture */
-    m_particle_texture = RapidGL::Util::loadGLTexture2D("bluewater.png", "textures/particles", false);
+    m_current_texture_filename = "bluewater.png";
+    m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
+
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void SimpleParticlesSystem::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -207,18 +227,18 @@ void SimpleParticlesSystem::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "18_simple_particles_system";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -232,24 +252,23 @@ void SimpleParticlesSystem::update(double delta_time)
 
 void SimpleParticlesSystem::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     m_particles_shader->bind();
-
-    glBindTextureUnit(0, m_particle_texture);
-    glBindTextureUnit(1, m_random_texture_1d);
-
-    m_particles_shader->setUniform("particle_lifetime", m_particle_lifetime);
-    m_particles_shader->setUniform("emitter_world_pos", m_emitter_pos);
-    m_particles_shader->setUniform("emitter_basis", make_arbitrary_basis(m_emitter_dir));
-    m_particles_shader->setUniform("delta_t", m_delta_time);
-    m_particles_shader->setUniform("acceleration", m_acceleration);
-    m_particles_shader->setUniform("model_view", m_camera->m_view);
-    m_particles_shader->setUniform("projection", m_camera->m_projection);
-    m_particles_shader->setUniform("particle_size", m_particle_size);
+    m_particles_shader->setUniform("particle_lifetime",      m_particle_lifetime);
+    m_particles_shader->setUniform("emitter_world_pos",      m_emitter_pos);
+    m_particles_shader->setUniform("emitter_basis",          make_arbitrary_basis(m_emitter_dir));
+    m_particles_shader->setUniform("delta_t",                m_delta_time);
+    m_particles_shader->setUniform("acceleration",           m_acceleration);
+    m_particles_shader->setUniform("model_view",             m_camera->m_view);
+    m_particles_shader->setUniform("projection",             m_camera->m_projection);
+    m_particles_shader->setUniform("particle_size_min_max",  m_particle_size_min_max);
+    m_particles_shader->setUniform("should_keep_color",      !m_should_fade_out_with_time);
+    m_particles_shader->setUniform("start_position_min_max", m_start_position_min_max);
+    m_particles_shader->setUniform("start_velocity_min_max", m_start_velocity_min_max);
+    m_particles_shader->setUniform("direction_constraints",  m_direction_constraints);
+    m_particles_shader->setUniform("cone_angle",             glm::radians(m_cone_angle));
 
     /* Update pass */
-    m_particles_shader->setSubroutine(RapidGL::Shader::ShaderType::VERTEX, "update");
+    m_particles_shader->setSubroutine(RGL::Shader::ShaderType::VERTEX, "update");
 
     glEnable(GL_RASTERIZER_DISCARD); // Turn off rasterization
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_tfo_ids[m_draw_buffer_idx]);
@@ -260,21 +279,34 @@ void SimpleParticlesSystem::render()
     glVertexAttribDivisor(1, 0);
     glVertexAttribDivisor(2, 0);
     glDrawArrays(GL_POINTS, 0, m_no_particles);
-    glBindVertexArray(0);
 
     glEndTransformFeedback();
     glDisable(GL_RASTERIZER_DISCARD); // Turn on rasterization
 
     /* Render pass */
-    m_particles_shader->setSubroutine(RapidGL::Shader::ShaderType::VERTEX, "render");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    /* Draw grid */
+    m_simple_shader->bind();
+    m_simple_shader->setUniform("mvp",        m_camera->m_projection * m_camera->m_view);
+    m_simple_shader->setUniform("color",      glm::vec3(0.0));
+    m_simple_shader->setUniform("mix_factor", 1.0f);
+
+    m_grid_model->render(m_simple_shader, false);
+
+    /* Draw particles */
+    m_particles_shader->bind();
+    m_particles_shader->setSubroutine(RGL::Shader::ShaderType::VERTEX, "render");
     
+    glBindTextureUnit(0, m_particle_texture);
+    glBindTextureUnit(1, m_random_texture_1d);
+
     glDepthMask(GL_FALSE);
     glBindVertexArray(m_vao_ids[m_draw_buffer_idx]);
     glVertexAttribDivisor(0, 1);
     glVertexAttribDivisor(1, 1);
     glVertexAttribDivisor(2, 1);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, m_no_particles);
-    glBindVertexArray(0);
     glDepthMask(GL_TRUE);
 
     /* Swap buffers */
@@ -292,7 +324,7 @@ void SimpleParticlesSystem::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
@@ -326,56 +358,155 @@ void SimpleParticlesSystem::render_gui()
 
                 m_emitter_dir = glm::normalize(m_emitter_dir);
             }
-            ImGui::SliderFloat3("Particles acceleration", &m_acceleration[0],   -10.0f, 10.0f, "%.1f");
-            ImGui::SliderFloat ("Particle lifetime",      &m_particle_lifetime,  0.1f,  20.0f, "%.1f");
-            ImGui::SliderFloat ("Particle size",          &m_particle_size,      0.01f, 0.1f,  "%.2f");
+            ImGui::SliderFloat3("Particles acceleration", &m_acceleration[0],           -10.0f, 10.0f,  "%.1f");
+            ImGui::SliderFloat ("Particle lifetime",      &m_particle_lifetime,          0.1f,  20.0f,  "%.1f");
+            ImGui::SliderFloat2("Particle size min max",  &m_particle_size_min_max[0],   0.01f, 5.0f,   "%.2f");
+            ImGui::SliderFloat2("Start position min max", &m_start_position_min_max[0], -5.0f,  5.0f,   "%.1f");
+            ImGui::SliderFloat2("Start velocity min max", &m_start_velocity_min_max[0], -5.0f,  5.0f,   "%.1f");
+            ImGui::SliderFloat3("Direction constraints",  &m_direction_constraints[0],   0.0f,  1.0f,   "%1.0f");
+            ImGui::SliderFloat ("Cone angle [deg]",       &m_cone_angle,                 0.0f,  180.0f, "%.1f");
+            ImGui::Checkbox    ("Fade out with time",     &m_should_fade_out_with_time);
+
+            ImGui::Spacing();
+
+            ImGui::Text(("Current texture: " + m_current_texture_filename).c_str());
+            ImGui::SameLine();
+            if (ImGui::Button("Load texture"))
+            {
+                m_file_dialog.Open();
+            }
+
+            ImGui::Spacing();
+
             if(ImGui::Button("Reset particles buffers"))
             {
-                // TODO: separate function
-                std::vector<GLfloat> particle_ages(m_no_particles);
-                float rate = m_particle_lifetime / m_no_particles;
+                reset_particles_buffers();
+            }
 
-                for (int i = 0; i < m_no_particles; ++i)
+            ImGui::Spacing();
+
+            if (ImGui::Button("Fountain preset"))
+            {
+                m_acceleration              = glm::vec3(0, -0.5, 0.0);
+                m_particle_lifetime         = 10.0f;
+                m_particle_size_min_max     = glm::vec2(0.05f);
+                m_should_fade_out_with_time = false;
+                m_start_position_min_max    = glm::vec2(0);
+                m_start_velocity_min_max    = glm::vec2(1.25, 1.5);
+                m_direction_constraints     = glm::vec3(1, 1, 1);
+                m_cone_angle                = glm::degrees(glm::pi<float>() / 8.0f);
+
+                if (m_particle_texture)
                 {
-                    particle_ages[i] = rate * (i - m_no_particles);
+                    glDeleteTextures(1, &m_particle_texture);
                 }
+                m_current_texture_filename = "bluewater.png";
+                m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
 
-                glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, m_no_particles * sizeof(float), particle_ages.data());
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                reset_particles_buffers();
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Fire preset"))
+            {
+                m_acceleration              = glm::vec3(0, 0.1, 0.0);
+                m_particle_lifetime         = 3.0f;
+                m_particle_size_min_max     = glm::vec2(0.5f);
+                m_should_fade_out_with_time = true;
+                m_start_position_min_max    = glm::vec2(-2, 2);
+                m_start_velocity_min_max    = glm::vec2(0.1, 0.5);
+                m_direction_constraints     = glm::vec3(0, 1, 0);
+                m_cone_angle                = 0.0f;
+
+                if (m_particle_texture)
+                {
+                    glDeleteTextures(1, &m_particle_texture);
+                }
+                m_current_texture_filename = "fire.png";
+                m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
+
+                reset_particles_buffers();
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Smoke preset"))
+            {
+                m_acceleration              = glm::vec3(0, 0.1, 0.0);
+                m_particle_lifetime         = 10.0f;
+                m_particle_size_min_max     = glm::vec2(0.1f, 2.5f);
+                m_should_fade_out_with_time = false;
+                m_start_position_min_max    = glm::vec2(0, 0);
+                m_start_velocity_min_max    = glm::vec2(0.1, 0.2);
+                m_direction_constraints     = glm::vec3(1, 1, 1);
+                m_cone_angle                = glm::degrees(glm::pi<float>() / 1.5f);
+
+                if (m_particle_texture)
+                {
+                    glDeleteTextures(1, &m_particle_texture);
+                }
+                m_current_texture_filename = "smoke.png";
+                m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
+
+                reset_particles_buffers();
             }
         }
         ImGui::PopItemWidth();
         ImGui::Spacing();
-
-        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-        if (ImGui::BeginTabBar("Lights' properties", tab_bar_flags))
-        {
-            if (ImGui::BeginTabItem("Directional"))
-            {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-                {
-                    ImGui::ColorEdit3 ("Light color",        &m_dir_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",    &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");
-                    ImGui::SliderFloat("Specular power",     &m_specular_power.x,               1.0, 120.0, "%.0f");
-                    ImGui::SliderFloat("Specular intensity", &m_specular_intenstiy.x,           0.0, 1.0,   "%.2f");
-
-                    static float ambient_factor = m_ambient_color.r;
-                    if (ImGui::SliderFloat("Ambient color", &ambient_factor, 0.0, 1.0, "%.2f"))
-                    {
-                        m_ambient_color = glm::vec3(ambient_factor);
-                    }
-
-                    if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
-                    {
-                        m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
-                    }
-                }
-                ImGui::PopItemWidth();
-                ImGui::EndTabItem();
-            }
-            ImGui::EndTabBar();
-        }
     }
     ImGui::End();
+
+    m_file_dialog.Display();
+    if (m_file_dialog.HasSelected())
+    {
+        glFinish();
+        std::string filepath = m_file_dialog.GetSelected().string();
+
+        static std::string res_string = "resources\\";
+
+        /* Get relative path with stripped resources\\ string. */
+        auto pos = filepath.find(res_string);
+
+        /* It is only allowed to load files from the RapidGL's resources directory. */
+        if (pos != std::string::npos)
+        {
+            m_current_texture_filename = filepath.substr(pos + res_string.size(), filepath.size());
+
+            if (m_particle_texture)
+            {
+                glDeleteTextures(1, &m_particle_texture);
+            }
+
+            /* Load texture data. */
+            m_particle_texture = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "", false);
+
+            /* Strip relative path to get filename + extenstion only. */
+            m_current_texture_filename = m_current_texture_filename.substr(m_current_texture_filename.find_last_of("\\") + 1, m_current_texture_filename.size());
+
+            m_file_dialog.ClearSelected();
+        }
+        else
+        {
+            std::cerr << "ERROR: It is only allowed to load files from the RapidGL's ./resources directory!\n";
+            m_file_dialog.ClearSelected();
+        }
+    }
+}
+
+void SimpleParticlesSystem::reset_particles_buffers()
+{
+    std::vector<GLfloat> particle_ages(m_no_particles);
+    float rate = m_particle_lifetime / m_no_particles;
+
+    for (int i = 0; i < m_no_particles; ++i)
+    {
+        particle_ages[i] = rate * (i - m_no_particles);
+    }
+
+    auto rng = std::default_random_engine{};
+    std::shuffle(particle_ages.begin(), particle_ages.end(), rng);
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_age_vbo_ids[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, m_no_particles * sizeof(float), particle_ages.data());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    m_draw_buffer_idx = 1;
 }

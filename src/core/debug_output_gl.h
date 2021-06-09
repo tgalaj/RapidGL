@@ -12,7 +12,7 @@
     #define STDCALL
 #endif
 
-namespace RapidGL
+namespace RGL
 {
     class DebugOutputGL final
     {

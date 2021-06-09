@@ -4,7 +4,7 @@
 #include <glm/trigonometric.hpp>
 #include <glm/geometric.hpp>
 
-namespace RapidGL
+namespace RGL
 {
     void GeomPrimitive::genCube(VertexBuffers & buffers, float radius)
     {

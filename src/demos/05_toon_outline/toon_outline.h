@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-class ToonOutline : public RapidGL::CoreApp
+class ToonOutline : public RGL::CoreApp
 {
 public:
     ToonOutline();
@@ -41,13 +41,13 @@ private:
         return direction;
     }
 
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_simple_toon_shader;
-    std::shared_ptr<RapidGL::Shader> m_advanced_toon_shader;
-    std::shared_ptr<RapidGL::Shader> m_simple_rim_toon_shader;
-    std::shared_ptr<RapidGL::Shader> m_toon_twin_shade_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_simple_toon_shader;
+    std::shared_ptr<RGL::Shader> m_advanced_toon_shader;
+    std::shared_ptr<RGL::Shader> m_simple_rim_toon_shader;
+    std::shared_ptr<RGL::Shader> m_toon_twin_shade_shader;
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
     std::vector<glm::vec3> m_objects_colors;
 
@@ -63,7 +63,7 @@ private:
 
     enum class ToonShadingMethod { SIMPLE, ADVANCED, SIMPLE_RIM, TWIN_SHADE} m_toon_shading_method;
     std::vector<std::string> m_toon_shading_methods_names;
-    std::vector<std::shared_ptr<RapidGL::Shader>> m_toon_shaders;
+    std::vector<std::shared_ptr<RGL::Shader>> m_toon_shaders;
 
     /* Advanced toon properties */
     float m_advanced_toon_A;
@@ -93,7 +93,7 @@ private:
     glm::vec3 m_outline_color;
     float m_stencil_outline_width;
 
-    std::shared_ptr<RapidGL::Shader> m_stencil_outline_shader;
+    std::shared_ptr<RGL::Shader> m_stencil_outline_shader;
 
     /* GL objects for outlines as a postprocess effect */
     GLuint m_fbo_normal_depth;
@@ -103,8 +103,8 @@ private:
     GLuint m_shading_tex_buffer;
     GLuint m_ps_vao_id;
 
-    std::shared_ptr<RapidGL::Shader> m_generate_data_outline_shader;
-    std::shared_ptr<RapidGL::Shader> m_outline_ps_shader;
+    std::shared_ptr<RGL::Shader> m_generate_data_outline_shader;
+    std::shared_ptr<RGL::Shader> m_outline_ps_shader;
 
     float m_depth_threshold;
     float m_depth_normal_threshold;

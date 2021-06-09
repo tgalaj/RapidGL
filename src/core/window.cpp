@@ -4,7 +4,7 @@
 #include "input.h"
 #include "gui/gui.h"
 
-namespace RapidGL
+namespace RGL
 {
     GLFWwindow * Window::m_window = nullptr;
     std::string  Window::m_title = "";

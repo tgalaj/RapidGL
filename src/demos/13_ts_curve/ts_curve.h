@@ -7,7 +7,7 @@
 
 #include <memory>
 
-class Tessellation1D : public RapidGL::CoreApp
+class Tessellation1D : public RGL::CoreApp
 {
 public:
     Tessellation1D();
@@ -20,9 +20,9 @@ public:
     void render_gui()               override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_solid_points_color_shader;
-    std::shared_ptr<RapidGL::Shader> m_curve_tessellation_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_solid_points_color_shader;
+    std::shared_ptr<RGL::Shader> m_curve_tessellation_shader;
 
     GLuint m_no_curve_points;
     GLuint m_curve_points_vao_id;

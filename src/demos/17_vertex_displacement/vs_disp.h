@@ -30,7 +30,7 @@ struct DirectionalLight : BaseLight
     }
 };
 
-class VertexDisplacement : public RapidGL::CoreApp
+class VertexDisplacement : public RGL::CoreApp
 {
 public:
     VertexDisplacement();
@@ -43,9 +43,9 @@ public:
     void render_gui()              override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_vs_disp_shader;
-    std::shared_ptr<RapidGL::Model> m_model;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_vs_disp_shader;
+    std::shared_ptr<RGL::Model> m_model;
     glm::mat4 m_world_matrix;
 
     DirectionalLight m_dir_light_properties;

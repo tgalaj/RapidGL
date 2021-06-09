@@ -3,7 +3,7 @@
 
 #include "postprocessing_filters.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

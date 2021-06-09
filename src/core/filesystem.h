@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-namespace RapidGL
+namespace RGL
 {
     namespace fs = std::filesystem;
 

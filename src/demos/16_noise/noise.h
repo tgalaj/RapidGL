@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-class ProceduralNoise : public RapidGL::CoreApp
+class ProceduralNoise : public RGL::CoreApp
 {
 public:
     ProceduralNoise();
@@ -21,12 +21,12 @@ public:
     void render_gui()               override;
 
 private:
-    RapidGL::Texture gen_perlin_data(uint32_t width, uint32_t height, float base_frequency = 4.0f, float persistance = 0.5f, bool periodic = true);
+    RGL::Texture gen_perlin_data(uint32_t width, uint32_t height, float base_frequency = 4.0f, float persistance = 0.5f, bool periodic = true);
 
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_noise_texturing_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_noise_texturing_shader;
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
     // Cloud

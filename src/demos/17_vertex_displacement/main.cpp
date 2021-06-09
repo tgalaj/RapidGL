@@ -2,7 +2,7 @@
 
 #include "vs_disp.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

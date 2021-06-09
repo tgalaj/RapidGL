@@ -1,6 +1,6 @@
 #include "mesh.h"
 
-namespace RapidGL
+namespace RGL
 {
     MeshData::MeshData()
         : m_indices_count(0),

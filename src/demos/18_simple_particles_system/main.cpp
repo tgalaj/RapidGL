@@ -2,7 +2,7 @@
 
 #include "simple_particles_system.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

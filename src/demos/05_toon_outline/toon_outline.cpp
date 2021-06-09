@@ -89,25 +89,25 @@ void ToonOutline::init_app()
     glStencilOp  (GL_KEEP, GL_KEEP, GL_REPLACE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Create models. */
     for (unsigned i = 0; i < 9; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/spot/spot.obj"));
-    m_objects[1]->load(RapidGL::FileSystem::getPath("models/bunny.obj"));
-    m_objects[2]->load(RapidGL::FileSystem::getPath("models/cone.fbx"));
+    m_objects[0]->load(RGL::FileSystem::getPath("models/spot/spot.obj"));
+    m_objects[1]->load(RGL::FileSystem::getPath("models/bunny.obj"));
+    m_objects[2]->load(RGL::FileSystem::getPath("models/cone.fbx"));
     m_objects[3]->genCube();
-    m_objects[4]->load(RapidGL::FileSystem::getPath("models/cylinder.fbx"));
-    m_objects[5]->load(RapidGL::FileSystem::getPath("models/torus_knot.fbx"));
+    m_objects[4]->load(RGL::FileSystem::getPath("models/cylinder.fbx"));
+    m_objects[5]->load(RGL::FileSystem::getPath("models/torus_knot.fbx"));
     m_objects[6]->genSphere(0.5, 40);
     m_objects[7]->genTorus(0.5, 1.0, 40, 40);
-    m_objects[8]->load(RapidGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[8]->load(RGL::FileSystem::getPath("models/teapot.obj"));
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-10.0,   0.25, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // spot
@@ -131,12 +131,12 @@ void ToonOutline::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.9, 0.0,  0.0));
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
 
-    RapidGL::Texture texture_spot;
-    texture_spot.m_id   = RapidGL::Util::loadGLTexture2D("spot.png", "models/spot", true);
+    RGL::Texture texture_spot;
+    texture_spot.m_id   = RGL::Util::loadGLTexture2D("spot.png", "models/spot", true);
     texture_spot.m_type = "texture_diffuse";
 
-    RapidGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id   = RapidGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
+    RGL::Texture default_diffuse_texture;
+    default_diffuse_texture.m_id   = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
     default_diffuse_texture.m_type = "texture_diffuse";
 
     m_objects[0]->getMesh(0).addTexture(texture_spot);
@@ -151,16 +151,16 @@ void ToonOutline::init_app()
 
     /* Create the toon shaders. */
     std::string dir = "../src/demos/05_toon_outline/";
-    m_simple_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_simple.frag");
+    m_simple_toon_shader = std::make_shared<RGL::Shader>(dir + "toon.vert", dir + "toon_simple.frag");
     m_simple_toon_shader->link();
 
-    m_advanced_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_advanced.frag");
+    m_advanced_toon_shader = std::make_shared<RGL::Shader>(dir + "toon.vert", dir + "toon_advanced.frag");
     m_advanced_toon_shader->link();
 
-    m_simple_rim_toon_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_simple_rim.frag");
+    m_simple_rim_toon_shader = std::make_shared<RGL::Shader>(dir + "toon.vert", dir + "toon_simple_rim.frag");
     m_simple_rim_toon_shader->link();
 
-    m_toon_twin_shade_shader = std::make_shared<RapidGL::Shader>(dir + "toon.vert", dir + "toon_twin_shade.frag");
+    m_toon_twin_shade_shader = std::make_shared<RGL::Shader>(dir + "toon.vert", dir + "toon_twin_shade.frag");
     m_toon_twin_shade_shader->link();
 
     m_toon_shading_methods_names = { "Simple", "Advanced", "Simple with Rim", "Toon Twin Shade" };
@@ -175,7 +175,7 @@ void ToonOutline::init_app()
 
     glGenTextures(1, &m_normals_depth_tex_buffer);
     glBindTexture(GL_TEXTURE_2D, m_normals_depth_tex_buffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RapidGL::Window::getWidth(), RapidGL::Window::getHeight(), 0 /* border */, GL_RGBA, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RGL::Window::getWidth(), RGL::Window::getHeight(), 0 /* border */, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -185,7 +185,7 @@ void ToonOutline::init_app()
 
     glGenRenderbuffers(1, &m_rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, RapidGL::Window::getWidth(), RapidGL::Window::getHeight());
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, RGL::Window::getWidth(), RGL::Window::getHeight());
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
 
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -198,7 +198,7 @@ void ToonOutline::init_app()
 
     glGenTextures(1, &m_shading_tex_buffer);
     glBindTexture(GL_TEXTURE_2D, m_shading_tex_buffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RapidGL::Window::getWidth(), RapidGL::Window::getHeight(), 0 /* border */, GL_RGBA, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RGL::Window::getWidth(), RGL::Window::getHeight(), 0 /* border */, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -213,37 +213,37 @@ void ToonOutline::init_app()
     /* Create the outline shaders. */
     m_outline_methods_names = { "Stencil", "Post-Process" };
 
-    m_stencil_outline_shader = std::make_shared<RapidGL::Shader>(dir + "outline_stencil.vert", dir + "outline_stencil.frag");
+    m_stencil_outline_shader = std::make_shared<RGL::Shader>(dir + "outline_stencil.vert", dir + "outline_stencil.frag");
     m_stencil_outline_shader->link();
 
-    m_generate_data_outline_shader = std::make_shared<RapidGL::Shader>(dir + "outline_ps_gen_data.vert", dir + "outline_ps_gen_data.frag");
+    m_generate_data_outline_shader = std::make_shared<RGL::Shader>(dir + "outline_ps_gen_data.vert", dir + "outline_ps_gen_data.frag");
     m_generate_data_outline_shader->link();
 
-    m_outline_ps_shader = std::make_shared<RapidGL::Shader>(dir + "outline_ps.vert", dir + "outline_ps.frag");
+    m_outline_ps_shader = std::make_shared<RGL::Shader>(dir + "outline_ps.vert", dir + "outline_ps.frag");
     m_outline_ps_shader->link();
 }
 
 void ToonOutline::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "05_toon_outline";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -285,7 +285,7 @@ void ToonOutline::stencil_outline()
     m_stencil_outline_shader->bind();
     m_stencil_outline_shader->setUniform("outline_width", 0.1f * m_stencil_outline_width);
     m_stencil_outline_shader->setUniform("outline_color", m_outline_color);
-    m_stencil_outline_shader->setUniform("screen_resolution", RapidGL::Window::getSize());
+    m_stencil_outline_shader->setUniform("screen_resolution", RGL::Window::getSize());
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
@@ -426,7 +426,7 @@ void ToonOutline::render_gui()
     CoreApp::render_gui();
 
 /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

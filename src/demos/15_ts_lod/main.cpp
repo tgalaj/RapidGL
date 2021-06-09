@@ -2,7 +2,7 @@
 
 #include "ts_lod.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 /**
  * References:

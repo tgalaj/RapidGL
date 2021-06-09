@@ -4,7 +4,7 @@
 #include "core_app.h"
 #include "shader.h"
 
-class SimpleTriangle : public RapidGL::CoreApp
+class SimpleTriangle : public RGL::CoreApp
 {
 public:
     SimpleTriangle();
@@ -22,5 +22,5 @@ private:
 
     glm::vec3 m_triangle_color;
     glm::vec2 m_triangle_translation;
-    std::shared_ptr<RapidGL::Shader> m_shader;
+    std::shared_ptr<RGL::Shader> m_shader;
 };

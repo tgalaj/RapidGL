@@ -2,7 +2,7 @@
 
 #include "noise.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

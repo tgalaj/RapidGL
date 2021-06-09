@@ -8,7 +8,7 @@
 #include "mesh.h"
 #include "shader.h"
 
-namespace RapidGL
+namespace RGL
 {
     class Model
     {

@@ -8,7 +8,7 @@
 
 #include "filesystem.h"
 
-namespace RapidGL
+namespace RGL
 {
     std::string Util::loadFile(const std::string & filename)
     {

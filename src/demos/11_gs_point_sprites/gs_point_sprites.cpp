@@ -45,17 +45,17 @@ void GSPointSprites::init_app()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(-6, 5.0, 10.0);
     m_camera->setOrientation(20.0f, 30.0f, 0.0f);
 
     /* Add textures to the objects. */
-    m_sprite_tex = std::make_shared<RapidGL::Texture>();
-    m_sprite_tex->m_id = RapidGL::Util::loadGLTexture2D("pear-tree.png", "textures/sprites", false);
+    m_sprite_tex = std::make_shared<RGL::Texture>();
+    m_sprite_tex->m_id = RGL::Util::loadGLTexture2D("pear-tree.png", "textures/sprites", false);
 
     /* Create shader. */
     std::string dir  = "../src/demos/11_gs_point_sprites/";
-    m_point_sprites_shader = std::make_shared<RapidGL::Shader>(dir + "gs_point_sprites.vert", dir + "gs_point_sprites.frag", dir + "gs_point_sprites.geom");
+    m_point_sprites_shader = std::make_shared<RGL::Shader>(dir + "gs_point_sprites.vert", dir + "gs_point_sprites.frag", dir + "gs_point_sprites.geom");
     m_point_sprites_shader->link();
 
     /* Create VAO and VBO for point sprites */
@@ -83,13 +83,13 @@ void GSPointSprites::init_app()
 void GSPointSprites::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -106,18 +106,18 @@ void GSPointSprites::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "11_gs_point_sprites";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -154,7 +154,7 @@ void GSPointSprites::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos       = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos       = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

@@ -8,7 +8,7 @@
 
 #include "input.h"
 
-namespace RapidGL
+namespace RGL
 {
     class Camera
     {

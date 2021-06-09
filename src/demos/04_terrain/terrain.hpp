@@ -65,7 +65,7 @@ struct SpotLight : PointLight
     }
 };
 
-class Terrain : public RapidGL::CoreApp
+class Terrain : public RGL::CoreApp
 {
 public:
     Terrain();
@@ -80,11 +80,11 @@ public:
 private:
     void render_terrain(const glm::mat4 & view_projection);
 
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_ambient_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_point_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_spot_light_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_ambient_light_shader;
+    std::shared_ptr<RGL::Shader> m_directional_light_shader;
+    std::shared_ptr<RGL::Shader> m_point_light_shader;
+    std::shared_ptr<RGL::Shader> m_spot_light_shader;
 
     std::shared_ptr<TerrainModel> m_terrain_model;
     glm::mat4 m_terrain_model_matrix;
@@ -98,12 +98,12 @@ private:
     std::vector<std::string> m_terrain_textures_filenames;
     std::vector<std::string> m_terrain_heightmaps_filenames;
 
-    std::shared_ptr<RapidGL::Shader> m_terrain_ambient_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_terrain_directional_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_terrain_point_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_terrain_spot_light_shader;
+    std::shared_ptr<RGL::Shader> m_terrain_ambient_light_shader;
+    std::shared_ptr<RGL::Shader> m_terrain_directional_light_shader;
+    std::shared_ptr<RGL::Shader> m_terrain_point_light_shader;
+    std::shared_ptr<RGL::Shader> m_terrain_spot_light_shader;
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
     DirectionalLight m_dir_light_properties;

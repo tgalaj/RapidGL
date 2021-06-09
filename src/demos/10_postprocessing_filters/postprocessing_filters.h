@@ -33,7 +33,7 @@ struct DirectionalLight : BaseLight
 
 struct PostprocessFilter
 {
-    std::shared_ptr<RapidGL::Shader> m_shader;
+    std::shared_ptr<RGL::Shader> m_shader;
 
     GLuint m_fbo_id;
     GLuint m_rbo_id;
@@ -61,7 +61,7 @@ struct PostprocessFilter
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        m_shader = std::make_shared<RapidGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", "../src/demos/10_postprocessing_filters/PS_filters.frag");
+        m_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", "../src/demos/10_postprocessing_filters/PS_filters.frag");
         m_shader->link();
 
         glGenVertexArrays(1, &m_dummy_vao_id);
@@ -107,7 +107,7 @@ struct PostprocessFilter
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         m_shader->bind();
-        m_shader->setSubroutine(RapidGL::Shader::ShaderType::FRAGMENT, filter_name);
+        m_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, filter_name);
         bindTexture();
 
         glBindVertexArray(m_dummy_vao_id);
@@ -115,7 +115,7 @@ struct PostprocessFilter
     }
 };
 
-class PostprocessingFilters : public RapidGL::CoreApp
+class PostprocessingFilters : public RGL::CoreApp
 {
 public:
     PostprocessingFilters();
@@ -128,15 +128,15 @@ public:
     void render_gui()               override;
 
 private:
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_ambient_light_shader;
-    std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_ambient_light_shader;
+    std::shared_ptr<RGL::Shader> m_directional_light_shader;
 
     std::shared_ptr<PostprocessFilter> m_postprocess_filter;
     std::string m_current_ps_filter_name;
     std::string m_ps_filter_names_list[4] = { "no_filter", "negative", "edge_detection", "gaussian_blur" };
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
     DirectionalLight m_dir_light_properties;

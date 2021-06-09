@@ -23,17 +23,17 @@ void Simple3d::init_app()
     glEnable(GL_MULTISAMPLE);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RapidGL::Camera>(60.0, RapidGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
     m_camera->setPosition(1.5, 0.0, 10.0);
 
     /* Create models. */
     for (unsigned i = 0; i < 8; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RapidGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::Model>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RapidGL::FileSystem::getPath("models/spot/spot.obj"));
+    m_objects[0]->load(RGL::FileSystem::getPath("models/spot/spot.obj"));
     m_objects[1]->genCone(1.0, 0.5);
     m_objects[2]->genCube();
     m_objects[3]->genCylinder(1.0, 0.5);
@@ -63,12 +63,12 @@ void Simple3d::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.5, 0.0));
 
     /* Add texture to the monkey and sphere models only. */
-    RapidGL::Texture texture_spot;
-    texture_spot.m_id   = RapidGL::Util::loadGLTexture2D("spot.png", "models/spot", false);
+    RGL::Texture texture_spot;
+    texture_spot.m_id   = RGL::Util::loadGLTexture2D("spot.png", "models/spot", false);
     texture_spot.m_type = "texture_diffuse";
 
-    RapidGL::Texture texture;
-    texture.m_id   = RapidGL::Util::loadGLTexture2D("bricks.png", "textures", false);
+    RGL::Texture texture;
+    texture.m_id   = RGL::Util::loadGLTexture2D("bricks.png", "textures", false);
     texture.m_type = "texture_diffuse";
 
     m_objects[0]->getMesh(0).addTexture(texture_spot);
@@ -76,20 +76,20 @@ void Simple3d::init_app()
 
     /* Create shader. */
     std::string dir = "../src/demos/02_simple_3d/";
-    m_simple_texturing_shader = std::make_shared<RapidGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
+    m_simple_texturing_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
     m_simple_texturing_shader->link();
 }
 
 void Simple3d::input()
 {
     /* Close the application when Esc is released. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::Escape))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
     {
         stop();
     }
 
     /* Toggle between wireframe and solid rendering */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F2))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F2))
     {
         static bool toggle_wireframe = false;
 
@@ -106,18 +106,18 @@ void Simple3d::input()
     }
 
     /* It's also possible to take a screenshot. */
-    if (RapidGL::Input::getKeyUp(RapidGL::KeyCode::F1))
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
         std::string filename = "02_simple_3d";
-        if (take_screenshot_png(filename, RapidGL::Window::getWidth() / 2.0, RapidGL::Window::getHeight() / 2.0))
+        if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RapidGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
 }
@@ -157,7 +157,7 @@ void Simple3d::render_gui()
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
-    ImVec2 window_pos = ImVec2(RapidGL::Window::getWidth() - 10.0, 10.0);
+    ImVec2 window_pos = ImVec2(RGL::Window::getWidth() - 10.0, 10.0);
     ImVec2 window_pos_pivot = ImVec2(1.0f, 0.0f);
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);

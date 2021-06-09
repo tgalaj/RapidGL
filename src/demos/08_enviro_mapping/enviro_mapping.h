@@ -32,7 +32,7 @@ struct DirectionalLight : BaseLight
     }
 };
 
-class EnvironmentMapping : public RapidGL::CoreApp
+class EnvironmentMapping : public RGL::CoreApp
 {
 public:
     EnvironmentMapping();
@@ -94,22 +94,22 @@ private:
     CubeMapRenderTarget generate_cubemap_rt() const;
     void                render_to_cubemap_rt(CubeMapRenderTarget & rt, int ignore_obj_id = -1);
 
-    std::shared_ptr<RapidGL::Camera> m_camera;
-    std::shared_ptr<RapidGL::Shader> m_directional_light_shader;
+    std::shared_ptr<RGL::Camera> m_camera;
+    std::shared_ptr<RGL::Shader> m_directional_light_shader;
 
-    std::vector<std::shared_ptr<RapidGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::Model>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
     std::vector<glm::vec3> m_color_tints;
     std::vector<glm::vec3> m_spheres_positions;
     std::vector<float> m_random_spheres_rotation_speeds;
 
-    std::shared_ptr<RapidGL::Model> m_xyzrgb_dragon;
-    std::shared_ptr<RapidGL::Model> m_lucy;
-    std::shared_ptr<RapidGL::Model> m_ground_plane;
+    std::shared_ptr<RGL::Model> m_xyzrgb_dragon;
+    std::shared_ptr<RGL::Model> m_lucy;
+    std::shared_ptr<RGL::Model> m_ground_plane;
 
     /* Environment mapping */
     std::shared_ptr<Skybox> m_skybox;
-    std::shared_ptr<RapidGL::Shader> m_enviro_mapping_shader;
+    std::shared_ptr<RGL::Shader> m_enviro_mapping_shader;
     float m_ior; /* index of refraction */
 
     std::string m_current_skybox_name;

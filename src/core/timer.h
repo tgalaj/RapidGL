@@ -1,7 +1,7 @@
 #pragma once
 #include <chrono>
 
-namespace RapidGL
+namespace RGL
 {
     class Timer final
     {

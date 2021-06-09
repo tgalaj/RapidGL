@@ -1,7 +1,7 @@
 #include "filesystem.h"
 #include "root_directory.h"
 
-namespace RapidGL
+namespace RGL
 {
     std::string FileSystem::getPath(const std::string& path)
     {

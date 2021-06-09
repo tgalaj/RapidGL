@@ -3,7 +3,7 @@
 
 #include "projected_texture.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {

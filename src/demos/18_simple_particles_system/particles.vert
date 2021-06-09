@@ -20,7 +20,12 @@ uniform vec3 acceleration; // gravity
 uniform float particle_lifetime;
 uniform vec3 emitter_world_pos;
 uniform mat3 emitter_basis; // rotation that rotates y axis to the direction of emitter
-uniform float particle_size;
+uniform vec2 particle_size_min_max;
+
+uniform vec2 start_position_min_max;
+uniform vec2 start_velocity_min_max;
+uniform vec3 direction_constraints;
+uniform float cone_angle;
 
 uniform mat4 model_view;
 uniform mat4 projection;
@@ -36,12 +41,18 @@ const vec2 texcoords[] = vec2[](vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,0), vec2
 
 vec3 random_initial_velocity() 
 {
-    float theta    = mix(0.0,  PI / 8.0, texelFetch(random_texture, 3 * gl_VertexID,     0).r);
-    float phi      = mix(0.0,  2.0 * PI, texelFetch(random_texture, 3 * gl_VertexID + 1, 0).r);
-    float velocity = mix(1.25, 1.5,      texelFetch(random_texture, 3 * gl_VertexID + 2, 0).r);
+    float theta    = mix(0.0,                      cone_angle,               texelFetch(random_texture, 3 * gl_VertexID,     0).r);
+    float phi      = mix(0.0,                      2.0 * PI,                 texelFetch(random_texture, 3 * gl_VertexID + 1, 0).r);
+    float velocity = mix(start_velocity_min_max.x, start_velocity_min_max.y, texelFetch(random_texture, 3 * gl_VertexID + 2, 0).r);
     vec3  v        = vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
 
-    return normalize(emitter_basis * v) * velocity;
+    return normalize(emitter_basis * v * direction_constraints) * velocity;
+}
+
+vec3 random_initial_position() 
+{
+    float offset = mix(start_position_min_max.x, start_position_min_max.y, texelFetch(random_texture, 2 * gl_VertexID + 1, 0).r);
+    return emitter_world_pos + vec3(offset, 0, 0);
 }
 
 subroutine void render_pass_type();
@@ -52,7 +63,7 @@ layout(index = 0) subroutine(render_pass_type) void update()
     if (in_age < 0 || in_age > particle_lifetime)
     {
         /* Particle is past it's lifetime - recycle */
-        tf_pos      = emitter_world_pos;
+        tf_pos      = random_initial_position();
         tf_velocity = random_initial_velocity();
     
         if (in_age < 0) 
@@ -76,8 +87,10 @@ layout(index = 1) subroutine(render_pass_type) void render()
 
     if (in_age >= 0.0)
     {
-        pos_view_space = (model_view * vec4(in_pos, 1.0)).xyz + offsets[gl_VertexID] * particle_size;
-        transparency_FS_in = clamp(1.0 - in_age / particle_lifetime, 0, 1);
+        float age_pct      = in_age / particle_lifetime;
+        transparency_FS_in = clamp(1.0 - age_pct, 0, 1);
+        pos_view_space     = (model_view * vec4(in_pos, 1.0)).xyz + offsets[gl_VertexID] * 
+                             mix(particle_size_min_max.x, particle_size_min_max.y, age_pct);
     }
 
     texcoord_FS_in = texcoords[gl_VertexID];

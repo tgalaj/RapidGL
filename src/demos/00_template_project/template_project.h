@@ -23,7 +23,7 @@
   *
 **/
 
-class TemplateProject : public RapidGL::CoreApp
+class TemplateProject : public RGL::CoreApp
 {
 public:
     TemplateProject();

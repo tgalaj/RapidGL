@@ -2,7 +2,7 @@
 
 #include "ts_curve.h"
 
-using namespace RapidGL;
+using namespace RGL;
 
 int main()
 {
