@@ -25,6 +25,7 @@ configure_file(${CMAKE_SOURCE_DIR}/configuration/root_directory.h.in ${CMAKE_SOU
 target_include_directories(${CORE_LIB_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/configuration)
 
 target_include_directories(${CORE_LIB_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(${CORE_LIB_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty")
 target_include_directories(${CORE_LIB_NAME} PUBLIC "${ASSIMP_INCLUDE_DIR}")
 target_include_directories(${CORE_LIB_NAME} PUBLIC "${GLFW_INCLUDE_DIR}")
 target_include_directories(${CORE_LIB_NAME} PUBLIC "${GLAD_INCLUDE_DIR}")
