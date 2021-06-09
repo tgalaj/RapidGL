@@ -8,12 +8,29 @@ This framework consists of two major parts:
 * **Demos**. Source files are located in ```src/demos```.
 
 ## How to build
-Simply run the following commands in the root directory:
+Make sure to clone the repository with one of the following commands (to also clone the dependencies):
 
 ```
-mkdir build
-cd build
-cmake ..
+git clone --recurse-submodules -j8 https://github.com/Shot511/RapidGL.git
+
+OR
+
+git clone --recurse-submodules https://github.com/Shot511/RapidGL.git
+
+OR
+
+git clone --recursive https://github.com/Shot511/RapidGL.git
+```
+
+If you've already cloned the repo run the following command in the root directory to also clone dependencies:
+
+```git submodule update --init --recursive```
+
+
+Then run the following command in the root directory to generate project files:
+
+```
+cmake -B build
 ```
 
 These will create project with your system-default build system which will allow you to build and run the examples.
