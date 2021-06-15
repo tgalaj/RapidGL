@@ -133,14 +133,8 @@ Available presets: fountain, fire and smoke.
 
 <img src="screenshots/18_simple_particles_system.png" width="50%" height="50%" alt="Simple particle system using Transform Feedback" />
 
-### Particle system using instanced meshes
-TODO
-
-### Particle system with the Compute Shader
-TODO
-
-### Shadow Mapping
-TODO: Shadow Mapping with PCF, random sampling.
+### Particle system using instanced meshes with the Compute Shader
+<img src="screenshots/19_instanced_particles_compute_shader.png" width="50%" height="50%" alt="Particle system using instanced meshes with the Compute Shader" />
 
 ### Mesh skinning
 TODO: LBS, DQS.
@@ -149,4 +143,7 @@ TODO: LBS, DQS.
 TODO
 
 ### PBR
+TODO
+
+### Variance Shadow Mapping
 TODO

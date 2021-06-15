@@ -272,11 +272,11 @@ namespace RGL
         m_meshes[m_meshes.size() - 1].setDrawMode(GL_TRIANGLE_STRIP);
     }
 
-    void Model::render(std::shared_ptr<Shader>& shader, bool is_textured)
+    void Model::render(std::shared_ptr<Shader>& shader, bool is_textured, uint32_t num_instances)
     {
         for(unsigned i = 0; i < m_meshes.size(); ++i)
         {
-            m_meshes[i].render(shader, is_textured);
+            m_meshes[i].render(shader, is_textured, num_instances);
         }
     }
 

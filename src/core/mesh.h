@@ -50,6 +50,7 @@ namespace RGL
         Mesh();
         ~Mesh();
 
+        void addAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor = 0);
         void setBuffers(const VertexBuffers & buffers);
         void setDrawMode(GLenum draw_mode) const { m_mesh_data->m_draw_mode = draw_mode; }
         void addTexture(const Texture & texture);
@@ -58,7 +59,7 @@ namespace RGL
         GLuint getIndicesCount()  const { return m_mesh_data->m_indices_count; }
         GLuint getTexturesCount() const { return m_mesh_data->m_textures.size(); }
 
-        void render(std::shared_ptr<Shader> & shader, bool is_textured = true);
+        void render(std::shared_ptr<Shader> & shader, bool is_textured = true, uint32_t num_instances = 0);
 
     private:
         std::shared_ptr<MeshData> m_mesh_data;

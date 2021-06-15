@@ -4,6 +4,7 @@
 #include <string>
 #include <stb_image.h>
 #include <glad/glad.h>
+#include <glm/vec3.hpp>
 
 namespace RGL
 {
@@ -58,7 +59,7 @@ namespace RGL
 
         static double randomDouble(double min, double max)
         {
-            // Returns a random real in [min,max).
+            // Returns a random real in [min, max).
             return min + (max - min) * randomDouble();
         }
 
@@ -66,6 +67,12 @@ namespace RGL
         {
             // Returns a random integer in [min, max].
             return static_cast<int>(randomDouble(min, max + 1));
+        }
+
+        static glm::vec3 randomVec3(double min, double max)
+        {
+            // Returns a random vec3 in [min, max).
+            return glm::vec3(randomDouble(min, max), randomDouble(min, max), randomDouble(min, max));
         }
     };
 }

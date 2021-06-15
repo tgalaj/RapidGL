@@ -7,13 +7,12 @@
 #include "gui/gui.h"
 
 #include <memory>
-#include <imfilebrowser.h>
 
-class SimpleParticlesSystem : public RGL::CoreApp
+class InstancedParticlesCS : public RGL::CoreApp
 {
 public:
-    SimpleParticlesSystem();
-    ~SimpleParticlesSystem();
+    InstancedParticlesCS();
+    ~InstancedParticlesCS();
 
     void init_app()                override;
     void input()                   override;
@@ -47,31 +46,23 @@ private:
     void reset_particles_buffers();
 
     std::shared_ptr<RGL::Camera> m_camera;
-    std::shared_ptr<RGL::Shader> m_simple_shader, m_particles_shader;
-    std::shared_ptr<RGL::Model> m_grid_model;
+    std::shared_ptr<RGL::Shader> m_simple_shader, m_particles_render_shader, m_particles_compute_shader;
+    std::shared_ptr<RGL::Model> m_instanced_model, m_grid_model;
 
-    GLuint m_tfo_ids[2]; // Transform Feedback Objects
-    GLuint m_pos_vbo_ids[2];
-    GLuint m_velocity_vbo_ids[2];
-    GLuint m_age_vbo_ids[2];
-    GLuint m_vao_ids[2];
-    GLuint m_random_texture_1d;
-    GLuint m_draw_buffer_idx;
-    
-    glm::vec3 m_acceleration;
-    glm::vec3 m_direction_constraints;
+    GLuint m_pos_vbo_id;
+    GLuint m_velocity_vbo_id;
+    GLuint m_age_vbo_id;
+    GLuint m_rotation_vbo_id;
+
     glm::vec3 m_emitter_pos, m_emitter_dir;
-    glm::vec2 m_particle_size_min_max;
+    glm::vec3 m_acceleration;
+    float m_particle_lifetime;
+    float m_delta_time;
     glm::vec2 m_start_position_min_max;
     glm::vec2 m_start_velocity_min_max;
+    glm::vec2 m_start_rotational_velocity_min_max;
+    glm::vec3 m_direction_constraints;
+    glm::vec3 m_particles_color;
     float m_cone_angle;
-    float m_delta_time;
-    float m_particle_angle;
-    float m_particle_lifetime;
-    GLuint m_particle_texture;
-    int m_no_particles;
-    bool m_should_fade_out_with_time;
-
-    ImGui::FileBrowser m_file_dialog;
-    std::string m_current_texture_filename;
+    GLuint m_total_particles;
 };

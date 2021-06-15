@@ -37,6 +37,16 @@ namespace RGL
     {
     }
 
+    /* The first available input attribute index is 4. */
+    void Mesh::addAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor)
+    {
+        glEnableVertexArrayAttrib (m_mesh_data->m_vao_id,  attrib_index);
+        glVertexArrayAttribFormat (m_mesh_data->m_vao_id,  attrib_index, format_size, data_type, GL_FALSE, 0);
+        glVertexArrayAttribBinding(m_mesh_data->m_vao_id,  attrib_index, binding_index);
+        glVertexArrayBindingDivisor(m_mesh_data->m_vao_id, binding_index, divisor);
+        glVertexArrayVertexBuffer (m_mesh_data->m_vao_id,  binding_index, buffer_id, 0 /*offset*/, stride);
+    }
+
     void Mesh::setBuffers(const VertexBuffers & buffers)
     {
         m_mesh_data->m_indices_count = buffers.m_indices.size();
@@ -72,7 +82,7 @@ namespace RGL
         m_mesh_data->m_textures.push_back(texture);
     }
 
-    void Mesh::render(std::shared_ptr<Shader> & shader, bool is_textured)
+    void Mesh::render(std::shared_ptr<Shader> & shader, bool is_textured, uint32_t num_instances)
     {        
         if (is_textured)
         {
@@ -103,7 +113,15 @@ namespace RGL
         }
 
         glBindVertexArray(m_mesh_data->m_vao_id);
-        glDrawElements(m_mesh_data->m_draw_mode, m_mesh_data->m_indices_count, GL_UNSIGNED_INT, nullptr);
+
+        if (num_instances == 0)
+        {
+            glDrawElements(m_mesh_data->m_draw_mode, m_mesh_data->m_indices_count, GL_UNSIGNED_INT, nullptr);
+        }
+        else
+        {
+            glDrawElementsInstanced(m_mesh_data->m_draw_mode, m_mesh_data->m_indices_count, GL_UNSIGNED_INT, nullptr, num_instances);
+        }
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 }

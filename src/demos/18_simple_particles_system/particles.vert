@@ -11,8 +11,8 @@ layout( xfb_buffer = 1, xfb_offset=0 ) out vec3  tf_velocity;
 layout( xfb_buffer = 2, xfb_offset=0 ) out float tf_age;
 
 /* Outputs to fragment shader */
-out float transparency_FS_in;
-out vec2 texcoord_FS_in;
+layout(location = 0) out float v_transparency;
+layout(location = 1) out vec2  v_texcoord;
 
 /* Uniforms */
 uniform float delta_t;
@@ -82,18 +82,18 @@ layout(index = 0) subroutine(render_pass_type) void update()
 
 layout(index = 1) subroutine(render_pass_type) void render()
 {
-    transparency_FS_in = 0.0;
+    v_transparency = 0.0;
     vec3 pos_view_space = vec3(0.0);
 
     if (in_age >= 0.0)
     {
-        float age_pct      = in_age / particle_lifetime;
-        transparency_FS_in = clamp(1.0 - age_pct, 0, 1);
-        pos_view_space     = (model_view * vec4(in_pos, 1.0)).xyz + offsets[gl_VertexID] * 
-                             mix(particle_size_min_max.x, particle_size_min_max.y, age_pct);
+        float age_pct    = in_age / particle_lifetime;
+        v_transparency = clamp(1.0 - age_pct, 0, 1);
+        pos_view_space   = (model_view * vec4(in_pos, 1.0)).xyz + offsets[gl_VertexID] * 
+                           mix(particle_size_min_max.x, particle_size_min_max.y, age_pct);
     }
 
-    texcoord_FS_in = texcoords[gl_VertexID];
+    v_texcoord = texcoords[gl_VertexID];
 
     gl_Position = projection * vec4(pos_view_space, 1);
 }

@@ -17,10 +17,6 @@ SimpleParticlesSystem::SimpleParticlesSystem()
       m_particle_size_min_max     (0.05f),
       m_particle_angle            (glm::half_pi<float>()),
       m_delta_time                (0.0f),
-      m_specular_power            (120.0f),
-      m_specular_intenstiy        (0.0f),
-      m_dir_light_angles          (67.5f),
-      m_ambient_color             (0.18f),
       m_should_fade_out_with_time (false),
       m_start_position_min_max    (0.0f),
       m_start_velocity_min_max    (1.25, 1.5),
@@ -289,7 +285,7 @@ void SimpleParticlesSystem::render()
     /* Draw grid */
     m_simple_shader->bind();
     m_simple_shader->setUniform("mvp",        m_camera->m_projection * m_camera->m_view);
-    m_simple_shader->setUniform("color",      glm::vec3(0.0));
+    m_simple_shader->setUniform("color",      glm::vec3(0.4));
     m_simple_shader->setUniform("mix_factor", 1.0f);
 
     m_grid_model->render(m_simple_shader, false);
