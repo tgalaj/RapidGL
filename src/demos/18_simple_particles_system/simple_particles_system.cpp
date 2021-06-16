@@ -70,8 +70,7 @@ void SimpleParticlesSystem::init_app()
 
     /* Create objects */
     m_grid_model = std::make_shared<RGL::Model>();
-    m_grid_model->genPlane(20, 20, 20, 20);
-    m_grid_model->setDrawMode(GL_LINES);
+    m_grid_model->genPlaneGrid(20, 20, 20, 20);
 
     /* Create shader. */
     std::string dir = "../src/demos/02_simple_3d/";

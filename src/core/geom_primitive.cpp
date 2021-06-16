@@ -504,8 +504,6 @@ namespace RGL
         {
             for (unsigned int i = 0; i <= slices; ++i, w += widthInc)
             {
-                //buffers.m_texcoords.push_back(glm::vec2(i / (float) slices, j / (float) stacks));
-
                 VertexBuffers::Vertex v;
                 v.m_position = glm::vec3(w, 0.0f, h);
                 v.m_normal   = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -517,7 +515,7 @@ namespace RGL
             w = -width * 0.5f;
         }
 
-        GLushort idx = 0;
+        GLuint idx = 0;
 
         for (unsigned int j = 0; j < stacks; ++j)
         {
@@ -530,6 +528,54 @@ namespace RGL
                 buffers.m_indices.push_back(idx + 1);
                 buffers.m_indices.push_back(idx + slices + 1);
                 buffers.m_indices.push_back(idx + slices + 2);
+
+                ++idx;
+            }
+
+            ++idx;
+        }
+    }
+
+    void GeomPrimitive::genPlaneGrid(VertexBuffers& buffers, float width, float height, unsigned int slices, unsigned int stacks)
+    {
+        float widthInc = width / float(slices);
+        float heightInc = height / float(stacks);
+
+        float w = -width * 0.5f;
+        float h = -height * 0.5f;
+
+        for (unsigned int j = 0; j <= stacks; ++j, h += heightInc)
+        {
+            for (unsigned int i = 0; i <= slices; ++i, w += widthInc)
+            {
+                VertexBuffers::Vertex v;
+                v.m_position = glm::vec3(w   , 0.0f, h);
+                v.m_normal   = glm::vec3(0.0f, 1.0f, 0.0f);
+                v.m_texcoord = glm::vec3(i   , j   , 0.0f);
+                v.m_tangent  = glm::vec3(0.0f);
+
+                buffers.m_vertices.push_back(v);
+            }
+            w = -width * 0.5f;
+        }
+
+        GLuint idx = 0;
+
+        for (unsigned int j = 0; j < stacks; ++j)
+        {
+            for (unsigned int i = 0; i < slices; ++i)
+            {
+                buffers.m_indices.push_back(idx);
+                buffers.m_indices.push_back(idx + 1);
+
+                buffers.m_indices.push_back(idx + 1);
+                buffers.m_indices.push_back(idx + slices + 2);
+
+                buffers.m_indices.push_back(idx + slices + 2);
+                buffers.m_indices.push_back(idx + slices + 1);
+
+                buffers.m_indices.push_back(idx + slices + 1);
+                buffers.m_indices.push_back(idx);
 
                 ++idx;
             }

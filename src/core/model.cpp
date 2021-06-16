@@ -231,6 +231,15 @@ namespace RGL
         genPrimitive(buffers);
     }
 
+    void Model::genPlaneGrid(float width, float height, unsigned int slices, unsigned int stacks)
+    {
+        VertexBuffers buffers;
+        GeomPrimitive::genPlaneGrid(buffers, width, height, slices, stacks);
+
+        genPrimitive(buffers, false);
+        m_meshes[m_meshes.size() - 1].setDrawMode(GL_LINES);
+    }
+
     void Model::genSphere(float radius, unsigned int slices)
     {
         VertexBuffers buffers;
