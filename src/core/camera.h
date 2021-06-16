@@ -118,7 +118,7 @@ namespace RGL
               m_position        (glm::vec3(0.0f)),
               m_direction       (glm::vec3(0.0f, 0.0f, -1.0f)),
               m_is_dirty        (true),
-              m_free_look_locked(false),
+              m_is_mouse_move   (false),
               m_view            (1.0f),
               m_projection      (1.0f),
               m_is_ortho        (is_ortho),
@@ -136,8 +136,9 @@ namespace RGL
         glm::vec3 m_position;
         glm::vec3 m_direction;
 
-        bool m_is_dirty;
-        bool m_free_look_locked;
+        glm::vec2 m_mouse_pressed_position;
+        bool      m_is_dirty;
+        bool      m_is_mouse_move;
 
         void move(const glm::vec3 & position, const glm::vec3& dir, float amount);
     };

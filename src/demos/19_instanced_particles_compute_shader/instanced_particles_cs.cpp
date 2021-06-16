@@ -25,10 +25,10 @@ InstancedParticlesCS::InstancedParticlesCS()
 
 InstancedParticlesCS::~InstancedParticlesCS()
 {
-    glDeleteBuffers           (1, &m_pos_vbo_id);
-    glDeleteBuffers           (1, &m_velocity_vbo_id);
-    glDeleteBuffers           (1, &m_age_vbo_id);
-    glDeleteBuffers           (1, &m_rotation_vbo_id);
+    glDeleteBuffers(1, &m_pos_vbo_id);
+    glDeleteBuffers(1, &m_velocity_vbo_id);
+    glDeleteBuffers(1, &m_age_vbo_id);
+    glDeleteBuffers(1, &m_rotation_vbo_id);
 }
 
 void InstancedParticlesCS::init_app()
@@ -234,7 +234,7 @@ void InstancedParticlesCS::render_gui()
                         "F1     - take a screenshot\n"
                         "F2     - toggle wireframe rendering\n"
                         "WASDQE - control camera movement\n"
-                        "RMB    - toggle cursor lock and rotate camera\n"
+                        "RMB    - press to rotate the camera\n"
                         "Esc    - close the app\n\n");
         }
 

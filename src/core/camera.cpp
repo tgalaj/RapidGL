@@ -27,20 +27,24 @@ namespace RGL
             move(m_position, glm::vec3(0, -1, 0), movement_amount);
 
         /* Camera Rotation */
-        if (Input::getMouseDown(m_unlock_mouse_key))
+        if (Input::getMouse(m_unlock_mouse_key))
         {
-            m_free_look_locked = !m_free_look_locked;
-            Input::setMouseCursorVisibility(!m_free_look_locked);
-
-            if (m_free_look_locked)
+            if (!m_is_mouse_move)
             {
-                Input::setMouseCursorPosition(Window::getCenter());
+                m_mouse_pressed_position = Input::getMousePosition();
             }
+
+            m_is_mouse_move = true;
+        }
+        else
+        {
+            m_is_mouse_move = false;
         }
 
-        if (m_free_look_locked)
+        if (m_is_mouse_move)
         {
-            auto delta_pos = Input::getMousePosition() - Window::getCenter();
+            auto mouse_pos = Input::getMousePosition();
+            auto delta_pos = mouse_pos - m_mouse_pressed_position;
 
             auto rot_y = delta_pos.x != 0.0f;
             auto rot_x = delta_pos.y != 0.0f;
@@ -59,7 +63,7 @@ namespace RGL
 
             if (rot_x || rot_y)
             {
-                Input::setMouseCursorPosition(Window::getCenter());
+                m_mouse_pressed_position = Input::getMousePosition();
             }
         }
 

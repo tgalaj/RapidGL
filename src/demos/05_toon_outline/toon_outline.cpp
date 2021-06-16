@@ -439,7 +439,7 @@ void ToonOutline::render_gui()
             ImGui::Text("Controls info: \n\n"
                         "F1     - take a screenshot\n"
                         "WASDQE - control camera movement\n"
-                        "RMB    - toggle cursor lock and rotate camera\n"
+                        "RMB    - press to rotate the camera\n"
                         "Esc    - close the app\n\n");
         }
 

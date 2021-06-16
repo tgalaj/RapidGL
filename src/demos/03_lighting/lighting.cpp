@@ -295,7 +295,7 @@ void Lighting::render_gui()
                         "F1     - take a screenshot\n"
                         "F2     - toggle wireframe rendering\n"
                         "WASDQE - control camera movement\n"
-                        "RMB    - toggle cursor lock and rotate camera\n"
+                        "RMB    - press to rotate the camera\n"
                         "Esc    - close the app\n\n");
         }
 
