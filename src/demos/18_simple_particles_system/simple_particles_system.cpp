@@ -176,7 +176,7 @@ void SimpleParticlesSystem::init_app()
 
     for(int i = 0; i < rand_velocities.size(); ++i)
     {
-        rand_velocities[i] = RGL::Util::randomDouble(0.0, 1.0);
+        rand_velocities[i] = RGL::Util::RandomDouble(0.0, 1.0);
     }
 
     glGenTextures(1, &m_random_texture_1d);

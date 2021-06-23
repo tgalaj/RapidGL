@@ -184,7 +184,7 @@ void InstancedParticlesCS::render()
     m_particles_compute_shader->setUniform("u_start_rotational_velocity_min_max", m_start_rotational_velocity_min_max); 
     m_particles_compute_shader->setUniform("u_direction_constraints",             m_direction_constraints);
     m_particles_compute_shader->setUniform("u_cone_angle",                        glm::radians(m_cone_angle));
-    m_particles_compute_shader->setUniform("u_random",                            RGL::Util::randomVec3(0, 1));
+    m_particles_compute_shader->setUniform("u_random",                            RGL::Util::RandomVec3(0, 1));
 
     glDispatchCompute(m_total_particles / 1000, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

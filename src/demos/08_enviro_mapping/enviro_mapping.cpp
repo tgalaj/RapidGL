@@ -108,7 +108,7 @@ void EnvironmentMapping::init_app()
 
     for (int i = 0; i < no_spheres; ++i)
     {
-        float rand_radius = RGL::Util::randomDouble(0.1, max_sphere_radius);
+        float rand_radius = RGL::Util::RandomDouble(0.1, max_sphere_radius);
         m_objects.emplace_back(std::make_shared<RGL::Model>());
         m_objects[3 + i]->genSphere(rand_radius, 20);
         m_objects[3 + i]->getMesh(0).addTexture(default_diffuse_texture);
@@ -123,7 +123,7 @@ void EnvironmentMapping::init_app()
         glm::vec3 random_color = glm::linearRand(glm::vec3(0.0, 0.0, 0.0), glm::vec3(1.0, 1.0, 1.0));
 
         m_spheres_positions.emplace_back(random_position);
-        m_random_spheres_rotation_speeds.emplace_back(RGL::Util::randomDouble(0.1, 0.7));
+        m_random_spheres_rotation_speeds.emplace_back(RGL::Util::RandomDouble(0.1, 0.7));
 
         m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), random_position));
         m_color_tints.emplace_back(random_color);

@@ -96,8 +96,8 @@ namespace RGL
         }
 
 
-        std::string code = Util::loadFile(file_name);
-        code = Util::loadShaderIncludes(code);
+        std::string code = Util::LoadFile(file_name);
+        code = Util::LoadShaderIncludes(code);
 
         const char * shader_code = code.c_str();
 
