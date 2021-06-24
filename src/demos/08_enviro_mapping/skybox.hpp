@@ -7,7 +7,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "shader.h"
-#include "mesh.h"
+#include <texture.h>
 
 class Skybox
 {
@@ -39,8 +39,8 @@ private:
 
     GLuint m_vao_id;
     GLuint m_vbo_id;
-    GLuint m_cube_map_id;
+    RGL::TextureCubeMap m_cubemap_texture;
 
-    std::shared_ptr<RGL::Shader>  m_skybox_shader;
+    std::shared_ptr<RGL::Shader> m_skybox_shader;
 };
 

@@ -39,10 +39,10 @@ void GSWireframe::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
+    m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RGL::FileSystem::getPath("models/armadillo.obj"));
+    m_objects[0]->Load(RGL::FileSystem::getPath("models/armadillo.obj"));
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.02)));
@@ -126,7 +126,7 @@ void GSWireframe::render()
         m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_directional_light_shader);
+        m_objects[i]->Render();
     }
 }
 

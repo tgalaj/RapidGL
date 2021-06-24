@@ -50,9 +50,9 @@ void TessellationLoD::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     /* Create object model */
-    m_model = std::make_shared<RGL::Model>();
-    m_model->load(RGL::FileSystem::getPath("models/suzanne.obj"));
-    m_model->setDrawMode(GL_PATCHES);
+    m_model = std::make_shared<RGL::StaticModel>();
+    m_model->Load(RGL::FileSystem::getPath("models/suzanne.obj"));
+    m_model->SetDrawMode(RGL::DrawMode::PATCHES);
 
     for (int i = 0; i < 5; ++i)
     {
@@ -139,7 +139,7 @@ void TessellationLoD::render()
     {
         m_pn_tessellation_shader->setUniform("model", world_matrix);
         m_pn_tessellation_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(world_matrix))));
-        m_model->render(m_pn_tessellation_shader, false);
+        m_model->Render();
     }
 }
 

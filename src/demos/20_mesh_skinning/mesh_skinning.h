@@ -23,8 +23,6 @@ public:
 private:
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_simple_texturing_shader;
-    
-    RGL::TextureSampler m_sampler;
 
     std::vector<RGL::StaticModel> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;

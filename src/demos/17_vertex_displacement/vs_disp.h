@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -45,7 +45,7 @@ public:
 private:
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_vs_disp_shader;
-    std::shared_ptr<RGL::Model> m_model;
+    std::shared_ptr<RGL::StaticModel> m_model;
     glm::mat4 m_world_matrix;
 
     DirectionalLight m_dir_light_properties;

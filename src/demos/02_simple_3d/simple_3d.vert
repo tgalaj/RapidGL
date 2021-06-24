@@ -8,7 +8,7 @@ out vec2 out_texcoord;
 
 void main()
 {
-    out_texcoord = in_texcoord.rg;
+    out_texcoord = in_texcoord;
 
     gl_Position = mvp * vec4(in_pos, 1.0);
 }

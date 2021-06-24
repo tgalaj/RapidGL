@@ -8,7 +8,7 @@ in vec3 normal;
 uniform float ambient_factor;
 uniform float gamma;
 
-uniform sampler2D texture_diffuse1;
+layout(binding = 0) uniform sampler2D texture_diffuse1;
 
 vec4 reinhard(vec4 hdr_color)
 {

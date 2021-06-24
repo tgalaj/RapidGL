@@ -67,24 +67,25 @@ namespace RGL
             }
         }
 
-        void AddAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor = 0);
-        void AddTexture(const std::shared_ptr<Texture2D> & texture, uint32_t mesh_id = 0);
+        virtual void AddAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor = 0);
+        virtual void AddTexture(const std::shared_ptr<Texture2D> & texture, uint32_t bindingindex = 0, uint32_t mesh_id = 0);
+        virtual void SetDrawMode(DrawMode mode) { m_draw_mode = mode; }
 
-        bool Load(const std::filesystem::path& filepath);
-        void Render(uint32_t num_instances = 0);
+        virtual bool Load(const std::filesystem::path& filepath);
+        virtual void Render(uint32_t num_instances = 0);
 
         /* Primitives */
-        void GenCone       (float    height      = 3.0f, float    radius      = 1.5f, uint32_t slices = 10, uint32_t stacks = 10);
-        void GenCube       (float    radius      = 1.0f);                     
-        void GenCubeMap    (float    radius      = 1.0f);                     
-        void GenCylinder   (float    height      = 3.0f, float    radius      = 1.5f, uint32_t slices = 10);
-        void GenPlane      (float    width       = 1.0f, float    height      = 1.0f, uint32_t slices = 5, uint32_t stacks = 5);
-        void GenPlaneGrid  (float    width       = 1.0f, float    height      = 1.0f, uint32_t slices = 5, uint32_t stacks = 5);
-        void GenSphere     (float    radius      = 1.5f, uint32_t slices      = 12);
-        void GenTorus      (float    innerRadius = 1.0f, float    outerRadius = 2.0f, uint32_t slices = 10, uint32_t stacks = 10);
-        void GenTrefoilKnot(uint32_t slices      = 100,  uint32_t stacks      = 20);
-        void GenPQTorusKnot(uint32_t slices      = 256,  uint32_t stacks      = 16,   int p = 2, int q = 3, float knot_r = 0.75, float tube_r = 0.15);
-        void GenQuad       (float    width       = 1.0f, float    height      = 1.0f);
+        virtual void GenCone       (float    height      = 3.0f, float    radius      = 1.5f, uint32_t slices = 10, uint32_t stacks = 10);
+        virtual void GenCube       (float    radius      = 1.0f);                     
+        virtual void GenCubeMap    (float    radius      = 1.0f);                     
+        virtual void GenCylinder   (float    height      = 3.0f, float    radius      = 1.5f, uint32_t slices = 10);
+        virtual void GenPlane      (float    width       = 1.0f, float    height      = 1.0f, uint32_t slices = 5, uint32_t stacks = 5);
+        virtual void GenPlaneGrid  (float    width       = 1.0f, float    height      = 1.0f, uint32_t slices = 5, uint32_t stacks = 5);
+        virtual void GenSphere     (float    radius      = 1.5f, uint32_t slices      = 12);
+        virtual void GenTorus      (float    innerRadius = 1.0f, float    outerRadius = 2.0f, uint32_t slices = 10, uint32_t stacks = 10);
+        virtual void GenTrefoilKnot(uint32_t slices      = 100,  uint32_t stacks      = 20);
+        virtual void GenPQTorusKnot(uint32_t slices      = 256,  uint32_t stacks      = 16,   int p = 2, int q = 3, float knot_r = 0.75, float tube_r = 0.15);
+        virtual void GenQuad       (float    width       = 1.0f, float    height      = 1.0f);
 
     protected:
         bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath);
@@ -117,7 +118,9 @@ namespace RGL
         GLuint   m_ibo_name;
         DrawMode m_draw_mode;
         
+        using TexturesContainer = std::vector<std::pair<std::shared_ptr<Texture2D>, uint32_t>>;
+
         std::vector<MeshPart> m_mesh_parts;
-        std::vector<std::shared_ptr<Texture2D>> m_textures;
+        std::vector<TexturesContainer> m_textures;
     };
 }

@@ -41,14 +41,12 @@ void AlphaCutout::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
-    m_objects[0]->load(RGL::FileSystem::getPath("models/pine/snow_pine_tree.obj"));
+    m_pine_tree.Load(RGL::FileSystem::getPath("models/pine/snow_pine_tree.obj"));
 
     constexpr auto kRadius    = 2.5f;
     constexpr float area_size = 15.0f;
 
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
-    m_objects[1]->genPlane(area_size * 2.0 + kRadius, area_size * 2.0 + kRadius, area_size * 2.0, area_size * 2.0);
+    m_ground_plane.GenPlane(area_size * 2.0 + kRadius, area_size * 2.0 + kRadius, area_size * 2.0, area_size * 2.0);
 
     m_ground_plane_model = glm::translate(glm::mat4(1.0), glm::vec3(0.0, -0.5, 0.0));
 
@@ -56,7 +54,6 @@ void AlphaCutout::init_app()
     constexpr auto kXMin = std::array<float, 2>{ {-area_size, -area_size}};
     constexpr auto kXMax = std::array<float, 2>{ { area_size,  area_size}};
 
-    // Minimal amount of information provided to sampling function.
     const auto samples = thinks::PoissonDiskSampling(kRadius, kXMin, kXMax);
 
     for (unsigned i = 0; i < samples.size(); ++i)
@@ -66,20 +63,18 @@ void AlphaCutout::init_app()
    
 
     /* Add textures to the objects. */
-    RGL::Texture pine_texture;
-    pine_texture.m_id = RGL::Util::loadGLTexture2D("diffuse_half.tga", "models/pine", true);
-    pine_texture.m_type = "texture_diffuse";
+    auto pine_texture = std::make_shared<RGL::Texture2D>();
+    pine_texture->Load(RGL::FileSystem::getPath("models/pine/diffuse_half.tga"), true);
+    pine_texture->SetAnisotropy(16);
 
-    if (m_objects[0]->getMesh(0).getTexturesCount() == 0)
-    {
-        m_objects[0]->getMesh(0).addTexture(pine_texture);
-    }
+    auto ground_texture = std::make_shared<RGL::Texture2D>();
+    ground_texture->Load(RGL::FileSystem::getPath("textures/grass_green_d.jpg"), true);
+    ground_texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+    ground_texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
+    ground_texture->SetAnisotropy(16);
 
-    RGL::Texture ground_texture;
-    ground_texture.m_id = RGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
-    ground_texture.m_type = "texture_diffuse";
-
-    m_objects[1]->getMesh(0).addTexture(ground_texture);
+    m_pine_tree.AddTexture(pine_texture);
+    m_ground_plane.AddTexture(ground_texture);
 
     /* Create shader. */
     std::string dir          = "../src/demos/07_alpha_cutout/";
@@ -164,7 +159,7 @@ void AlphaCutout::render()
         m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_directional_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
-        m_objects[0]->render(m_directional_light_shader);
+        m_pine_tree.Render();
     }
 
     /* Render ground plane */
@@ -172,7 +167,7 @@ void AlphaCutout::render()
     m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_ground_plane_model))));
     m_directional_light_shader->setUniform("mvp", view_projection * m_ground_plane_model);
     
-    m_objects[1]->render(m_directional_light_shader);
+    m_ground_plane.Render();
 }
 
 void AlphaCutout::render_gui()

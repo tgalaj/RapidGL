@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -21,13 +21,17 @@ public:
     void render_gui()               override;
 
 private:
-    RGL::Texture gen_perlin_data(uint32_t width, uint32_t height, float base_frequency = 4.0f, float persistance = 0.5f, bool periodic = true);
+    GLuint gen_perlin_data(uint32_t width, uint32_t height, float base_frequency = 4.0f, float persistance = 0.5f, bool periodic = true);
 
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_noise_texturing_shader;
 
-    std::vector<std::shared_ptr<RGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::StaticModel>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
+
+    GLuint m_cloud_texture;
+    GLuint m_wood_grain_texture;
+    GLuint m_decal_texture;
 
     // Cloud
     glm::vec3 m_sky_color;

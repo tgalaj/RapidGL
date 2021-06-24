@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 #include "gui/gui.h"
 
@@ -47,7 +47,7 @@ private:
 
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_simple_shader, m_particles_render_shader, m_particles_compute_shader;
-    std::shared_ptr<RGL::Model> m_instanced_model, m_grid_model;
+    RGL::StaticModel m_instanced_model, m_grid_model;
 
     GLuint m_pos_vbo_id;
     GLuint m_velocity_vbo_id;

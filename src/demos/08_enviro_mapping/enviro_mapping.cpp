@@ -49,19 +49,19 @@ void EnvironmentMapping::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
-    m_objects[0]->load(RGL::FileSystem::getPath("models/xyzrgb_dragon.obj"));
+    m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
+    m_objects[0]->Load(RGL::FileSystem::getPath("models/xyzrgb_dragon.obj"));
     m_xyzrgb_dragon = m_objects[0];
 
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
-    m_objects[1]->load(RGL::FileSystem::getPath("models/lucy.obj"));
+    m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
+    m_objects[1]->Load(RGL::FileSystem::getPath("models/lucy.obj"));
     m_lucy = m_objects[1];
 
     constexpr auto kRadius    = 2.5f; 
     constexpr float area_size = 15.0f;
 
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
-    m_objects[2]->genPlane(area_size * 2.0 + kRadius, area_size * 2.0 + kRadius, area_size * 2.0, area_size * 2.0);
+    m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
+    m_objects[2]->GenPlane(area_size * 2.0 + kRadius, area_size * 2.0 + kRadius, area_size * 2.0, area_size * 2.0);
     m_ground_plane = m_objects[2];
 
     /* Set model matrices for each model. */
@@ -82,26 +82,19 @@ void EnvironmentMapping::init_app()
     m_color_tints.emplace_back(glm::vec3(1.0));
 
     /* Add textures to the objects. */
-    RGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
-    default_diffuse_texture.m_type = "texture_diffuse";
+    auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
+    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
 
-    if (m_xyzrgb_dragon->getMesh(0).getTexturesCount() == 0)
-    {
-        m_xyzrgb_dragon->getMesh(0).addTexture(default_diffuse_texture);
-    }
+    m_xyzrgb_dragon->AddTexture(default_diffuse_texture);
+    m_lucy->AddTexture(default_diffuse_texture);
 
-    if (m_lucy->getMesh(0).getTexturesCount() == 0)
-    {
-        m_lucy->getMesh(0).addTexture(default_diffuse_texture);
-    }
+    auto ground_texture = std::make_shared<RGL::Texture2D>();
+    ground_texture->Load(RGL::FileSystem::getPath("textures/grass_green_d.jpg"), true);
+    ground_texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+    ground_texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
+    ground_texture->SetAnisotropy(16);
 
-    RGL::Texture ground_texture;
-    ground_texture.m_id = RGL::Util::loadGLTexture2D("grass_green_d.jpg", "textures", true);
-    ground_texture.m_type = "texture_diffuse";
-
-    m_ground_plane->getMesh(0).addTexture(ground_texture);
-
+    m_ground_plane->AddTexture(ground_texture);
 
     constexpr uint8_t no_spheres = 1000;
     constexpr float max_sphere_radius = 0.4f;
@@ -109,9 +102,9 @@ void EnvironmentMapping::init_app()
     for (int i = 0; i < no_spheres; ++i)
     {
         float rand_radius = RGL::Util::RandomDouble(0.1, max_sphere_radius);
-        m_objects.emplace_back(std::make_shared<RGL::Model>());
-        m_objects[3 + i]->genSphere(rand_radius, 20);
-        m_objects[3 + i]->getMesh(0).addTexture(default_diffuse_texture);
+        m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
+        m_objects[3 + i]->GenSphere(rand_radius, 20);
+        m_objects[3 + i]->AddTexture(default_diffuse_texture);
 
         glm::vec3 random_position = glm::sphericalRand(16.0f);
         if (random_position.y < -0.5f)
@@ -261,38 +254,38 @@ void EnvironmentMapping::render_objects(const glm::mat4& camera_view, const glm:
         m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
         m_directional_light_shader->setUniform("color_tint", m_color_tints[i]);
 
-        m_objects[i]->render(m_directional_light_shader);
+        m_objects[i]->Render();
     }
 
     /* Render reflective / refractive models */
     m_enviro_mapping_shader->bind();
     m_enviro_mapping_shader->setUniform("cam_pos", camera_position);
 
-    if(!m_dynamic_enviro_mapping_toggle) m_skybox->bindSkyboxTexture();
+    if(!m_dynamic_enviro_mapping_toggle) m_skybox->bindSkyboxTexture(1);
 
     /* xyzrgb dragon */
     if (ignore_obj_id != 0)
     {
-        if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[0].bindTexture();
+        if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[0].bindTexture(1);
 
         m_enviro_mapping_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "reflection");
         m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[0]);
         m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[0]))));
         m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[0]);
-        m_xyzrgb_dragon->render(m_enviro_mapping_shader, false);
+        m_xyzrgb_dragon->Render();
     }
 
     /* lucy */
     if (ignore_obj_id != 1)
     {
-        if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[1].bindTexture();
+        if (m_dynamic_enviro_mapping_toggle) m_cubemap_rts[1].bindTexture(1);
 
         m_enviro_mapping_shader->setSubroutine(RGL::Shader::ShaderType::FRAGMENT, "refraction");
         m_enviro_mapping_shader->setUniform("ior", m_ior);
         m_enviro_mapping_shader->setUniform("model", m_objects_model_matrices[1]);
         m_enviro_mapping_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[1]))));
         m_enviro_mapping_shader->setUniform("mvp", view_projection * m_objects_model_matrices[1]);
-        m_lucy->render(m_enviro_mapping_shader, false);
+        m_lucy->Render();
     }
 
     /* Render skybox */

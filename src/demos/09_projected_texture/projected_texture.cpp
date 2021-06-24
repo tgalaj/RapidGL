@@ -45,19 +45,19 @@ void ProjectedTexture::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 9; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RGL::FileSystem::getPath("models/bunny.obj"));
-    m_objects[1]->genCone(1.0, 0.5);
-    m_objects[2]->genCube();
-    m_objects[3]->genCylinder(1.0, 0.5);
-    m_objects[4]->genPlane();
-    m_objects[5]->genSphere(0.5);
-    m_objects[6]->genTorus(0.5, 1.0);
-    m_objects[7]->genQuad();
-    m_objects[8]->genPlane(50, 50);
+    m_objects[0]->Load(RGL::FileSystem::getPath("models/bunny.obj"));
+    m_objects[1]->GenCone(1.0, 0.5);
+    m_objects[2]->GenCube();
+    m_objects[3]->GenCylinder(1.0, 0.5);
+    m_objects[4]->GenPlane();
+    m_objects[5]->GenSphere(0.5);
+    m_objects[6]->GenTorus(0.5, 1.0);
+    m_objects[7]->GenQuad();
+    m_objects[8]->GenPlane(50, 50);
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, -1.0, -5)));                                                                         // bunny
@@ -71,21 +71,19 @@ void ProjectedTexture::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, -1.0, -5)));                                                                         // ground plane
 
     /* Add textures to the objects. */
-    RGL::Texture texture;
-    texture.m_id = RGL::Util::loadGLTexture2D("bricks.png", "textures", true);
-    texture.m_type = "texture_diffuse";
+    auto texture = std::make_shared<RGL::Texture2D>();
+    texture->Load(RGL::FileSystem::getPath("textures/bricks.png"), true);
 
-    RGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
-    default_diffuse_texture.m_type = "texture_diffuse";
+    auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
+    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
 
-    m_objects[5]->getMesh(0).addTexture(texture);
+    m_objects[5]->AddTexture(texture);
 
     for (auto& model : m_objects)
     {
-        if (model->getMesh(0).getTexturesCount() == 0)
+        if (&model != &m_objects[5])
         {
-            model->getMesh(0).addTexture(default_diffuse_texture);
+            model->AddTexture(default_diffuse_texture);
         }
     }
 
@@ -98,13 +96,9 @@ void ProjectedTexture::init_app()
     m_spot_light_shader->link();
 
     /* Load texture to be projected and adjust its parameters */
-    m_projector.m_texture.m_id   = RGL::Util::loadGLTexture2D(m_current_projector_texture_name.c_str(), "textures/circles", true);
-    m_projector.m_texture.m_type = "texture_diffuse";
-
-    glBindTexture(GL_TEXTURE_2D, m_projector.m_texture.m_id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    m_projector.m_texture.Load(RGL::FileSystem::getPath("textures/circles/" + m_current_projector_texture_name), true);
+    m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
+    m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
 
     /* Set up the projectors' matrix */
     m_projector.m_view_matrix       = glm::lookAt(m_spot_light_properties.position, m_spot_light_properties.position + m_spot_light_properties.direction, glm::cross(m_spot_light_properties.direction, glm::vec3(1.0, 0.0, 0.0)));
@@ -185,7 +179,7 @@ void ProjectedTexture::render()
         //m_ambient_light_shader->setUniform("model", m_objects_model_matrices[i]);
         m_ambient_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_ambient_light_shader);
+        m_objects[i]->Render();
     }
 
     /*
@@ -216,8 +210,7 @@ void ProjectedTexture::render()
     m_spot_light_shader->setUniform("gamma",              m_gamma);
 
     /* Projector texture uniforms */
-    glBindTexture(GL_TEXTURE_2D, m_projector.m_texture.m_id);
-    glBindTextureUnit(1, m_projector.m_texture.m_id);
+    m_projector.m_texture.Bind(1);
     m_projector.m_view_matrix = glm::lookAt(m_spot_light_properties.position, m_spot_light_properties.position + m_spot_light_properties.direction, glm::cross(m_spot_light_properties.direction, glm::vec3(1.0, 0.0, 0.0)));
     m_spot_light_shader->setUniform("projector_matrix", m_projector.transform());
 
@@ -227,7 +220,7 @@ void ProjectedTexture::render()
         m_spot_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_spot_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_spot_light_shader);
+        m_objects[i]->Render();
     }
 
     /* Enable writing to the depth buffer. */
@@ -311,18 +304,9 @@ void ProjectedTexture::render_gui()
                             {
                                 m_current_projector_texture_name = sf;
 
-                                if(m_projector.m_texture.m_id != 0)
-                                {
-                                    glDeleteTextures(1, &m_projector.m_texture.m_id);
-                                }
-
-                                m_projector.m_texture.m_id = RGL::Util::loadGLTexture2D(m_current_projector_texture_name.c_str(), "textures/circles", true);
-                                m_projector.m_texture.m_type = "texture_diffuse";
-
-                                glBindTexture(GL_TEXTURE_2D, m_projector.m_texture.m_id);
-                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-                                glBindTexture(GL_TEXTURE_2D, 0);
+                                m_projector.m_texture.Load(RGL::FileSystem::getPath("textures/circles/" + m_current_projector_texture_name), true);
+                                m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
+                                m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
                             }
 
                             if (is_selected)

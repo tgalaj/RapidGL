@@ -5,18 +5,6 @@
 
 #include "util.h"
 
-// TODO: Refactor StaticModel loading
-// 1. Use glDrawElementsBaseVertex - done
-// 2. Store base index and vertex - done
-// 4. Properly load textures from the mesh file - done
-// 5. Properly load textures from the image file - done
-//    Support only one texture per type! model->SetTexture(RGL::TextureType, Texture)
-//    
-// 6. Have 2 classes:
-//        - static model - done
-//        - animated model
-// 7. Ability to access every mesh part to change Material's properties (add and delete)
-
 namespace RGL
 {
     void StaticModel::Render(uint32_t num_instances)
@@ -31,7 +19,10 @@ namespace RGL
 
                 assert(material_index < m_textures.size());
                 
-                if(m_textures[material_index]) m_textures[material_index]->Bind(0);
+                for(auto & pair : m_textures[material_index])
+                {
+                     pair.first->Bind(pair.second);
+                }
             }
 
             if(num_instances == 0 )
@@ -200,8 +191,8 @@ namespace RGL
 
                     std::string full_path = dir + "/" + p;
 
-                    m_textures[i] = std::make_shared<Texture2D>();
-                    if (!m_textures[i]->Load(full_path))
+                    auto texture = std::make_shared<Texture2D>();
+                    if (!texture->Load(full_path))
                     {
                         fprintf(stderr, "Error loading texture %s.\n", full_path.c_str());
                         return false;
@@ -209,6 +200,7 @@ namespace RGL
                     else
                     {
                         printf("Loaded texture '%s'\n", full_path.c_str());
+                        m_textures[i].push_back( {texture, 0} );
                     }
                 }
             }
@@ -266,10 +258,21 @@ namespace RGL
 
         glCreateVertexArrays(1, &m_vao_name);
 
-                          glVertexArrayVertexBuffer(m_vao_name, 0 /* bindingindex*/, m_vbo_name, 0                                                               /*offset*/, sizeof(vertex_data.positions[0]) /*stride*/);
-                          glVertexArrayVertexBuffer(m_vao_name, 1 /* bindingindex*/, m_vbo_name, sizeof(vertex_data.positions[0]) * vertex_data.positions.size() /*offset*/, sizeof(vertex_data.texcoords[0]) /*stride*/);
-                          glVertexArrayVertexBuffer(m_vao_name, 2 /* bindingindex*/, m_vbo_name, sizeof(vertex_data.texcoords[0]) * vertex_data.texcoords.size() /*offset*/, sizeof(vertex_data.normals[0])   /*stride*/);
-        if (has_tangents) glVertexArrayVertexBuffer(m_vao_name, 3 /* bindingindex*/, m_vbo_name, sizeof(vertex_data.normals[0])   * vertex_data.normals.size()   /*offset*/, sizeof(vertex_data.tangents[0])  /*stride*/);
+        uint64_t offset = 0;
+        glVertexArrayVertexBuffer(m_vao_name, 0 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.positions[0]) /*stride*/);
+                          
+        offset += sizeof(vertex_data.positions[0]) * vertex_data.positions.size();
+        glVertexArrayVertexBuffer(m_vao_name, 1 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.texcoords[0]) /*stride*/);
+        
+        offset += sizeof(vertex_data.texcoords[0]) * vertex_data.texcoords.size();
+        glVertexArrayVertexBuffer(m_vao_name, 2 /* bindingindex*/, m_vbo_name,  offset, sizeof(vertex_data.normals[0]) /*stride*/);
+
+        if (has_tangents)
+        {
+            offset += sizeof(vertex_data.normals[0]) * vertex_data.normals.size();
+            glVertexArrayVertexBuffer(m_vao_name, 3 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.tangents[0]) /*stride*/);
+        }
+
         glVertexArrayElementBuffer(m_vao_name, m_ibo_name);
 
                           glEnableVertexArrayAttrib(m_vao_name, 0 /*attribindex*/); // positions
@@ -301,20 +304,22 @@ namespace RGL
         }
     }
 
-    void StaticModel::AddTexture(const std::shared_ptr<Texture2D>& texture, uint32_t mesh_id)
+    void StaticModel::AddTexture(const std::shared_ptr<Texture2D>& texture, uint32_t bindingindex, uint32_t mesh_id)
     {
         assert(mesh_id < m_mesh_parts.size());
 
         /* If the mesh part doesn't have any texture assigned, add the new one. */
         if (m_mesh_parts[mesh_id].m_material_index == INVALID_MATERIAL)
         {
-            m_textures.push_back(texture);
+            TexturesContainer container = { {texture, bindingindex} };
+            m_textures.push_back(container);
             m_mesh_parts[mesh_id].m_material_index = m_textures.size() - 1;
         }
-        /* If mesh part had already assigned a texture, replace it. */
+        /* If mesh part had already assigned a texture, add new one. */
         else
         {
-            m_textures[m_mesh_parts[mesh_id].m_material_index] = texture;
+            auto material_index = m_mesh_parts[mesh_id].m_material_index;
+            m_textures[material_index].push_back({texture, bindingindex});
         }
     }
 
@@ -762,8 +767,7 @@ namespace RGL
             ++idx;
         }
 
-        GenPrimitive(vertex_data);
-    }
+        GenPrimitive(vertex_data);    }
 
     void StaticModel::GenPlaneGrid(float width, float height, uint32_t slices, uint32_t stacks)
     {
@@ -811,7 +815,7 @@ namespace RGL
 
             ++idx;
         }
-        GenPrimitive(vertex_data);
+        GenPrimitive(vertex_data, false);
     }
 
     void StaticModel::GenSphere(float radius, uint32_t slices)
@@ -894,8 +898,8 @@ namespace RGL
                                                            torusRadius * sin2PIt));
 
                 vertex_data.normals.push_back(glm::vec3(cos2PIp * cos2PIt,
-                                              sin2PIp * cos2PIt,
-                                              sin2PIt));
+                                                        sin2PIp * cos2PIt,
+                                                        sin2PIt));
 
                 vertex_data.texcoords.push_back(glm::vec2(phi, theta));
             }

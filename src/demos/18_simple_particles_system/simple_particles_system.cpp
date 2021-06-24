@@ -33,7 +33,6 @@ SimpleParticlesSystem::~SimpleParticlesSystem()
     glDeleteVertexArrays      (2, m_vao_ids);
     glDeleteTransformFeedbacks(2, m_tfo_ids);
     glDeleteTextures          (1, &m_random_texture_1d);
-    glDeleteTextures          (1, &m_particle_texture);
 }
 
 void SimpleParticlesSystem::init_app()
@@ -69,8 +68,8 @@ void SimpleParticlesSystem::init_app()
     m_camera->update(0.0);
 
     /* Create objects */
-    m_grid_model = std::make_shared<RGL::Model>();
-    m_grid_model->genPlaneGrid(20, 20, 20, 20);
+    m_grid_model = std::make_shared<RGL::StaticModel>();
+    m_grid_model->GenPlaneGrid(20, 20, 20, 20);
 
     /* Create shader. */
     std::string dir = "../src/demos/02_simple_3d/";
@@ -179,21 +178,17 @@ void SimpleParticlesSystem::init_app()
         rand_velocities[i] = RGL::Util::RandomDouble(0.0, 1.0);
     }
 
-    glGenTextures(1, &m_random_texture_1d);
-    glBindTexture(GL_TEXTURE_1D, m_random_texture_1d);
-    glTexStorage1D(GL_TEXTURE_1D, 1, GL_R32F, size);
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, size, GL_RED, GL_FLOAT, rand_velocities.data());
+    glCreateTextures(GL_TEXTURE_1D, 1, &m_random_texture_1d);
 
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureStorage1D(m_random_texture_1d, 1, GL_R32F, size);
+    glTextureSubImage1D(m_random_texture_1d, 0, 0, size, GL_RED, GL_FLOAT, rand_velocities.data());
 
-    glBindTexture(GL_TEXTURE_1D, 0);
+    glTextureParameteri(m_random_texture_1d, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(m_random_texture_1d, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     /* Create particle texture */
     m_current_texture_filename = "bluewater.png";
-    m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
+    m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
 }
 
 void SimpleParticlesSystem::input()
@@ -287,13 +282,13 @@ void SimpleParticlesSystem::render()
     m_simple_shader->setUniform("color",      glm::vec3(0.4));
     m_simple_shader->setUniform("mix_factor", 1.0f);
 
-    m_grid_model->render(m_simple_shader, false);
+    m_grid_model->Render();
 
     /* Draw particles */
     m_particles_shader->bind();
     m_particles_shader->setSubroutine(RGL::Shader::ShaderType::VERTEX, "render");
     
-    glBindTextureUnit(0, m_particle_texture);
+    m_particle_texture.Bind(0);
     glBindTextureUnit(1, m_random_texture_1d);
 
     glDepthMask(GL_FALSE);
@@ -391,12 +386,8 @@ void SimpleParticlesSystem::render_gui()
                 m_direction_constraints     = glm::vec3(1, 1, 1);
                 m_cone_angle                = glm::degrees(glm::pi<float>() / 8.0f);
 
-                if (m_particle_texture)
-                {
-                    glDeleteTextures(1, &m_particle_texture);
-                }
                 m_current_texture_filename = "bluewater.png";
-                m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
+                m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
 
                 reset_particles_buffers();
             }
@@ -413,12 +404,8 @@ void SimpleParticlesSystem::render_gui()
                 m_direction_constraints     = glm::vec3(0, 1, 0);
                 m_cone_angle                = 0.0f;
 
-                if (m_particle_texture)
-                {
-                    glDeleteTextures(1, &m_particle_texture);
-                }
                 m_current_texture_filename = "fire.png";
-                m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
+                m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
 
                 reset_particles_buffers();
             }
@@ -435,12 +422,8 @@ void SimpleParticlesSystem::render_gui()
                 m_direction_constraints     = glm::vec3(1, 1, 1);
                 m_cone_angle                = glm::degrees(glm::pi<float>() / 1.5f);
 
-                if (m_particle_texture)
-                {
-                    glDeleteTextures(1, &m_particle_texture);
-                }
                 m_current_texture_filename = "smoke.png";
-                m_particle_texture         = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "textures/particles", false);
+                m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
 
                 reset_particles_buffers();
             }
@@ -466,13 +449,8 @@ void SimpleParticlesSystem::render_gui()
         {
             m_current_texture_filename = filepath.substr(pos + res_string.size(), filepath.size());
 
-            if (m_particle_texture)
-            {
-                glDeleteTextures(1, &m_particle_texture);
-            }
-
             /* Load texture data. */
-            m_particle_texture = RGL::Util::loadGLTexture2D(m_current_texture_filename.c_str(), "", false);
+            m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
 
             /* Strip relative path to get filename + extenstion only. */
             m_current_texture_filename = m_current_texture_filename.substr(m_current_texture_filename.find_last_of("\\") + 1, m_current_texture_filename.size());

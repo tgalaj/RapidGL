@@ -4,66 +4,54 @@
 
 namespace RGL
 {
-    TextureSampler::TextureSampler() : m_so_id(0), m_max_anisotropy(1.0f)
+    void Texture::SetFiltering(TextureFiltering type, TextureFilteringParam param)
     {
-    }
-
-    void TextureSampler::Create()
-    {
-        glCreateSamplers(1, &m_so_id);
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &m_max_anisotropy);
-
-        SetFiltering(Filtering::MIN,       FilteringParam::LINEAR_MIP_LINEAR);
-        SetFiltering(Filtering::MAG,       FilteringParam::LINEAR);
-        SetWraping  (WrapingCoordinate::S, WrapingParam::CLAMP_TO_EDGE);
-        SetWraping  (WrapingCoordinate::T, WrapingParam::CLAMP_TO_EDGE);
-    }
-
-    void TextureSampler::SetFiltering(Filtering type, FilteringParam param)
-    {
-        if (type == Filtering::MAG && param > FilteringParam::LINEAR)
+        if (type == TextureFiltering::MAG && param > TextureFilteringParam::LINEAR)
         {
-            param = FilteringParam::LINEAR;
+            param = TextureFilteringParam::LINEAR;
         }
 
-        glSamplerParameteri(m_so_id, GLenum(type), GLint(param));
+        glTextureParameteri(m_obj_name, GLenum(type), GLint(param));
     }
 
-    void TextureSampler::SetMinLod(float min)
+    void Texture::SetMinLod(float min)
     {
-        glSamplerParameterf(m_so_id, GL_TEXTURE_MIN_LOD, min);
+        glTextureParameterf(m_obj_name, GL_TEXTURE_MIN_LOD, min);
     }
 
-    void TextureSampler::SetMaxLod(float max)
+    void Texture::SetMaxLod(float max)
     {
-        glSamplerParameterf(m_so_id, GL_TEXTURE_MAX_LOD, max);
+        glTextureParameterf(m_obj_name, GL_TEXTURE_MAX_LOD, max);
     }
 
-    void TextureSampler::SetWraping(WrapingCoordinate coord, WrapingParam param)
+    void Texture::SetWraping(TextureWrapingCoordinate coord, TextureWrapingParam param)
     {
-        glSamplerParameteri(m_so_id, GLenum(coord), GLint(param));
+        glTextureParameteri(m_obj_name, GLenum(coord), GLint(param));
     }
 
-    void TextureSampler::SetBorderColor(float r, float g, float b, float a)
+    void Texture::SetBorderColor(float r, float g, float b, float a)
     {
         float color[4] = { r, g, b, a };
-        glSamplerParameterfv(m_so_id, GL_TEXTURE_BORDER_COLOR, color);
+        glTextureParameterfv(m_obj_name, GL_TEXTURE_BORDER_COLOR, color);
     }
 
-    void TextureSampler::SetCompareMode(CompareMode mode)
+    void Texture::SetCompareMode(TextureCompareMode mode)
     {
-        glSamplerParameteri(m_so_id, GL_TEXTURE_COMPARE_MODE, GLint(mode));
+        glTextureParameteri(m_obj_name, GL_TEXTURE_COMPARE_MODE, GLint(mode));
     }
 
-    void TextureSampler::SetCompareFunc(CompareFunc func)
+    void Texture::SetCompareFunc(TextureCompareFunc func)
     {
-        glSamplerParameteri(m_so_id, GL_TEXTURE_COMPARE_FUNC, GLint(func));
+        glTextureParameteri(m_obj_name, GL_TEXTURE_COMPARE_FUNC, GLint(func));
     }
 
-    void TextureSampler::SetAnisotropy(float anisotropy)
+    void Texture::SetAnisotropy(float anisotropy)
     {
-        std::clamp(anisotropy, 1.0f, m_max_anisotropy);
-        glSamplerParameterf(m_so_id, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
+        float max_anisotropy;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_anisotropy);
+
+        std::clamp(anisotropy, 1.0f, max_anisotropy);
+        glTextureParameterf(m_obj_name, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
     }
 
     bool Texture2D::Load(std::string_view filepath, bool is_srgb, uint32_t num_mipmaps)
@@ -100,12 +88,17 @@ namespace RGL
         glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_UNSIGNED_BYTE, data);
         glGenerateTextureMipmap(m_obj_name);
 
+        SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
+        SetWraping(TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping(TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+
         Util::ReleaseTextureData(data);
 
         return true;
     }
 
-    bool TextureCubeMap::Load(std::string_view* filepaths, bool is_srgb, uint32_t num_mipmaps)
+    bool TextureCubeMap::Load(std::string* filepaths, bool is_srgb, uint32_t num_mipmaps)
     {
         constexpr int NUM_FACES = 6;
 
@@ -147,6 +140,12 @@ namespace RGL
         }
 
         glGenerateTextureMipmap(m_obj_name);
+
+        SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
+        SetWraping(TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping(TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping(TextureWrapingCoordinate::R, TextureWrapingParam::CLAMP_TO_EDGE);
 
         for (int i = 0; i < NUM_FACES; ++i)
         {

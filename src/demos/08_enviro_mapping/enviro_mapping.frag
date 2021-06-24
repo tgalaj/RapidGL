@@ -5,7 +5,7 @@ out vec4 frag_color;
 in vec3 world_pos;
 in vec3 world_normal;
 
-layout(binding = 0) uniform samplerCube skybox;
+layout(binding = 1) uniform samplerCube skybox;
 uniform vec3 cam_pos;
 uniform float ior;
 

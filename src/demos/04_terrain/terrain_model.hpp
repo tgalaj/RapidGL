@@ -1,9 +1,9 @@
 #pragma once
 
-#include <model.h>
+#include <static_model.h>
 #include "util.h"
 
-class TerrainModel : public RGL::Model
+class TerrainModel : public RGL::StaticModel
 {
 public:
     TerrainModel(const std::string & heightmap_filename, float size = 200.0f, float max_height = 100.0f);

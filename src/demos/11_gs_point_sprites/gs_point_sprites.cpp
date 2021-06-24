@@ -25,11 +25,6 @@ GSPointSprites::~GSPointSprites()
     {
         glDeleteBuffers(1, &m_sprites_vbo_id);
     }
-
-    if(m_sprite_tex != nullptr)
-    {
-        glDeleteTextures(1, &m_sprite_tex->m_id);
-    }
 }
 
 void GSPointSprites::init_app()
@@ -50,8 +45,8 @@ void GSPointSprites::init_app()
     m_camera->setOrientation(20.0f, 30.0f, 0.0f);
 
     /* Add textures to the objects. */
-    m_sprite_tex = std::make_shared<RGL::Texture>();
-    m_sprite_tex->m_id = RGL::Util::loadGLTexture2D("pear-tree.png", "textures/sprites", false);
+    m_sprite_tex = std::make_shared<RGL::Texture2D>();
+    m_sprite_tex->Load(RGL::FileSystem::getPath("textures/sprites/pear-tree.png"), false);
 
     /* Create shader. */
     std::string dir  = "../src/demos/11_gs_point_sprites/";
@@ -137,8 +132,7 @@ void GSPointSprites::render()
     m_point_sprites_shader->setUniform("half_quad_width", m_half_quad_width);
     m_point_sprites_shader->setUniform("projection_matrix", m_camera->m_projection);
 
-    glBindTextureUnit(0, m_sprite_tex->m_id);
-
+    m_sprite_tex->Bind(0);
     glBindVertexArray(m_sprites_vao_id);
     glDrawArrays(GL_POINTS, 0, m_no_sprites);
 }

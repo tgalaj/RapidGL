@@ -3,7 +3,7 @@ out vec4 frag_color;
 
 in vec2 out_texcoord;
 
-uniform sampler2D texture_diffuse1;
+layout(binding = 0) uniform sampler2D texture_diffuse1;
 uniform vec3 color;
 uniform float mix_factor;
 

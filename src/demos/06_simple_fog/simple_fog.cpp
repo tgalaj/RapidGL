@@ -45,8 +45,8 @@ void SimpleFog::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_objects.emplace_back(std::make_shared<RGL::Model>());
-    m_objects[0]->genPQTorusKnot(256, 16, 2, 3, 0.75, 0.15);
+    m_objects.emplace_back(RGL::StaticModel());
+    m_objects[0].GenPQTorusKnot(256, 16, 2, 3, 0.75, 0.15);
 
     /* Set model matrices for each model. */
     std::random_device rd;
@@ -61,17 +61,9 @@ void SimpleFog::init_app()
     }
 
     /* Add textures to the objects. */
-    RGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
-    default_diffuse_texture.m_type = "texture_diffuse";
-
-    for (auto& model : m_objects)
-    {
-        if (model->getMesh(0).getTexturesCount() == 0)
-        {
-            model->getMesh(0).addTexture(default_diffuse_texture);
-        }
-    }
+    auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
+    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
+    m_objects[0].AddTexture(default_diffuse_texture);
 
     /* Create shader. */
     std::string dir          = "../src/demos/06_simple_fog/";
@@ -176,7 +168,7 @@ void SimpleFog::render()
         m_directional_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
         m_directional_light_shader->setUniform("object_color",  m_objects_colors[i]);
 
-        m_objects[0]->render(m_directional_light_shader);
+        m_objects[0].Render();
     }
 }
 

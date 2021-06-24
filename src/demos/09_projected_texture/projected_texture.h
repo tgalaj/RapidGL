@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -51,7 +51,7 @@ struct Projector
     glm::mat4 m_view_matrix;
     glm::mat4 m_projection_matrix;
     glm::mat4 m_bias_matrix;
-    RGL::Texture m_texture;
+    RGL::Texture2D m_texture;
 
     glm::mat4 transform() const
     {
@@ -76,7 +76,7 @@ private:
     std::shared_ptr<RGL::Shader> m_ambient_light_shader;
     std::shared_ptr<RGL::Shader> m_spot_light_shader;
 
-    std::vector<std::shared_ptr<RGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::StaticModel>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
     SpotLight m_spot_light_properties;

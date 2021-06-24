@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -47,7 +47,7 @@ private:
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_directional_light_shader;
 
-    std::vector<std::shared_ptr<RGL::Model>> m_objects;
+    RGL::StaticModel m_pine_tree, m_ground_plane;
     std::vector<glm::mat4> m_objects_model_matrices;
     
     glm::mat4 m_ground_plane_model;

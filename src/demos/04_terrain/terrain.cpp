@@ -64,18 +64,18 @@ void Terrain::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 8; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RGL::Model>());
+        m_objects.emplace_back(RGL::StaticModel());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RGL::FileSystem::getPath("models/teapot.obj"));
-    m_objects[1]->genCone(1.0, 0.5);
-    m_objects[2]->genCube();
-    m_objects[3]->genCylinder(1.0, 0.5);
-    m_objects[4]->genPlane();
-    m_objects[5]->genSphere(0.5);
-    m_objects[6]->genTorus(0.5, 1.0);
-    m_objects[7]->genQuad();
+    m_objects[0].Load(RGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[1].GenCone(1.0, 0.5);
+    m_objects[2].GenCube();
+    m_objects[3].GenCylinder(1.0, 0.5);
+    m_objects[4].GenPlane();
+    m_objects[5].GenSphere(0.5);
+    m_objects[6].GenTorus(0.5, 1.0);
+    m_objects[7].GenQuad();
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.5 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.08)));                           // teapot
@@ -88,21 +88,19 @@ void Terrain::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0, 1.0 + m_terrain_model->getHeightOfTerrain(10.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
 
     /* Add textures to the objects. */
-    RGL::Texture texture;
-    texture.m_id = RGL::Util::loadGLTexture2D("bricks.png", "textures", true);
-    texture.m_type = "texture_diffuse";
+    auto texture_default_diffuse = std::make_shared<RGL::Texture2D>();
+    texture_default_diffuse->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
 
-    RGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
-    default_diffuse_texture.m_type = "texture_diffuse";
+    auto texture_bricks = std::make_shared<RGL::Texture2D>();
+    texture_bricks->Load(RGL::FileSystem::getPath("textures/bricks.png"), true);
 
-    m_objects[5]->getMesh(0).addTexture(texture);
+    m_objects[5].AddTexture(texture_bricks);
 
     for (auto& model : m_objects)
     {
-        if (model->getMesh(0).getTexturesCount() == 0)
+        if (&model != &m_objects[5])
         {
-            model->getMesh(0).addTexture(default_diffuse_texture);
+            model.AddTexture(texture_default_diffuse);
         }
     }
     
@@ -110,13 +108,18 @@ void Terrain::init_app()
     m_terrain_textures_filenames   = { "grass_green_d.jpg", "ground_mud2_d.jpg", "grass_flowers.png", "path.png", "blendmap.png", "mntn_white_d.jpg", "grass_rocky_d.jpg" };
     m_terrain_heightmaps_filenames = { "heightmap.png",  "heightmap1.png", "heightmap2.png", "heightmap3.png", "heightmap_test.png"};
 
+    uint32_t bindingindex = 0;
     for (auto& tf : m_terrain_textures_filenames)
     {
-        RGL::Texture texture;
-        texture.m_id   = RGL::Util::loadGLTexture2D(tf.c_str(), "textures", tf != "blendmap.png" ? true : false);
-        texture.m_type = "texture_diffuse";
+        std::string path = RGL::FileSystem::getPath("textures/" + tf);
 
-        m_terrain_model->getMesh(0).addTexture(texture);
+        auto texture = std::make_shared<RGL::Texture2D>();
+        texture->Load(path, tf != "blendmap.png" ? true : false);
+        texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+        texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
+        texture->SetAnisotropy(16.0);
+
+        m_terrain_model->AddTexture(texture, bindingindex++);
     }
 
     /* Create the shaders... */
@@ -226,7 +229,7 @@ void Terrain::render()
         //m_ambient_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
         m_ambient_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_ambient_light_shader);
+        m_objects[i].Render();
     }
 
     /* Now render terrain - ambient only. */
@@ -239,7 +242,7 @@ void Terrain::render()
 
     m_terrain_ambient_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_terrain_model_matrix))));
     m_terrain_ambient_light_shader->setUniform("mvp",           view_projection * m_terrain_model_matrix);
-    m_terrain_model->render(m_terrain_ambient_light_shader);
+    m_terrain_model->Render();
 
     /*
      * Disable writing to the depth buffer and additively
@@ -268,7 +271,7 @@ void Terrain::render()
         m_directional_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
         m_directional_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_directional_light_shader);
+        m_objects[i].Render();
     }
 
     /* Render point lights */
@@ -293,7 +296,7 @@ void Terrain::render()
         m_point_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
         m_point_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_point_light_shader);
+        m_objects[i].Render();
     }
 
     /* Render spot lights */
@@ -320,7 +323,7 @@ void Terrain::render()
         m_spot_light_shader->setUniform("normal_matrix", glm::transpose(glm::inverse(glm::mat3(m_objects_model_matrices[i]))));
         m_spot_light_shader->setUniform("mvp",           view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_spot_light_shader);
+        m_objects[i].Render();
     }
 
     render_terrain(view_projection);
@@ -356,7 +359,7 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     m_terrain_directional_light_shader->setUniform("normal_matrix", terrain_normal_matrix);
     m_terrain_directional_light_shader->setUniform("mvp",           mvp);
 
-    m_terrain_model->render(m_terrain_directional_light_shader);
+    m_terrain_model->Render();
 
     /* Render point lights */
     m_terrain_point_light_shader->bind();
@@ -382,7 +385,7 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     m_terrain_point_light_shader->setUniform("normal_matrix", terrain_normal_matrix);
     m_terrain_point_light_shader->setUniform("mvp",           mvp);
 
-    m_terrain_model->render(m_terrain_point_light_shader);
+    m_terrain_model->Render();
 
     /* Render spot lights */
     m_terrain_spot_light_shader->bind();
@@ -410,7 +413,7 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     m_terrain_spot_light_shader->setUniform("normal_matrix", terrain_normal_matrix);
     m_terrain_spot_light_shader->setUniform("mvp",           mvp);
 
-    m_terrain_model->render(m_terrain_spot_light_shader);
+    m_terrain_model->Render();
 }
 
 void Terrain::render_gui()
@@ -496,13 +499,18 @@ void Terrain::render_gui()
                         m_terrain_position     = glm::vec3(m_terrain_size / 2.0, 0.0, m_terrain_size / 2.0);
                         m_terrain_model_matrix = glm::translate(glm::mat4(1.0), m_terrain_position);
 
+                        uint32_t bindingindex = 0;
                         for (auto& tf : m_terrain_textures_filenames)
                         {
-                            RGL::Texture texture;
-                            texture.m_id   = RGL::Util::loadGLTexture2D(tf.c_str(), "textures", false);
-                            texture.m_type = "texture_diffuse";
+                            std::string path = RGL::FileSystem::getPath("textures/" + tf);
 
-                            m_terrain_model->getMesh(0).addTexture(texture);
+                            auto texture = std::make_shared<RGL::Texture2D>();
+                            texture->Load(path, tf != "blendmap.png" ? true : false);
+                            texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+                            texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
+                            texture->SetAnisotropy(16.0);
+
+                            m_terrain_model->AddTexture(texture, bindingindex++);
 
                             /* Update other models' matrices */
                             m_objects_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.3));                            //teapot

@@ -1,5 +1,6 @@
 #include "skybox.hpp"
 #include "util.h"
+#include <filesystem.h>
 
 Skybox::Skybox(const std::string& skybox_directory,
                const std::string& left_face,
@@ -13,15 +14,15 @@ Skybox::Skybox(const std::string& skybox_directory,
     /* Create cubemap texture object */
     std::string filenames[6] = 
     {
-        skybox_directory + "/" + left_face,
-        skybox_directory + "/" + right_face,
-        skybox_directory + "/" + up_face,
-        skybox_directory + "/" + down_face,
-        skybox_directory + "/" + front_face,
-        skybox_directory + "/" + back_face
+        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + left_face),
+        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + right_face),
+        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + up_face),
+        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + down_face),
+        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + front_face),
+        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + back_face)
     };
     
-    m_cube_map_id = RGL::Util::loadGLTextureCube(filenames, "textures/skyboxes", 1, false);
+    m_cubemap_texture.Load(filenames);
 
     /* Create skybox shader object */
     std::string dir = "../src/demos/08_enviro_mapping/";
@@ -30,6 +31,9 @@ Skybox::Skybox(const std::string& skybox_directory,
     m_skybox_shader->link();
 
     /* Create buffer objects */
+    m_vao_id = 0;
+    m_vbo_id = 0;
+
     glCreateVertexArrays(1, &m_vao_id);
     glCreateBuffers(1, &m_vbo_id);
 
@@ -96,16 +100,13 @@ Skybox::~Skybox()
     if (m_vao_id != 0)
     {
         glDeleteVertexArrays(1, &m_vao_id);
+        m_vao_id = 0;
     }
 
     if (m_vbo_id != 0)
     {
         glDeleteBuffers(1, &m_vbo_id);
-    }
-
-    if(m_cube_map_id != 0)
-    {
-        glDeleteTextures(1, &m_cube_map_id);
+        m_vbo_id = 0;
     }
 }
 
@@ -114,7 +115,7 @@ void Skybox::render(const glm::mat4& projection, const glm::mat4& view)
     m_skybox_shader->bind();
     m_skybox_shader->setUniform("view_projection", projection * glm::mat4(glm::mat3(view)));
 
-    glBindTextureUnit(0, m_cube_map_id);
+    m_cubemap_texture.Bind(1);
     glBindVertexArray(m_vao_id);
 
     glDepthFunc(GL_LEQUAL);
@@ -124,5 +125,5 @@ void Skybox::render(const glm::mat4& projection, const glm::mat4& view)
 
 void Skybox::bindSkyboxTexture(GLuint unit)
 {
-    glBindTextureUnit(unit, m_cube_map_id);
+    m_cubemap_texture.Bind(unit);
 }

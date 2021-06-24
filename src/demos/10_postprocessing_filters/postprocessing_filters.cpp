@@ -40,15 +40,15 @@ void PostprocessingFilters::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 5; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RGL::Model>());
+        m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->genCube(2);
-    m_objects[1]->genCube(1.5);
-    m_objects[2]->genCube(1);
-    m_objects[3]->genCube(3);
-    m_objects[4]->genPlane(30, 30);
+    m_objects[0]->GenCube(2);
+    m_objects[1]->GenCube(1.5);
+    m_objects[2]->GenCube(1);
+    m_objects[3]->GenCube(3);
+    m_objects[4]->GenPlane(30, 30);
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-6, 0.0, -5))); // crate 0
@@ -60,19 +60,20 @@ void PostprocessingFilters::init_app()
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, -1.0, -5))); // ground plane
 
     /* Add textures to the objects. */
-    RGL::Texture crate_texture;
-    crate_texture.m_id = RGL::Util::loadGLTexture2D("crate0_diffuse.png", "textures/crate", true);
-    crate_texture.m_type = "texture_diffuse";
+    auto crate_texture = std::make_shared<RGL::Texture2D>();
+    crate_texture->Load(RGL::FileSystem::getPath("textures/crate/crate0_diffuse.png"), true);
 
-    RGL::Texture ground_texture;
-    ground_texture.m_id = RGL::Util::loadGLTexture2D("ground.png", "textures", true);
-    ground_texture.m_type = "texture_diffuse";
+    auto ground_texture = std::make_shared<RGL::Texture2D>();
+    ground_texture->Load(RGL::FileSystem::getPath("textures/ground.png"), true);
+    ground_texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+    ground_texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
+    ground_texture->SetAnisotropy(16);
 
-    m_objects[0]->getMesh(0).addTexture(crate_texture);
-    m_objects[1]->getMesh(0).addTexture(crate_texture);
-    m_objects[2]->getMesh(0).addTexture(crate_texture);
-    m_objects[3]->getMesh(0).addTexture(crate_texture);
-    m_objects[4]->getMesh(0).addTexture(ground_texture);
+    m_objects[0]->AddTexture(crate_texture);
+    m_objects[1]->AddTexture(crate_texture);
+    m_objects[2]->AddTexture(crate_texture);
+    m_objects[3]->AddTexture(crate_texture);
+    m_objects[4]->AddTexture(ground_texture);
 
     /* Create shader. */
     std::string dir  = "../src/demos/03_lighting/";
@@ -152,7 +153,7 @@ void PostprocessingFilters::render()
         //m_ambient_light_shader->setUniform("model", m_objects_model_matrices[i]);
         m_ambient_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_ambient_light_shader);
+        m_objects[i]->Render();
     }
 
     /*
@@ -181,7 +182,7 @@ void PostprocessingFilters::render()
         m_directional_light_shader->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_directional_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
-        m_objects[i]->render(m_directional_light_shader);
+        m_objects[i]->Render();
     }
 
     /* Enable writing to the depth buffer. */

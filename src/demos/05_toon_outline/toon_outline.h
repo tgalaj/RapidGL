@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -47,7 +47,7 @@ private:
     std::shared_ptr<RGL::Shader> m_simple_rim_toon_shader;
     std::shared_ptr<RGL::Shader> m_toon_twin_shade_shader;
 
-    std::vector<std::shared_ptr<RGL::Model>> m_objects;
+    std::vector<RGL::StaticModel> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
     std::vector<glm::vec3> m_objects_colors;
 

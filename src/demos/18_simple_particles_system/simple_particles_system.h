@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 #include "gui/gui.h"
 
@@ -48,7 +48,9 @@ private:
 
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_simple_shader, m_particles_shader;
-    std::shared_ptr<RGL::Model> m_grid_model;
+    std::shared_ptr<RGL::StaticModel> m_grid_model;
+
+    RGL::Texture2D m_particle_texture;
 
     GLuint m_tfo_ids[2]; // Transform Feedback Objects
     GLuint m_pos_vbo_ids[2];
@@ -68,7 +70,6 @@ private:
     float m_delta_time;
     float m_particle_angle;
     float m_particle_lifetime;
-    GLuint m_particle_texture;
     int m_no_particles;
     bool m_should_fade_out_with_time;
 

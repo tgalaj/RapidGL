@@ -42,8 +42,8 @@ void VertexDisplacement::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     /* Create object model */
-    m_model = std::make_shared<RGL::Model>();
-    m_model->genPlane(10, 5, 100, 50);
+    m_model = std::make_shared<RGL::StaticModel>();
+    m_model->GenPlane(10, 5, 100, 50);
 
     glm::quat rotation(glm::radians(glm::vec3(70.0, 0.0, 0.0)));
     m_world_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.0, 0)) * glm::mat4_cast(rotation);
@@ -125,7 +125,7 @@ void VertexDisplacement::render()
     m_vs_disp_shader->setUniform("amplitude",                        m_amplitude);
     m_vs_disp_shader->setUniform("velocity",                         m_velocity);
     m_vs_disp_shader->setUniform("frequency",                        m_frequency);
-    m_model->render(m_vs_disp_shader, false);
+    m_model->Render();
 }
 
 void VertexDisplacement::render_gui()

@@ -47,11 +47,8 @@ void InstancedParticlesCS::init_app()
     m_camera->update(0.0);
 
     /* Create objects */
-    m_instanced_model = std::make_shared<RGL::Model>();
-    m_instanced_model->genTorus(0.03, 0.07, 20, 20);
-
-    m_grid_model = std::make_shared<RGL::Model>();
-    m_grid_model->genPlaneGrid(20, 20, 20, 20);
+    m_instanced_model.GenTorus(0.03, 0.07, 20, 20);
+    m_grid_model.GenPlaneGrid(20, 20, 20, 20);
 
     /* Create shader. */
     std::string dir = "../src/demos/02_simple_3d/";
@@ -102,21 +99,21 @@ void InstancedParticlesCS::init_app()
     glBufferData(GL_SHADER_STORAGE_BUFFER, initial_rotations.size() * sizeof(initial_rotations[0]), initial_rotations.data(), GL_DYNAMIC_DRAW);
 
     /* Add new VBOs to mesh's VAO */
-    m_instanced_model->getMesh().addAttributeBuffer(4 /* attrib index */, 
-                                                    1 /* binding index */, 
-                                                    4 /* format size */, 
-                                                    GL_FLOAT /* data type */, 
-                                                    m_pos_vbo_id /* buffer id */, 
-                                                    sizeof(glm::vec4) /* stride */,
-                                                    1 /* divisor */);
+    m_instanced_model.AddAttributeBuffer(4 /* attrib index */, 
+                                         4 /* binding index */, 
+                                         4 /* format size */, 
+                                         GL_FLOAT /* data type */, 
+                                         m_pos_vbo_id /* buffer id */, 
+                                         sizeof(glm::vec4) /* stride */,
+                                         1 /* divisor */);
 
-    m_instanced_model->getMesh().addAttributeBuffer(5 /* attrib index */, 
-                                                    2 /* binding index */, 
-                                                    2 /* format size */, 
-                                                    GL_FLOAT /* data type */, 
-                                                    m_rotation_vbo_id /* buffer id */, 
-                                                    sizeof(glm::vec2) /* stride */,
-                                                    1 /* divisor */);
+    m_instanced_model.AddAttributeBuffer(5 /* attrib index */, 
+                                         5 /* binding index */, 
+                                         2 /* format size */, 
+                                         GL_FLOAT /* data type */, 
+                                         m_rotation_vbo_id /* buffer id */, 
+                                         sizeof(glm::vec2) /* stride */,
+                                         1 /* divisor */);
 
     glBindVertexArray(0);
 }
@@ -198,14 +195,16 @@ void InstancedParticlesCS::render()
     m_simple_shader->setUniform("color", glm::vec3(0.4));
     m_simple_shader->setUniform("mix_factor", 1.0f);
 
-    m_grid_model->render(m_simple_shader, false);
+    m_grid_model.Render();
+
+    m_simple_shader->setUniform("color", m_particles_color);
 
     /* Draw the particles */
     m_particles_render_shader->bind();
     m_particles_render_shader->setUniform("u_mvp",        m_camera->m_projection * m_camera->m_view);
     m_particles_render_shader->setUniform("u_model_view", m_camera->m_view);
     m_particles_render_shader->setUniform("u_diffuse",    m_particles_color);
-    m_instanced_model->render(m_particles_render_shader, false, m_total_particles);
+    m_instanced_model.Render(m_total_particles);
 }
 
 void InstancedParticlesCS::render_gui()

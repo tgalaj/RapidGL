@@ -95,30 +95,30 @@ void ToonOutline::init_app()
     /* Create models. */
     for (unsigned i = 0; i < 9; ++i)
     {
-        m_objects.emplace_back(std::make_shared<RGL::Model>());
+        m_objects.emplace_back(RGL::StaticModel());
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->load(RGL::FileSystem::getPath("models/spot/spot.obj"));
-    m_objects[1]->load(RGL::FileSystem::getPath("models/bunny.obj"));
-    m_objects[2]->load(RGL::FileSystem::getPath("models/cone.fbx"));
-    m_objects[3]->genCube();
-    m_objects[4]->load(RGL::FileSystem::getPath("models/cylinder.fbx"));
-    m_objects[5]->load(RGL::FileSystem::getPath("models/torus_knot.fbx"));
-    m_objects[6]->genSphere(0.5, 40);
-    m_objects[7]->genTorus(0.5, 1.0, 40, 40);
-    m_objects[8]->load(RGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[0].Load(RGL::FileSystem::getPath("models/spot/spot.obj"));
+    m_objects[1].Load(RGL::FileSystem::getPath("models/bunny.obj"));
+    m_objects[2].Load(RGL::FileSystem::getPath("models/cone.fbx"));
+    m_objects[3].GenCube();
+    m_objects[4].Load(RGL::FileSystem::getPath("models/cylinder.fbx"));
+    m_objects[5].Load(RGL::FileSystem::getPath("models/torus_knot.fbx"));
+    m_objects[6].GenSphere(0.5, 40);
+    m_objects[7].GenTorus(0.5, 1.0, 40, 40);
+    m_objects[8].Load(RGL::FileSystem::getPath("models/teapot.obj"));
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-10.0,   0.25, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // spot
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( -7.5,  -0.5,  -5)));                                                                         // bunny
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( -5.0,  -0.5,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01)));                           // cone
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( -2.5,   0.0,  -5)));                                                                         // cube
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  0.0,  -0.5,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01)));                           // cylinder
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  2.5,   0.0,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01))) ;                          // torus knot
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  5.0,   0.0,  -5)));                                                                         // sphere
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  7.5,   0.0,  -5)));                                                                         // torus
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 10.0,  -0.5,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.3)));                            // teapot
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-10.0,   0.25, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)));                                               // spot
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( -7.5,  -0.5,  -5)));                                                                                                                       // bunny
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( -5.0,  -0.5,  -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01))); // cone
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( -2.5,   0.0,  -5)));                                                                                                                       // cube
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  0.0,  -0.5,  -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01))); // cylinder
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  2.5,   0.0,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01))) ;                                                                        // torus knot
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  5.0,   0.0,  -5)));                                                                                                                       // sphere
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(  7.5,   0.0,  -5)));                                                                                                                       // torus
+    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 11.0,   0.0,  -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.09)));                                                                         // teapot
 
     /* Set colors for individual models. */
     m_objects_colors.emplace_back(glm::vec3(0.9, 0.9,  0.9));
@@ -131,21 +131,19 @@ void ToonOutline::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.9, 0.0,  0.0));
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
 
-    RGL::Texture texture_spot;
-    texture_spot.m_id   = RGL::Util::loadGLTexture2D("spot.png", "models/spot", true);
-    texture_spot.m_type = "texture_diffuse";
+    auto texture_spot = std::make_shared<RGL::Texture2D>();
+    texture_spot->Load(RGL::FileSystem::getPath("models/spot/spot.png"), true);
 
-    RGL::Texture default_diffuse_texture;
-    default_diffuse_texture.m_id   = RGL::Util::loadGLTexture2D("default_diffuse.png", "textures", true);
-    default_diffuse_texture.m_type = "texture_diffuse";
+    auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
+    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
 
-    m_objects[0]->getMesh(0).addTexture(texture_spot);
+    m_objects[0].AddTexture(texture_spot);
 
     for (auto& model : m_objects)
     {
-        if (model->getMesh(0).getTexturesCount() == 0)
+        if (&model != &m_objects[0])
         {
-            model->getMesh(0).addTexture(default_diffuse_texture);
+            model.AddTexture(default_diffuse_texture);
         }
     }
 
@@ -296,7 +294,7 @@ void ToonOutline::stencil_outline()
         m_stencil_outline_shader->setUniform("mvp",        view_projection * m_objects_model_matrices[i]);
         m_stencil_outline_shader->setUniform("mvp_normal", glm::mat3(view_projection * normal_matrix));
 
-        m_objects[i]->render(m_stencil_outline_shader, false);
+        m_objects[i].Render();
     }
 
     glStencilMask(0xFF);
@@ -325,7 +323,7 @@ void ToonOutline::ps_outline()
         m_generate_data_outline_shader->setUniform("view_model",               view * m_objects_model_matrices[i]);
         m_generate_data_outline_shader->setUniform("normal_matrix_view_space", glm::mat3(normal_matrix));
 
-        m_objects[i]->render(m_generate_data_outline_shader, false);
+        m_objects[i].Render();
     }
 
     /* Render shading to a RGBA texture */
@@ -411,7 +409,7 @@ void ToonOutline::render_toon_shaded_objects()
         m_toon_shaders[toon_shader_id]->setUniform("normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[i]))));
         m_toon_shaders[toon_shader_id]->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
         m_toon_shaders[toon_shader_id]->setUniform("object_color", m_objects_colors[i]);
-        m_objects[i]->render(m_toon_shaders[toon_shader_id]);
+        m_objects[i].Render();
     }
 }
 

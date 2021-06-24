@@ -2,8 +2,8 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
 #include "shader.h"
+#include "texture.h"
 
 #include <memory>
 
@@ -22,7 +22,7 @@ public:
 private:
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_point_sprites_shader;
-    std::shared_ptr<RGL::Texture> m_sprite_tex;
+    std::shared_ptr<RGL::Texture2D> m_sprite_tex;
 
     float m_half_quad_width;
     uint32_t m_no_sprites;

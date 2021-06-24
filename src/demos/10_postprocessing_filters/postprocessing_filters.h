@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "model.h"
+#include "static_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -136,7 +136,7 @@ private:
     std::string m_current_ps_filter_name;
     std::string m_ps_filter_names_list[4] = { "no_filter", "negative", "edge_detection", "gaussian_blur" };
 
-    std::vector<std::shared_ptr<RGL::Model>> m_objects;
+    std::vector<std::shared_ptr<RGL::StaticModel>> m_objects;
     std::vector<glm::mat4> m_objects_model_matrices;
 
     DirectionalLight m_dir_light_properties;

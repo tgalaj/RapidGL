@@ -64,9 +64,6 @@ void MeshSkinning::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.5, 0.0));
 
     /* Add texture to the monkey and sphere models only. */
-    m_sampler.Create();
-    m_sampler.Bind(0);
-
     auto texture_spot = std::make_shared<RGL::Texture2D>();
     texture_spot->Load(RGL::FileSystem::getPath("models/spot/spot.png"));
 

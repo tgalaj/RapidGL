@@ -2,11 +2,14 @@
 #include <iostream>
 #include <cmath>
 
+#include <glm/geometric.hpp>
+#include <filesystem.h>
+
 TerrainModel::TerrainModel(const std::string& heightmap_filename, float size, float max_height)
     : M_SIZE(size),
       M_MAX_HEIGHT(max_height)
 {
-    genTerrainVertices(heightmap_filename);
+    genTerrainVertices(RGL::FileSystem::getPath(heightmap_filename));
 
     std::cout << "Created terrain with max height = " << M_MAX_HEIGHT << std::endl;
 }
@@ -57,11 +60,11 @@ float TerrainModel::getHeightOfTerrain(float world_x, float world_z, float terra
 
 void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
 {
-    RGL::VertexBuffers buffers;
+    RGL::VertexData vertex_data;
     RGL::ImageData heightmap_metadata;
 
     stbi_set_flip_vertically_on_load(1);
-    auto heightmap_image = RGL::Util::loadTextureData(heightmap_filename, heightmap_metadata, 1);
+    auto heightmap_image = RGL::Util::LoadTextureData(heightmap_filename, heightmap_metadata, 1);
     stbi_set_flip_vertically_on_load(0);
 
     if (heightmap_image)
@@ -79,19 +82,15 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
         {
             for (unsigned int i = 0; i < vertex_count_width; ++i)
             {
-                RGL::VertexBuffers::Vertex v;
                 m_heights[j][i] = getHeight(i, j, heightmap_image, heightmap_metadata);
 
-                v.m_position = glm::vec3(-float(i) / float(vertex_count_width - 1) * M_SIZE * aspect_ratio,
-                                          m_heights[j][i], 
-                                         -float(j) / float(vertex_count_height - 1) * M_SIZE);
-                v.m_normal   = calculateNormal(i, j, heightmap_image, heightmap_metadata);
-                v.m_texcoord = glm::vec3((1.0 - float(i) / float(vertex_count_width - 1)),
-                                         1.0 - float(j) / float(vertex_count_height - 1),
-                                         0.0f);
-                v.m_tangent  = glm::vec3(0.0f);
-
-                buffers.m_vertices.push_back(v);
+                vertex_data.positions.push_back( glm::vec3(-float(i) / float(vertex_count_width - 1) * M_SIZE * aspect_ratio,
+                                                 m_heights[j][i], 
+                                                -float(j) / float(vertex_count_height - 1) * M_SIZE));
+                vertex_data.normals.push_back(calculateNormal(i, j, heightmap_image, heightmap_metadata));
+                vertex_data.texcoords.push_back(glm::vec3((1.0 - float(i) / float(vertex_count_width - 1)),
+                                                           1.0 - float(j) / float(vertex_count_height - 1),
+                                                           0.0f));
             }
         }
 
@@ -104,17 +103,17 @@ void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
                 int bottom_left  = (j + 1) * vertex_count_width + i;
                 int bottom_right = bottom_left + 1;
 
-                buffers.m_indices.push_back(top_left);
-                buffers.m_indices.push_back(bottom_left);
-                buffers.m_indices.push_back(top_right);
+                vertex_data.indices.push_back(top_left);
+                vertex_data.indices.push_back(bottom_left);
+                vertex_data.indices.push_back(top_right);
 
-                buffers.m_indices.push_back(top_right);
-                buffers.m_indices.push_back(bottom_left);
-                buffers.m_indices.push_back(bottom_right);
+                vertex_data.indices.push_back(top_right);
+                vertex_data.indices.push_back(bottom_left);
+                vertex_data.indices.push_back(bottom_right);
             }
         }
 
-        genPrimitive(buffers);
+        GenPrimitive(vertex_data);
     }
     else
     {
