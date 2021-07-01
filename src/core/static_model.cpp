@@ -29,7 +29,7 @@ namespace RGL
             {
                 glDrawElementsBaseVertex(GLenum(m_draw_mode), 
                                          m_mesh_parts[i].m_indices_count,
-                                         GL_UNSIGNED_INT, 
+                                         GL_UNSIGNED_INT,
                                          (void*)(sizeof(unsigned int) * m_mesh_parts[i].m_base_index),
                                          m_mesh_parts[i].m_base_vertex);
             }
@@ -47,7 +47,7 @@ namespace RGL
         glBindTextureUnit(0, 0);
     }
 
-    bool StaticModel::Load(const std::filesystem::path& filepath)
+    bool StaticModel::Load(const std::filesystem::path& filepath, bool srgb_textures)
     {
         /* Release the previously loaded mesh if it was loaded. */
         if(m_vao_name)
@@ -71,10 +71,10 @@ namespace RGL
             return false;
         }
 
-        return ParseScene(scene, filepath);
+        return ParseScene(scene, filepath, srgb_textures);
     }
 
-    bool StaticModel::ParseScene(const aiScene* scene, const std::filesystem::path& filepath)
+    bool StaticModel::ParseScene(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures)
     {
         m_mesh_parts.resize(scene->mNumMeshes);
         m_textures.resize(scene->mNumMaterials);
@@ -111,7 +111,7 @@ namespace RGL
         }
 
         /* Load materials. */
-        if (!LoadMaterials(scene, filepath))
+        if (!LoadMaterials(scene, filepath, srgb_textures))
         {
             fprintf(stderr, "Assimp error while loading mesh %s\n Error: Could not load the materials.\n", filepath.generic_string());
             return false;
@@ -125,19 +125,19 @@ namespace RGL
 
     void StaticModel::LoadMeshPart(const aiMesh* mesh, VertexData& vertex_data)
     {
-        const aiVector3D zero_vec3(0.0f, 0.0f, 0.0f);
+        const glm::vec3 zero_vec3(0.0f, 0.0f, 0.0f);
 
         for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
         {
-            auto pos      = &(mesh->mVertices[i]);
-            auto texcoord = mesh->HasTextureCoords(0)        ? &(mesh->mTextureCoords[0][i]) : &zero_vec3;
-            auto normal   = mesh->HasNormals()               ? &(mesh->mNormals[i])          : &zero_vec3;
-            auto tangent  = mesh->HasTangentsAndBitangents() ? &(mesh->mTangents[i])         : &zero_vec3;
+            auto pos      = vec3_cast(mesh->mVertices[i]);
+            auto texcoord = mesh->HasTextureCoords(0)        ? vec3_cast(mesh->mTextureCoords[0][i]) : zero_vec3;
+            auto normal   = mesh->HasNormals()               ? vec3_cast(mesh->mNormals[i])          : zero_vec3;
+            auto tangent  = mesh->HasTangentsAndBitangents() ? vec3_cast(mesh->mTangents[i])         : zero_vec3;
 
-            vertex_data.positions.push_back(glm::vec3(pos->x, pos->y, pos->z));
-            vertex_data.texcoords.push_back(glm::vec2(texcoord->x, texcoord->y));
-            vertex_data.normals.push_back(glm::vec3(normal->x, normal->y, normal->z));
-            vertex_data.tangents.push_back(glm::vec3(tangent->x, tangent->y, tangent->z));
+            vertex_data.positions.push_back(pos);
+            vertex_data.texcoords.push_back(glm::vec2(texcoord.x, texcoord.y));
+            vertex_data.normals.push_back(normal);
+            vertex_data.tangents.push_back(tangent);
         }
 
         for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
@@ -152,7 +152,7 @@ namespace RGL
         }
     }
 
-    bool StaticModel::LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath)
+    bool StaticModel::LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures)
     {
         // Extract the directory part from the file name
         std::string::size_type last_slash_index = filepath.generic_string().rfind("/");
@@ -171,36 +171,65 @@ namespace RGL
             dir = filepath.generic_string().substr(0, last_slash_index);
         }
 
-        /* Load the materials. */
-        for (uint32_t i = 0; i < scene->mNumMaterials; ++i)
+        /* Check if the model has embedded textures. */
+        if (scene->HasTextures())
         {
-            auto pMaterial = scene->mMaterials[i];
-
-            if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+            for (uint32_t i = 0; i < scene->mNumTextures; ++i)
             {
-                aiString path;
+                uint32_t data_size = scene->mTextures[i]->mHeight > 0 ? scene->mTextures[i]->mWidth * scene->mTextures[i]->mHeight : scene->mTextures[i]->mWidth;
 
-                if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
+                auto texture = std::make_shared<Texture2D>();
+                if (texture->Load(reinterpret_cast<unsigned char*>(scene->mTextures[i]->pcData), data_size, srgb_textures))
                 {
-                    std::string p(path.data);
-
-                    if (p.substr(0, 2) == ".\\")
+                    if(scene->mTextures[i]->achFormatHint[0] & 0x01)
                     {
-                        p = p.substr(2, p.size() - 2);
+                        texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+                        texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
                     }
+                    m_textures[i].push_back({ texture, 0 });
 
-                    std::string full_path = dir + "/" + p;
+                    printf("Loaded embedded texture for the model '%s'\n", filepath.generic_string().c_str());
+                }
+                else
+                {
+                    fprintf(stderr, "Error loading embedded texture for the model %s.\n", filepath.generic_string().c_str());
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            /* If not, load the materials and textures normally. */
+            for (uint32_t i = 0; i < scene->mNumMaterials; ++i)
+            {
+                auto pMaterial = scene->mMaterials[i];
 
-                    auto texture = std::make_shared<Texture2D>();
-                    if (!texture->Load(full_path))
+                if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+                {
+                    aiString path;
+
+                    if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
                     {
-                        fprintf(stderr, "Error loading texture %s.\n", full_path.c_str());
-                        return false;
-                    }
-                    else
-                    {
-                        printf("Loaded texture '%s'\n", full_path.c_str());
-                        m_textures[i].push_back( {texture, 0} );
+                        std::string p(path.data);
+
+                        if (p.substr(0, 2) == ".\\")
+                        {
+                            p = p.substr(2, p.size() - 2);
+                        }
+
+                        std::string full_path = dir + "/" + p;
+
+                        auto texture = std::make_shared<Texture2D>();
+                        if (!texture->Load(full_path, srgb_textures))
+                        {
+                            fprintf(stderr, "Error loading texture %s.\n", full_path.c_str());
+                            return false;
+                        }
+                        else
+                        {
+                            printf("Loaded texture '%s'\n", full_path.c_str());
+                            m_textures[i].push_back({ texture, 0 });
+                        }
                     }
                 }
             }

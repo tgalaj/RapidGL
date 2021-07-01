@@ -3,6 +3,10 @@
 #include <filesystem>
 #include <memory>
 
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 
@@ -37,7 +41,7 @@ namespace RGL
         {
         }
 
-        ~StaticModel() { Release(); }
+        virtual ~StaticModel() { Release(); }
 
         StaticModel           (const StaticModel&) = delete;
         StaticModel& operator=(const StaticModel&) = delete;
@@ -71,7 +75,7 @@ namespace RGL
         virtual void AddTexture(const std::shared_ptr<Texture2D> & texture, uint32_t bindingindex = 0, uint32_t mesh_id = 0);
         virtual void SetDrawMode(DrawMode mode) { m_draw_mode = mode; }
 
-        virtual bool Load(const std::filesystem::path& filepath);
+        virtual bool Load(const std::filesystem::path& filepath, bool srgb_textures = true);
         virtual void Render(uint32_t num_instances = 0);
 
         /* Primitives */
@@ -88,15 +92,22 @@ namespace RGL
         virtual void GenQuad       (float    width       = 1.0f, float    height      = 1.0f);
 
     protected:
-        bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath);
-        void LoadMeshPart(const aiMesh* mesh, VertexData& vertex_data);
-        bool LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath);
-        void CreateBuffers(VertexData& vertex_data);
+        // For converting between ASSIMP and glm
+        static inline glm::vec3 vec3_cast(const aiVector3D& v)   { return glm::vec3(v.x, v.y, v.z); }
+        static inline glm::vec2 vec2_cast(const aiVector3D& v)   { return glm::vec2(v.x, v.y); }
+        static inline glm::quat quat_cast(const aiQuaternion& q) { return glm::quat(q.w, q.x, q.y, q.z); }
+        static inline glm::mat4 mat4_cast(const aiMatrix4x4& m)  { return glm::transpose(glm::make_mat4(&m.a1)); }
+        static inline glm::mat4 mat4_cast(const aiMatrix3x3& m)  { return glm::transpose(glm::make_mat3(&m.a1)); }
 
-        void CalcTangentSpace(VertexData& vertex_data);
-        void GenPrimitive(VertexData& vertex_data, bool generate_tangents = true);
+        virtual bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures);
+        virtual void LoadMeshPart(const aiMesh* mesh, VertexData& vertex_data);
+        virtual bool LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures);
+        virtual void CreateBuffers(VertexData& vertex_data);
 
-        void Release()
+        virtual void CalcTangentSpace(VertexData& vertex_data);
+        virtual void GenPrimitive(VertexData& vertex_data, bool generate_tangents = true);
+
+        virtual void Release()
         {
             glDeleteBuffers(1, &m_vbo_name);
             m_vbo_name = 0;

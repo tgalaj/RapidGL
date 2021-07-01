@@ -64,14 +64,29 @@ namespace RGL
 
     unsigned char* Util::LoadTextureData(std::string_view filepath, ImageData & image_data, int desired_number_of_channels)
     {
-        int width, height, nr_channels;
-        unsigned char* data = stbi_load(std::string(filepath).c_str(), &width, &height, &nr_channels, desired_number_of_channels);
+        int width, height, channels_in_file;
+        unsigned char* data = stbi_load(std::string(filepath).c_str(), &width, &height, &channels_in_file, desired_number_of_channels);
 
         if (data)
         {
             image_data.width    = width;
             image_data.height   = height;
-            image_data.channels = desired_number_of_channels == 0 ? nr_channels : desired_number_of_channels;
+            image_data.channels = desired_number_of_channels == 0 ? channels_in_file : desired_number_of_channels;
+        }
+
+        return data;
+    }
+
+    unsigned char* Util::LoadTextureData(unsigned char* memory_data, uint32_t data_size, ImageData& image_data, int desired_number_of_channels)
+    {
+        int width, height, channels_in_file;
+        unsigned char* data = stbi_load_from_memory(memory_data, data_size, &width, &height, &channels_in_file, desired_number_of_channels);
+
+        if (data)
+        {
+            image_data.width    = width;
+            image_data.height   = height;
+            image_data.channels = desired_number_of_channels == 0 ? channels_in_file : desired_number_of_channels;
         }
 
         return data;

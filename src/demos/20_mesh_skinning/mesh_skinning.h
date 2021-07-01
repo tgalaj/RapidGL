@@ -2,7 +2,7 @@
 #include "core_app.h"
 
 #include "camera.h"
-#include "static_model.h"
+#include "animated_model.h"
 #include "shader.h"
 
 #include <memory>
@@ -22,11 +22,14 @@ public:
 
 private:
     std::shared_ptr<RGL::Camera> m_camera;
-    std::shared_ptr<RGL::Shader> m_simple_texturing_shader;
+    std::shared_ptr<RGL::Shader> m_simple_skinning_shader;
 
-    std::vector<RGL::StaticModel> m_objects;
-    std::vector<glm::mat4> m_objects_model_matrices;
-    std::vector<glm::vec3> m_objects_colors;
+    RGL::AnimatedModel m_animated_model;
+    std::vector<std::string> m_animations_names;
+    std::vector<glm::mat4> m_bone_transforms;
+    glm::mat4 m_object_model_matrix;;
 
-    float m_mix_factor;
+    uint32_t m_current_animation_index;
+    float m_animation_speed;
+    float m_gamma;
 };

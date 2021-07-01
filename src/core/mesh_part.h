@@ -33,5 +33,6 @@ namespace RGL
         uint32_t m_indices_count;
 
         friend class StaticModel;
+        friend class AnimatedModel;
     };
 }

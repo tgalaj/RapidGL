@@ -4,9 +4,12 @@
 #include "input.h"
 #include "util.h"
 #include "gui/gui.h"
+#include <timer.h>
 
 MeshSkinning::MeshSkinning()
-    : m_mix_factor(0.0f)
+    : m_current_animation_index(0),
+      m_animation_speed        (40.0f),
+      m_gamma                  (0.4f)
 {
 }
 
@@ -25,58 +28,21 @@ void MeshSkinning::init_app()
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(1.5, 0.0, 10.0);
+    m_camera->setPosition(-2.0, 1.0, 2.0);
+    m_camera->setOrientation(10.0, 45.0, 0.0);
 
     /* Create models. */
-    for (unsigned i = 0; i < 8; ++i)
-    {
-        m_objects.emplace_back(RGL::StaticModel());
-    }
-
-    /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0].Load(RGL::FileSystem::getPath("models/spot/spot.obj"));
-    m_objects[1].GenCone(1.0, 0.5);
-    m_objects[2].GenCube();
-    m_objects[3].GenCylinder(1.0, 0.5);
-    m_objects[4].GenPlane();
-    m_objects[5].GenSphere(0.5);
-    m_objects[6].GenTorus(0.5, 1.0);
-    m_objects[7].GenQuad();
+    m_animated_model.Load(RGL::FileSystem::getPath("models/fox.glb"));
+    m_animations_names = m_animated_model.GetAnimationsNames();
+    m_animated_model.SetAnimationSpeed(m_animation_speed);
 
     /* Set model matrices for each model. */
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0))); // spot
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-5.0, 0.5, -5)));                                                                         // cone
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-2.5, 0.0, -5)));                                                                         // cube
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 0.0, 0.0, -5)));                                                                         // cylinder
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 2.5, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // plane
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 5.0, 0.0, -5)));                                                                         // sphere
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3( 7.5, 0.0, -5)));                                                                         // torus
-    m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(10.0, 0.0, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(90.0f), glm::vec3(1, 0, 0)));  // quad
-
-    /* Set colors for individual models. */
-    m_objects_colors.emplace_back(glm::vec3(1.0, 0.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 1.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 0.0, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(1.0, 1.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 1.0, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(1.0, 0.0, 1.0));
-    m_objects_colors.emplace_back(glm::vec3(0.5, 0.0, 0.0));
-    m_objects_colors.emplace_back(glm::vec3(0.0, 0.5, 0.0));
-
-    /* Add texture to the monkey and sphere models only. */
-    auto texture_spot = std::make_shared<RGL::Texture2D>();
-    texture_spot->Load(RGL::FileSystem::getPath("models/spot/spot.png"));
-
-    auto texture_bricks = std::make_shared<RGL::Texture2D>();
-    texture_bricks->Load(RGL::FileSystem::getPath("textures/bricks.png"));
-
-    m_objects[0].AddTexture(texture_spot);
-    m_objects[5].AddTexture(texture_bricks);
+    m_object_model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(0.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.01));
 
     /* Create shader. */
-    std::string dir = "../src/demos/02_simple_3d/";
-    m_simple_texturing_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
-    m_simple_texturing_shader->link();
+    std::string dir = "../src/demos/20_mesh_skinning/";
+    m_simple_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning.vert", dir + "skinning.frag");
+    m_simple_skinning_shader->link();
 }
 
 void MeshSkinning::input()
@@ -125,6 +91,9 @@ void MeshSkinning::update(double delta_time)
 {
     /* Update variables here. */
     m_camera->update(delta_time);
+
+    m_bone_transforms.clear();
+    m_animated_model.BoneTransform(delta_time, m_bone_transforms);
 }
 
 void MeshSkinning::render()
@@ -132,17 +101,15 @@ void MeshSkinning::render()
     /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_simple_texturing_shader->bind();
-    m_simple_texturing_shader->setUniform("mix_factor", m_mix_factor);
+    m_simple_skinning_shader->bind();
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
     
-    for (unsigned i = 0; i < m_objects.size(); ++i)
-    {
-        m_simple_texturing_shader->setUniform("color", m_objects_colors[i]);
-        m_simple_texturing_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
-        m_objects[i].Render();
-    }
+    m_simple_skinning_shader->setUniform("mvp",   view_projection * m_object_model_matrix);
+    m_simple_skinning_shader->setUniform("model", m_object_model_matrix);
+    m_simple_skinning_shader->setUniform("bones", m_bone_transforms.data(), m_bone_transforms.size());
+    m_simple_skinning_shader->setUniform("gamma", m_gamma);
+    m_animated_model.Render();
 }
 
 void MeshSkinning::render_gui()
@@ -164,14 +131,45 @@ void MeshSkinning::render_gui()
 
     ImGui::Begin("Info");
     {
-        ImGui::SliderFloat("Color mix factor", &m_mix_factor, 0.0, 1.0);
+        if (ImGui::CollapsingHeader("Help"))
+        {
+            ImGui::Text("Controls info: \n\n"
+                        "F1     - take a screenshot\n"
+                        "WASDQE - control camera movement\n"
+                        "RMB    - press to rotate the camera\n"
+                        "Esc    - close the app\n\n");
+        }
 
-        ImGui::Text("\nControls info: \n\n"
-                    "F1     - take a screenshot\n"
-                    "F2     - toggle wireframe rendering\n"
-                    "WASDQE - control camera movement\n"
-                    "RMB    - press to rotate the camera\n"
-                    "Esc    - close the app\n\n");
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::Spacing();
+
+        ImGui::SliderFloat("Gamma", &m_gamma, 0.0, 2.5 , "%.1f");
+
+        if (ImGui::SliderFloat("Animation speed", &m_animation_speed, 0.0, 500.0, "%.1f"))
+        {
+            m_animated_model.SetAnimationSpeed(m_animation_speed);
+        }
+
+        if (ImGui::BeginCombo("Animation", m_animations_names[m_current_animation_index].c_str()))
+        {
+            for (int i = 0; i < m_animations_names.size(); ++i)
+            {
+                bool is_selected = (m_current_animation_index == i);
+                if (ImGui::Selectable(m_animations_names[i].c_str(), is_selected))
+                {
+                    m_current_animation_index = i;
+                    m_animated_model.SetAnimation(i);
+                }
+
+                if (is_selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::PopItemWidth();
     }
     ImGui::End();
 }

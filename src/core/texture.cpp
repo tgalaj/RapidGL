@@ -50,7 +50,7 @@ namespace RGL
         float max_anisotropy;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_anisotropy);
 
-        std::clamp(anisotropy, 1.0f, max_anisotropy);
+        glm::clamp(anisotropy, 1.0f, max_anisotropy);
         glTextureParameterf(m_obj_name, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
     }
 
@@ -90,8 +90,52 @@ namespace RGL
 
         SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
         SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
-        SetWraping(TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
-        SetWraping(TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+
+        Util::ReleaseTextureData(data);
+
+        return true;
+    }
+
+    bool Texture2D::Load(unsigned char* memory_data, uint32_t data_size, bool is_srgb, uint32_t num_mipmaps)
+    {
+        auto data = Util::LoadTextureData(memory_data, data_size, m_metadata);
+
+        if (!data)
+        {
+            fprintf(stderr, "Texture failed to load from the memory.\n");
+            return false;
+        }
+
+        GLenum format          = 0;
+        GLenum internal_format = 0;
+
+        if (m_metadata.channels == 1)
+        {
+            format          = GL_RED;
+            internal_format = GL_R8;
+        }
+        else if (m_metadata.channels == 3)
+        {
+            format          = GL_RGB;
+            internal_format = is_srgb ? GL_SRGB8 : GL_RGB8;
+        }
+        else if (m_metadata.channels == 4)
+        {
+            format          = GL_RGBA;
+            internal_format = is_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+        }
+
+        glCreateTextures       (GLenum(TextureType::Texture2D), 1, &m_obj_name);
+        glTextureStorage2D     (m_obj_name, num_mipmaps /* levels */, internal_format, m_metadata.width, m_metadata.height);
+        glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_UNSIGNED_BYTE, data);
+        glGenerateTextureMipmap(m_obj_name);
+
+        SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
+        SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
 
         Util::ReleaseTextureData(data);
 
