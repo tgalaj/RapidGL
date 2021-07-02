@@ -37,7 +37,8 @@ void MeshSkinning::init_app()
     m_animated_model.SetAnimationSpeed(m_animation_speed);
 
     /* Set model matrices for each model. */
-    m_object_model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(0.0f), glm::vec3(1, 0, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.01));
+    auto scale_factor = m_animated_model.GetUnitScaleFactor();
+    m_object_model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(0.0f), glm::vec3(1, 0, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
 
     /* Create shader. */
     std::string dir = "../src/demos/20_mesh_skinning/";

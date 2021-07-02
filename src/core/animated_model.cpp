@@ -308,7 +308,7 @@ namespace RGL
             m_mesh_parts[i].m_base_index = indices_count;
 
             vertices_count += scene->mMeshes[i]->mNumVertices;
-            indices_count += m_mesh_parts[i].m_indices_count;
+            indices_count  += m_mesh_parts[i].m_indices_count;
         }
 
         /* Reserve space in the vectors for the vertex attributes and indices. */
@@ -320,11 +320,19 @@ namespace RGL
         bones_data.resize(vertices_count);
 
         /* Load mesh parts one by one. */
+        glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
+        glm::vec3 max = -min;
+
         for (uint32_t i = 0; i < m_mesh_parts.size(); ++i)
         {
-            auto mesh = scene->mMeshes[i];
+            aiMesh* mesh = scene->mMeshes[i];
             LoadMeshPart(i, mesh, vertex_data, bones_data);
+
+            min = glm::min(min, vec3_cast(mesh->mAABB.mMin));
+            max = glm::max(max, vec3_cast(mesh->mAABB.mMax));
         }
+
+        m_unit_scale = 1.0f / glm::compMax(max - min);
 
         /* Load materials. */
         if (!LoadMaterials(scene, filepath, srgb_textures))

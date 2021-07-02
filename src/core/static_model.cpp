@@ -1,6 +1,8 @@
 #include "static_model.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/component_wise.hpp>
+
 #include <assimp/postprocess.h>
 
 #include "util.h"
@@ -104,11 +106,19 @@ namespace RGL
         vertex_data.indices.reserve(indices_count);
 
         /* Load mesh parts one by one. */
+        glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
+        glm::vec3 max = -min;
+
         for (uint32_t i = 0; i < m_mesh_parts.size(); ++i)
         {
             auto mesh = scene->mMeshes[i];
             LoadMeshPart(mesh, vertex_data);
+
+            min = glm::min(min, vec3_cast(mesh->mAABB.mMin));
+            max = glm::max(max, vec3_cast(mesh->mAABB.mMax));
         }
+
+        m_unit_scale = 1.0f / glm::compMax(max - min);
 
         /* Load materials. */
         if (!LoadMaterials(scene, filepath, srgb_textures))

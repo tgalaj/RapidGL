@@ -34,10 +34,11 @@ namespace RGL
     {
     public:
         StaticModel()
-            : m_vao_name (0),
-              m_vbo_name (0),
-              m_ibo_name (0),
-              m_draw_mode(DrawMode::TRIANGLES)
+            : m_unit_scale(1),
+              m_vao_name  (0),
+              m_vbo_name  (0),
+              m_ibo_name  (0),
+              m_draw_mode (DrawMode::TRIANGLES)
         {
         }
 
@@ -47,33 +48,42 @@ namespace RGL
         StaticModel& operator=(const StaticModel&) = delete;
 
         StaticModel(StaticModel&& other) noexcept
-            : m_vao_name (other.m_vao_name),
-              m_vbo_name (other.m_vbo_name),
-              m_ibo_name (other.m_ibo_name),
-              m_draw_mode(other.m_draw_mode)
+            : m_mesh_parts(std::move(other.m_mesh_parts)),
+              m_textures  (std::move(other.m_textures)),
+              m_unit_scale(other.m_unit_scale),
+              m_vao_name  (other.m_vao_name),
+              m_vbo_name  (other.m_vbo_name),
+              m_ibo_name  (other.m_ibo_name),
+              m_draw_mode (other.m_draw_mode)
         {
-            other.m_vao_name  = 0;
-            other.m_vbo_name  = 0;
-            other.m_ibo_name  = 0;
-            other.m_draw_mode = DrawMode::TRIANGLES;
+            other.m_unit_scale = 1;
+            other.m_vao_name   = 0;
+            other.m_vbo_name   = 0;
+            other.m_ibo_name   = 0;
+            other.m_draw_mode  = DrawMode::TRIANGLES;
         }
 
-        StaticModel& operator=(StaticModel&& other)
+        StaticModel& operator=(StaticModel&& other) noexcept
         {
             if (this != &other)
             {
                 Release();
 
-                std::swap(m_vao_name,  other.m_vao_name);
-                std::swap(m_vbo_name,  other.m_vbo_name);
-                std::swap(m_ibo_name,  other.m_ibo_name);
-                std::swap(m_draw_mode, other.m_draw_mode);
+                std::swap(m_mesh_parts, other.m_mesh_parts);
+                std::swap(m_textures,   other.m_textures);
+                std::swap(m_unit_scale, other.m_unit_scale);
+                std::swap(m_vao_name,   other.m_vao_name);
+                std::swap(m_vbo_name,   other.m_vbo_name);
+                std::swap(m_ibo_name,   other.m_ibo_name);
+                std::swap(m_draw_mode,  other.m_draw_mode);
             }
         }
 
         virtual void AddAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor = 0);
         virtual void AddTexture(const std::shared_ptr<Texture2D> & texture, uint32_t bindingindex = 0, uint32_t mesh_id = 0);
+        
         virtual void SetDrawMode(DrawMode mode) { m_draw_mode = mode; }
+        virtual float GetUnitScaleFactor() const { return m_unit_scale; }
 
         virtual bool Load(const std::filesystem::path& filepath, bool srgb_textures = true);
         virtual void Render(uint32_t num_instances = 0);
@@ -109,6 +119,8 @@ namespace RGL
 
         virtual void Release()
         {
+            m_unit_scale = 1.0;
+
             glDeleteBuffers(1, &m_vbo_name);
             m_vbo_name = 0;
 
@@ -124,14 +136,15 @@ namespace RGL
             m_textures.clear();
         }
 
-        GLuint   m_vao_name;
-        GLuint   m_vbo_name;
-        GLuint   m_ibo_name;
-        DrawMode m_draw_mode;
-        
         using TexturesContainer = std::vector<std::pair<std::shared_ptr<Texture2D>, uint32_t>>;
 
         std::vector<MeshPart> m_mesh_parts;
         std::vector<TexturesContainer> m_textures;
+
+        float    m_unit_scale;
+        GLuint   m_vao_name;
+        GLuint   m_vbo_name;
+        GLuint   m_ibo_name;
+        DrawMode m_draw_mode;
     };
 }
