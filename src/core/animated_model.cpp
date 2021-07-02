@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <assimp/postprocess.h>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/dual_quaternion.hpp>
 
 namespace RGL
 {
@@ -24,6 +25,34 @@ namespace RGL
             for (uint32_t i = 0; i < m_bones_count; ++i)
             {
                 transforms[i] = m_bone_infos[i].m_final_transform;
+            }
+        }
+    }
+
+    void AnimatedModel::BoneTransform(float dt, std::vector<glm::mat2x4>& transforms)
+    {
+        if (m_assimp_scene->mNumAnimations > 0)
+        {
+            /* Calc animation duration */
+            float ticks_per_second = (float)(m_assimp_scene->mAnimations[m_current_animation]->mTicksPerSecond != 0 ? m_assimp_scene->mAnimations[m_current_animation]->mTicksPerSecond : 25.0f);
+            float animation_duration = (float)m_assimp_scene->mAnimations[m_current_animation]->mDuration;
+
+            m_current_animation_time += ticks_per_second * dt * m_animation_speed;
+            m_current_animation_time = fmod(m_current_animation_time, animation_duration);
+
+            ReadNodeHierarchy(m_current_animation_time, m_assimp_scene->mRootNode, glm::mat4(1.0f));
+
+            transforms.resize(m_bones_count);
+
+            for (uint32_t i = 0; i < m_bones_count; ++i)
+            {
+                 glm::quat rotation(m_bone_infos[i].m_final_transform);
+                 glm::fdualquat dq (rotation, m_bone_infos[i].m_final_transform[3]);
+
+                 glm::mat2x4 dq_mat(glm::vec4(dq.real.w, dq.real.x, dq.real.y, dq.real.z), 
+                                    glm::vec4(dq.dual.w, dq.dual.x, dq.dual.y, dq.dual.z));
+
+                 transforms[i] = dq_mat;
             }
         }
     }

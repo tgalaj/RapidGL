@@ -137,7 +137,9 @@ Available presets: fountain, fire and smoke.
 <img src="screenshots/19_instanced_particles_compute_shader.png" width="50%" height="50%" alt="Particle system using instanced meshes with the Compute Shader" />
 
 ### Mesh skinning
-TODO: LBS, DQS.
+This demo presents simple model animation system using Assimp. There are two skinning methods available: Linear Blend Skinning and Dual Quaternion Blend Skinning.
+
+<img src="screenshots/20_mesh_skinning.png" width="50%" height="50%" alt="Mesh skinning" />
 
 ### OIT
 TODO

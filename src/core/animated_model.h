@@ -2,6 +2,7 @@
 
 #include "static_model.h"
 
+#include <glm/mat2x4.hpp>
 #include <glm/mat4x4.hpp>
 #include <map>
 
@@ -20,8 +21,13 @@ namespace RGL
 
         virtual ~AnimatedModel() {}
 
-        void BoneTransform(float dt, std::vector<glm::mat4> & transforms);
-        bool Load         (const std::filesystem::path& filepath, bool srgb_textures = true) override;
+        /* Used for Linear Blend Skinning */
+        void BoneTransform(float dt, std::vector<glm::mat4>& transforms);
+
+        /* Used for Dual Quaternion Blend Skinning */
+        void BoneTransform(float dt, std::vector<glm::mat2x4>& transforms);
+
+        bool Load(const std::filesystem::path& filepath, bool srgb_textures = true) override;
 
         std::vector<std::string> GetAnimationsNames() const;
         uint32_t                 GetAnimationsCount() const { return m_animations_count; }

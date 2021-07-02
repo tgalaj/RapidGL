@@ -7,7 +7,8 @@
 #include <timer.h>
 
 MeshSkinning::MeshSkinning()
-    : m_current_animation_index(0),
+    : m_skinning_method        (SkinningMethod::LBS),
+      m_current_animation_index(0),
       m_animation_speed        (40.0f),
       m_gamma                  (0.4f)
 {
@@ -28,7 +29,7 @@ void MeshSkinning::init_app()
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(-2.0, 1.0, 2.0);
+    m_camera->setPosition(-1.0, 0.5, 1.0);
     m_camera->setOrientation(10.0, 45.0, 0.0);
 
     /* Create models. */
@@ -38,12 +39,18 @@ void MeshSkinning::init_app()
 
     /* Set model matrices for each model. */
     auto scale_factor = m_animated_model.GetUnitScaleFactor();
-    m_object_model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(0.0f), glm::vec3(1, 0, 0)) * glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
+    m_object_model_matrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
 
     /* Create shader. */
     std::string dir = "../src/demos/20_mesh_skinning/";
-    m_simple_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning.vert", dir + "skinning.frag");
-    m_simple_skinning_shader->link();
+
+    /* Linear Blend Skinning shader. */
+    m_lbs_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning_lbs.vert", dir + "skinning.frag");
+    m_lbs_skinning_shader->link();
+
+    /* Dual Quaternion Blend Skinning shader. */
+    m_dqs_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning_dqs.vert", dir + "skinning.frag");
+    m_dqs_skinning_shader->link();
 }
 
 void MeshSkinning::input()
@@ -93,8 +100,17 @@ void MeshSkinning::update(double delta_time)
     /* Update variables here. */
     m_camera->update(delta_time);
 
-    m_bone_transforms.clear();
-    m_animated_model.BoneTransform(delta_time, m_bone_transforms);
+    switch(m_skinning_method)
+    {
+        case SkinningMethod::LBS:
+            m_bone_transforms.clear();
+            m_animated_model.BoneTransform(delta_time, m_bone_transforms);
+            break;
+        case SkinningMethod::DQS:
+            m_bone_transforms_dq.clear();
+            m_animated_model.BoneTransform(delta_time, m_bone_transforms_dq);
+            break;
+    }
 }
 
 void MeshSkinning::render()
@@ -102,14 +118,26 @@ void MeshSkinning::render()
     /* Put render specific code here. Don't update variables here! */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_simple_skinning_shader->bind();
-
     auto view_projection = m_camera->m_projection * m_camera->m_view;
-    
-    m_simple_skinning_shader->setUniform("mvp",   view_projection * m_object_model_matrix);
-    m_simple_skinning_shader->setUniform("model", m_object_model_matrix);
-    m_simple_skinning_shader->setUniform("bones", m_bone_transforms.data(), m_bone_transforms.size());
-    m_simple_skinning_shader->setUniform("gamma", m_gamma);
+
+    if (m_skinning_method == SkinningMethod::LBS)
+    {
+        m_lbs_skinning_shader->bind();
+        m_lbs_skinning_shader->setUniform("mvp",   view_projection * m_object_model_matrix);
+        m_lbs_skinning_shader->setUniform("model", m_object_model_matrix);
+        m_lbs_skinning_shader->setUniform("bones", m_bone_transforms.data(), m_bone_transforms.size());
+        m_lbs_skinning_shader->setUniform("gamma", m_gamma);
+    }
+
+    if (m_skinning_method == SkinningMethod::DQS)
+    {
+        m_dqs_skinning_shader->bind();
+        m_dqs_skinning_shader->setUniform("mvp",   view_projection * m_object_model_matrix);
+        m_dqs_skinning_shader->setUniform("model", m_object_model_matrix);
+        m_dqs_skinning_shader->setUniform("bones", m_bone_transforms_dq.data(), m_bone_transforms_dq.size());
+        m_dqs_skinning_shader->setUniform("gamma", m_gamma);
+    }
+
     m_animated_model.Render();
 }
 
@@ -160,6 +188,24 @@ void MeshSkinning::render_gui()
                 {
                     m_current_animation_index = i;
                     m_animated_model.SetAnimation(i);
+                }
+
+                if (is_selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        if (ImGui::BeginCombo("Skinning method", m_skinning_methods_names[int(m_skinning_method)].c_str()))
+        {
+            for (int i = 0; i < std::size(m_skinning_methods_names); ++i)
+            {
+                bool is_selected = (int(m_skinning_method) == i);
+                if (ImGui::Selectable(m_skinning_methods_names[i].c_str(), is_selected))
+                {
+                    m_skinning_method = SkinningMethod(i);
                 }
 
                 if (is_selected)

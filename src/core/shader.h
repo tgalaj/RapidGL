@@ -64,6 +64,7 @@ namespace RGL
         void setUniform(const std::string & uniformName, const glm::mat3 & matrix);
         void setUniform(const std::string & uniformName, const glm::mat4 & matrix);
         void setUniform(const std::string & uniformName, glm::mat4 * matrices, unsigned count);
+        void setUniform(const std::string & uniformName, glm::mat2x4 * matrices, unsigned count);
 
         void setSubroutine(ShaderType shader_type, const std::string& subroutine_name);
 

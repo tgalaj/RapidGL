@@ -375,6 +375,21 @@ namespace RGL
         }
     }
 
+    void Shader::setUniform(const std::string& uniformName, glm::mat2x4* matrices, unsigned count)
+    {
+        if (m_uniforms_locations.count(uniformName))
+        {
+            glProgramUniformMatrix2x4fv(m_program_id, m_uniforms_locations[uniformName], count, GL_FALSE, &matrices[0][0][0]);
+        }
+        else
+        {
+            if (getUniformLocation(uniformName))
+            {
+                glProgramUniformMatrix2x4fv(m_program_id, m_uniforms_locations[uniformName], count, GL_FALSE, &matrices[0][0][0]);
+            }
+        }
+    }
+
     void Shader::setSubroutine(ShaderType shader_type, const std::string & subroutine_name)
     {
         glUniformSubroutinesuiv(GLenum(shader_type), m_active_subroutine_uniform_locations[GLenum(shader_type)], &m_subroutine_indices[subroutine_name]);
