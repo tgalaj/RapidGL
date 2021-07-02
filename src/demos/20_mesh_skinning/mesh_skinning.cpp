@@ -33,6 +33,8 @@ void MeshSkinning::init_app()
     m_camera->setOrientation(10.0, 45.0, 0.0);
 
     /* Create models. */
+    m_grid_model.GenPlaneGrid(20, 20, 20, 20);
+
     m_animated_model.Load(RGL::FileSystem::getPath("models/fox.glb"));
     m_animations_names = m_animated_model.GetAnimationsNames();
     m_animated_model.SetAnimationSpeed(m_animation_speed);
@@ -51,6 +53,10 @@ void MeshSkinning::init_app()
     /* Dual Quaternion Blend Skinning shader. */
     m_dqs_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning_dqs.vert", dir + "skinning.frag");
     m_dqs_skinning_shader->link();
+
+    dir = "../src/demos/02_simple_3d/";
+    m_simple_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
+    m_simple_shader->link();
 }
 
 void MeshSkinning::input()
@@ -120,6 +126,14 @@ void MeshSkinning::render()
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
+    /* Draw the grid. */
+    m_simple_shader->bind();
+    m_simple_shader->setUniform("mvp",        view_projection);
+    m_simple_shader->setUniform("color",      glm::vec3(0.4));
+    m_simple_shader->setUniform("mix_factor", 1.0f);
+    m_grid_model.Render();
+
+    /* Draw the animated model. */
     if (m_skinning_method == SkinningMethod::LBS)
     {
         m_lbs_skinning_shader->bind();

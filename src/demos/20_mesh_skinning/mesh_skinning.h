@@ -25,8 +25,9 @@ private:
     const std::string m_skinning_methods_names[2] = { "Linear Blend Skinning", "Dual Quaternion Blend Skinning" };
 
     std::shared_ptr<RGL::Camera> m_camera;
-    std::shared_ptr<RGL::Shader> m_lbs_skinning_shader, m_dqs_skinning_shader;
+    std::shared_ptr<RGL::Shader> m_lbs_skinning_shader, m_dqs_skinning_shader, m_simple_shader;
 
+    RGL::StaticModel m_grid_model;
     RGL::AnimatedModel m_animated_model;
     std::vector<std::string> m_animations_names;
     glm::mat4 m_object_model_matrix;;
