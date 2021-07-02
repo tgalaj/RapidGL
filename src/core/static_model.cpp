@@ -242,63 +242,47 @@ namespace RGL
     {
         bool has_tangents = !vertex_data.tangents.empty();
 
-        /* Merge vertex data into one buffer. */
-        std::vector<float> vertices;
-        vertices.reserve(vertex_data.positions.size() * 3 + 
-                         vertex_data.texcoords.size() * 2 + 
-                         vertex_data.normals.size()   * 3 + 
-                         vertex_data.tangents.size()  * 3);
-
-        for (auto& p : vertex_data.positions)
-        {
-            vertices.push_back(p.x);
-            vertices.push_back(p.y);
-            vertices.push_back(p.z);
-        }
-
-        for (auto& t : vertex_data.texcoords)
-        {
-            vertices.push_back(t.x);
-            vertices.push_back(t.y);
-        }
-
-        for (auto& n : vertex_data.normals)
-        {
-            vertices.push_back(n.x);
-            vertices.push_back(n.y);
-            vertices.push_back(n.z);
-        }
-        
-        if (has_tangents)
-        {
-            for (auto& t : vertex_data.tangents)
-            {
-                vertices.push_back(t.x);
-                vertices.push_back(t.y);
-                vertices.push_back(t.z);
-            }
-        }
+        const GLsizei positions_size_bytes = vertex_data.positions.size() * sizeof(vertex_data.positions[0]);
+        const GLsizei texcoords_size_bytes = vertex_data.texcoords.size() * sizeof(vertex_data.texcoords[0]);
+        const GLsizei normals_size_bytes   = vertex_data.normals  .size() * sizeof(vertex_data.normals  [0]);
+        const GLsizei tangents_size_bytes  = has_tangents ? vertex_data.tangents .size() * sizeof(vertex_data.tangents [0]) : 0;
+        const GLsizei total_size_bytes     = positions_size_bytes + texcoords_size_bytes + normals_size_bytes + tangents_size_bytes;
 
         glCreateBuffers     (1, &m_vbo_name);
-        glNamedBufferStorage(m_vbo_name, sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_DYNAMIC_STORAGE_BIT);
+        glNamedBufferStorage(m_vbo_name, total_size_bytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+        uint64_t offset = 0;
+        glNamedBufferSubData(m_vbo_name, offset, positions_size_bytes, vertex_data.positions.data());
+
+        offset += positions_size_bytes;
+        glNamedBufferSubData(m_vbo_name, offset, texcoords_size_bytes, vertex_data.texcoords.data());
+
+        offset += texcoords_size_bytes;
+        glNamedBufferSubData(m_vbo_name, offset, normals_size_bytes, vertex_data.normals.data());
+
+        if(has_tangents)
+        {
+            offset += normals_size_bytes;
+            glNamedBufferSubData(m_vbo_name, offset, tangents_size_bytes, vertex_data.tangents.data());
+        }
 
         glCreateBuffers     (1, &m_ibo_name);
         glNamedBufferStorage(m_ibo_name, sizeof(vertex_data.indices[0]) * vertex_data.indices.size(), vertex_data.indices.data(), GL_DYNAMIC_STORAGE_BIT);
 
         glCreateVertexArrays(1, &m_vao_name);
 
-        uint64_t offset = 0;
+        offset = 0;
         glVertexArrayVertexBuffer(m_vao_name, 0 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.positions[0]) /*stride*/);
                           
-        offset += sizeof(vertex_data.positions[0]) * vertex_data.positions.size();
+        offset += positions_size_bytes;
         glVertexArrayVertexBuffer(m_vao_name, 1 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.texcoords[0]) /*stride*/);
         
-        offset += sizeof(vertex_data.texcoords[0]) * vertex_data.texcoords.size();
+        offset += texcoords_size_bytes;
         glVertexArrayVertexBuffer(m_vao_name, 2 /* bindingindex*/, m_vbo_name,  offset, sizeof(vertex_data.normals[0]) /*stride*/);
 
         if (has_tangents)
         {
-            offset += sizeof(vertex_data.normals[0]) * vertex_data.normals.size();
+            offset += normals_size_bytes;
             glVertexArrayVertexBuffer(m_vao_name, 3 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.tangents[0]) /*stride*/);
         }
 

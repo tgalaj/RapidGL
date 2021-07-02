@@ -55,9 +55,9 @@ namespace RGL
 
         struct VertexBoneData
         {
-            uint32_t m_ids[NUM_BONES_PER_VERTEX];
+            int   m_ids[NUM_BONES_PER_VERTEX];
             float m_weights[NUM_BONES_PER_VERTEX];
-
+            
             VertexBoneData()
             {
                 Reset();
@@ -65,11 +65,11 @@ namespace RGL
 
             void Reset()
             {
-                memset(m_ids, 0, sizeof(m_ids));
+                memset(m_ids,     0, sizeof(m_ids));
                 memset(m_weights, 0, sizeof(m_weights));
             }
 
-            void AddBoneData(uint32_t bone_id, float weight)
+            void AddBoneData(int bone_id, float weight)
             {
                 for (uint32_t i = 0; i < NUM_BONES_PER_VERTEX; ++i)
                 {

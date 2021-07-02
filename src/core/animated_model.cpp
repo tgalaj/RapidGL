@@ -375,49 +375,22 @@ namespace RGL
         bool has_tangents   = !vertex_data.tangents.empty();
         bool has_bones_data = !bones_data.empty();
 
-        /* Merge vertex data into one buffer. */
-        std::vector<float> vertices;
-        vertices.reserve(vertex_data.positions.size() * 3 + 
-                         vertex_data.texcoords.size() * 2 + 
-                         vertex_data.normals.size()   * 3 + 
-                         vertex_data.tangents.size()  * 3 +
-                         bones_data.size()            * NUM_BONES_PER_VERTEX /*bone weights*/);
+        std::vector<float> bone_weights; 
+        bone_weights.reserve(bones_data.size() * NUM_BONES_PER_VERTEX);
 
-        std::vector<uint32_t> bone_ids;
+        std::vector<int> bone_ids; 
         bone_ids.reserve(bones_data.size() * NUM_BONES_PER_VERTEX);
-
-        for (auto& p : vertex_data.positions)
-        {
-            vertices.push_back(p.x);
-            vertices.push_back(p.y);
-            vertices.push_back(p.z);
-        }
-
-        for (auto& t : vertex_data.texcoords)
-        {
-            vertices.push_back(t.x);
-            vertices.push_back(t.y);
-        }
-
-        for (auto& n : vertex_data.normals)
-        {
-            vertices.push_back(n.x);
-            vertices.push_back(n.y);
-            vertices.push_back(n.z);
-        }
-        
-        if (has_tangents)
-        {
-            for (auto& t : vertex_data.tangents)
-            {
-                vertices.push_back(t.x);
-                vertices.push_back(t.y);
-                vertices.push_back(t.z);
-            }
-        }
 
         if (has_bones_data)
         {
+            for (uint32_t i = 0; i < bones_data.size(); ++i)
+            {
+                for (auto& bone_weight : bones_data[i].m_weights)
+                {
+                    bone_weights.push_back(bone_weight);
+                }
+            }
+
             for (uint32_t i = 0; i < bones_data.size(); ++i)
             {
                 for (auto& bone_id : bones_data[i].m_ids)
@@ -425,52 +398,74 @@ namespace RGL
                     bone_ids.push_back(bone_id);
                 }
             }
-
-            for (uint32_t i = 0; i < bones_data.size(); ++i)
-            {
-                for (auto& bone_weight : bones_data[i].m_weights)
-                {
-                    vertices.push_back(bone_weight);
-                }
-            }
         }
 
-        auto const vertices_size_bytes = size_t(vertices.size() * sizeof(vertices[0]));
-        auto const bone_ids_size_bytes = size_t(bone_ids.size() * sizeof(bone_ids[0]));
+        const GLsizei positions_size_bytes    = vertex_data.positions.size() * sizeof(vertex_data.positions[0]);
+        const GLsizei texcoords_size_bytes    = vertex_data.texcoords.size() * sizeof(vertex_data.texcoords[0]);
+        const GLsizei normals_size_bytes      = vertex_data.normals  .size() * sizeof(vertex_data.normals  [0]);
 
-        glCreateBuffers     (1, &m_vbo_name);
-        glNamedBufferStorage(m_vbo_name, vertices_size_bytes + bone_ids_size_bytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        const GLsizei tangents_size_bytes     = has_tangents   ? vertex_data.tangents.size() * sizeof(vertex_data.tangents[0]) : 0;
+        const GLsizei bone_weights_size_bytes = has_bones_data ? bone_weights        .size() * sizeof(bone_weights        [0]) : 0;
+        const GLsizei bone_ids_size_bytes     = has_bones_data ? bone_ids            .size() * sizeof(bone_ids            [0]) : 0;
 
-        glNamedBufferSubData(m_vbo_name, 0, vertices_size_bytes, vertices.data());
-        glNamedBufferSubData(m_vbo_name, vertices_size_bytes, bone_ids_size_bytes, bone_ids.data());
+        const GLsizei total_size_bytes = positions_size_bytes + texcoords_size_bytes + normals_size_bytes + tangents_size_bytes + bone_weights_size_bytes + bone_ids_size_bytes;
+
+        glCreateBuffers(1, &m_vbo_name);
+        glNamedBufferStorage(m_vbo_name, total_size_bytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+        uint64_t offset = 0;
+
+        glNamedBufferSubData(m_vbo_name, offset, positions_size_bytes, vertex_data.positions.data());
+        offset += positions_size_bytes;
+
+        glNamedBufferSubData(m_vbo_name, offset, texcoords_size_bytes, vertex_data.texcoords.data());
+        offset += texcoords_size_bytes;
+
+        glNamedBufferSubData(m_vbo_name, offset, normals_size_bytes, vertex_data.normals.data());
+        offset += normals_size_bytes;
+
+        if (has_tangents)
+        {
+            glNamedBufferSubData(m_vbo_name, offset, tangents_size_bytes, vertex_data.tangents.data());
+            offset += tangents_size_bytes;
+        }
+
+        if (has_bones_data)
+        {
+            glNamedBufferSubData(m_vbo_name, offset, bone_weights_size_bytes, bone_weights.data());
+            offset += bone_weights_size_bytes;
+
+            glNamedBufferSubData(m_vbo_name, offset, bone_ids_size_bytes, bone_ids.data());
+        }
 
         glCreateBuffers     (1, &m_ibo_name);
         glNamedBufferStorage(m_ibo_name, sizeof(vertex_data.indices[0]) * vertex_data.indices.size(), vertex_data.indices.data(), GL_DYNAMIC_STORAGE_BIT);
 
         glCreateVertexArrays(1, &m_vao_name);
 
-        uint64_t offset = 0;
-        glVertexArrayVertexBuffer(m_vao_name, 0 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.positions[0]) /*stride*/);
-                          
-        offset += sizeof(vertex_data.positions[0]) * vertex_data.positions.size();
-        glVertexArrayVertexBuffer(m_vao_name, 1 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.texcoords[0]) /*stride*/);
+        offset = 0;
         
-        offset += sizeof(vertex_data.texcoords[0]) * vertex_data.texcoords.size();
-        glVertexArrayVertexBuffer(m_vao_name, 2 /* bindingindex*/, m_vbo_name,  offset, sizeof(vertex_data.normals[0]) /*stride*/);
+        glVertexArrayVertexBuffer(m_vao_name, 0 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.positions[0]) /*stride*/); 
+        offset += positions_size_bytes;
 
-        offset += sizeof(vertex_data.normals[0]) * vertex_data.normals.size();
+        glVertexArrayVertexBuffer(m_vao_name, 1 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.texcoords[0]) /*stride*/);
+        offset += texcoords_size_bytes;
+
+        glVertexArrayVertexBuffer(m_vao_name, 2 /* bindingindex*/, m_vbo_name,  offset, sizeof(vertex_data.normals[0]) /*stride*/);
+        offset += normals_size_bytes;
+
         if (has_tangents)
         {
             glVertexArrayVertexBuffer(m_vao_name, 3 /* bindingindex*/, m_vbo_name, offset, sizeof(vertex_data.tangents[0]) /*stride*/);
+            offset += tangents_size_bytes;
         }
 
         if (has_bones_data)
         {
-            if (has_tangents) offset += sizeof(vertex_data.tangents[0]) * vertex_data.tangents.size();
-            glVertexArrayVertexBuffer(m_vao_name, 4 /* bindingindex*/, m_vbo_name, offset, sizeof(glm::vec4) /*stride*/);
+            glVertexArrayVertexBuffer(m_vao_name, 4 /* bindingindex*/, m_vbo_name, offset, sizeof(bone_weights[0]) * 4 /*stride*/);
+            offset += bone_weights_size_bytes;
 
-            offset += sizeof(bones_data[0].m_weights[0]) * bones_data.size() * NUM_BONES_PER_VERTEX;
-            glVertexArrayVertexBuffer(m_vao_name, 5 /* bindingindex*/, m_vbo_name, offset, sizeof(glm::ivec4) /*stride*/);
+            glVertexArrayVertexBuffer(m_vao_name, 5 /* bindingindex*/, m_vbo_name, offset, sizeof(bone_ids[0]) * 4 /*stride*/);
         }
 
         glVertexArrayElementBuffer(m_vao_name, m_ibo_name);
@@ -499,8 +494,8 @@ namespace RGL
 
         if (has_bones_data)
         {
-            glVertexArrayAttribFormat(m_vao_name, 4 /*attribindex */, 4 /* size */, GL_FLOAT, GL_FALSE, 0 /*relativeoffset*/);
-            glVertexArrayAttribFormat(m_vao_name, 5 /*attribindex */, 4 /* size */, GL_INT,   GL_FALSE, 0 /*relativeoffset*/);
+            glVertexArrayAttribFormat (m_vao_name, 4 /*attribindex */, 4 /* size */, GL_FLOAT, GL_FALSE, 0 /*relativeoffset*/);
+            glVertexArrayAttribIFormat(m_vao_name, 5 /*attribindex */, 4 /* size */, GL_INT,             0 /*relativeoffset*/);
         }
 
         glVertexArrayAttribBinding(m_vao_name, 0 /*attribindex*/, 0 /*bindingindex*/); // positions
@@ -513,7 +508,7 @@ namespace RGL
 
         if (has_bones_data)
         {
-            glVertexArrayAttribBinding(m_vao_name, 4 /*attribindex*/, 5 /*bindingindex*/); // bone weights
+            glVertexArrayAttribBinding(m_vao_name, 4 /*attribindex*/, 4 /*bindingindex*/); // bone weights
             glVertexArrayAttribBinding(m_vao_name, 5 /*attribindex*/, 5 /*bindingindex*/); // bone ids
         }
     }
