@@ -141,8 +141,10 @@ This demo presents simple model animation system using Assimp. There are two ski
 
 <img src="screenshots/20_mesh_skinning.png" width="50%" height="50%" alt="Mesh skinning" />
 
-### OIT
-TODO
+### Order Independent Transparency (OIT) with MSAA
+Order Independent Transparency using linked lists (per pixel) with MSAA.
+
+<img src="screenshots/21_oit.png" width="50%" height="50%" alt="Order Independent Transparency (OIT)" />
 
 ### PBR
 TODO
