@@ -16,8 +16,7 @@ namespace RGL
 {
     CoreApp::CoreApp()
         : m_frame_time(0.0),
-          m_fps(0),
-          m_fpsToReturn(0),
+          m_fps       (0),
           m_is_running(false)
     {
     }
@@ -62,7 +61,7 @@ namespace RGL
 
     unsigned int CoreApp::get_fps() const
     {
-        return m_fpsToReturn;
+        return m_fps;
     }
 
     void CoreApp::start()
@@ -170,9 +169,7 @@ namespace RGL
 
                 if (frame_counter >= 1.0)
                 {
-                    #ifdef _DEBUG
-                    //std::cout << 1000.0 / (double)frames << std::endl;
-                    #endif
+                    m_fps = 1000.0 / (double)frames;
 
                     frames = 0;
                     frame_counter = 0;

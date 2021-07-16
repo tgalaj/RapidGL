@@ -25,7 +25,7 @@ namespace RGL
         virtual void render()                  = 0;
         virtual void render_gui();
 
-        unsigned int get_fps() const;
+        uint32_t get_fps() const;
 
         virtual void start() final;
         virtual void stop()  final;
@@ -35,9 +35,8 @@ namespace RGL
     private:
         void run();
 
-        double       m_frame_time;
-        unsigned int m_fps;
-        unsigned int m_fpsToReturn;
-        bool         m_is_running;
+        double   m_frame_time;
+        uint32_t m_fps;
+        bool     m_is_running;
     };
 }

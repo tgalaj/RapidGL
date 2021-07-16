@@ -1,0 +1,152 @@
+#define PI 3.141592653589793238462643
+
+out vec4 frag_color;
+
+layout (location = 0) in vec2 in_texcoord;
+layout (location = 1) in vec3 in_world_pos;
+layout (location = 2) in vec3 in_normal;
+
+// layout(binding = 0) uniform sampler2D albedo_map;
+// layout(binding = 1) uniform sampler2D normal_map;
+// layout(binding = 2) uniform sampler2D metallic_map;
+// layout(binding = 3) uniform sampler2D roughness_map;
+// layout(binding = 4) uniform sampler2D ao_map;
+
+uniform vec3  u_cam_pos;
+
+uniform vec3  u_albedo;
+uniform float u_metallic;
+uniform float u_roughness;
+uniform float u_ao;
+
+struct BaseLight
+{
+    vec3 color;
+    float intensity;
+};
+
+struct DirectionalLight
+{
+    BaseLight base;
+    vec3 direction;
+};
+
+struct PointLight
+{
+    BaseLight base;
+    vec3 position;
+    float range;
+};
+
+struct SpotLight
+{
+    PointLight point;
+    vec3 direction;
+    float cutoff;
+};
+
+vec3 fresnelSchlick(float cos_theta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(max(1.0 - cos_theta, 0.0), 5.0);
+}
+
+float distributionGGX(vec3 n, vec3 h, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(n, h), 0.0);
+    float NdotH2 = NdotH * NdotH;
+
+    float num = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return num / max(denom, 1e-6);
+}
+
+float geometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return num / max(denom, 1e-6);
+}
+
+float geometrySmith(vec3 n, vec3 wo, vec3 wi, float roughness)
+{
+    float NdotV = max(dot(n, wo), 0.0);
+    float NdotL = max(dot(n, wi), 0.0);
+
+    float ggx1 = geometrySchlickGGX(NdotL, roughness);
+    float ggx2 = geometrySchlickGGX(NdotV, roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
+{
+    vec3 wo = normalize(u_cam_pos - world_pos);
+    vec3 wi = normalize(direction);
+    vec3 h  = normalize(wo + wi);
+
+    float dist        = length(direction);
+    float attenuation = 1.0 / (dist * dist);
+    vec3  radiance    = base.color * base.intensity * attenuation;
+
+    // fresnel reflectance
+    vec3 F0 = vec3(0.04);
+         F0 = mix(F0, u_albedo, u_metallic);
+    vec3 F  = fresnelSchlick(clamp(dot(h, wo), 0.0, 1.0), F0);
+
+    // cook-torrance brdf
+    float NDF = distributionGGX(normal, h, u_roughness);
+    float G   = geometrySmith(normal, wo, wi, u_roughness);
+
+    float NdotL    = max(dot(normal, wi), 0.0);
+    vec3  num      = NDF * G * F;
+    float denom    = 4.0 * max(dot(normal, wo), 0.0) * NdotL;
+    vec3  specular = num / max(denom, 1e-3);
+
+    vec3 ks = F;
+    vec3 kd = 1.0 - ks;
+         kd = kd * (1.0 - u_metallic);
+
+    return (kd * u_albedo / PI + specular) * radiance * NdotL;
+}
+
+vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 world_pos)
+{
+    return pbr(light.base, -light.direction, normal, world_pos);
+}
+
+vec3 calcPointLight(PointLight light, vec3 normal, vec3 world_pos)
+{
+    vec3  light_direction   = light.position - world_pos;
+    //float distance_to_point = length(light_direction);
+
+    //if(distance_to_point > light.range)
+    //{
+    //    return vec4(0.0);
+    //}`
+
+    return pbr(light.base, light_direction, normal, world_pos);
+}
+
+vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 world_pos)
+{
+    vec3  light_direction = normalize(world_pos - light.point.position);
+    float theta           = dot(light_direction, light.direction);
+    
+    vec3 color = vec3(0.0);
+    
+    if(theta > light.cutoff)
+    {
+        float smoothing_factor = 1.0 - ((1.0 - theta) / (1.0 - light.cutoff));
+              color            = calcPointLight(light.point, normal, world_pos) * smoothing_factor;
+    }
+
+    return color;
+}

@@ -1,10 +1,12 @@
 ﻿#pragma once
 
-#include <random>
-#include <string>
 #include <stb_image.h>
 #include <glad/glad.h>
 #include <glm/vec3.hpp>
+
+#include <random>
+#include <string>
+#include <filesystem>
 
 namespace RGL
 {
@@ -44,9 +46,12 @@ namespace RGL
         * @returns Pointer to unsigned char that contains image's data.
         *          Has to be freed with stbi_image_free(data)!
         */
-        static unsigned char* LoadTextureData   (std::string_view filepath, ImageData & image_data, int desired_number_of_channels = 0);
-        static unsigned char* LoadTextureData   (unsigned char* memory_data, uint32_t data_size, ImageData& image_data, int desired_number_of_channels = 0);
-        static void           ReleaseTextureData(unsigned char* data);
+        static unsigned char* LoadTextureData    (const std::filesystem::path& filepath,                        ImageData& image_data, int desired_number_of_channels = 0);
+        static unsigned char* LoadTextureData    (unsigned char*               memory_data, uint32_t data_size, ImageData& image_data, int desired_number_of_channels = 0);
+        static float        * LoadTextureDataHdr (const std::filesystem::path& filepath,                        ImageData& image_data, int desired_number_of_channels = 0);
+        
+        static void ReleaseTextureData (unsigned char* data);
+        static void ReleaseTextureData (float*         data);
 
         static double RandomDouble()
         {

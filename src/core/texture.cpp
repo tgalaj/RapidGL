@@ -88,8 +88,8 @@ namespace RGL
         glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_UNSIGNED_BYTE, data);
         glGenerateTextureMipmap(m_obj_name);
 
-        SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
-        SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
+        SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
         SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
         SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
 
@@ -132,8 +132,42 @@ namespace RGL
         glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_UNSIGNED_BYTE, data);
         glGenerateTextureMipmap(m_obj_name);
 
-        SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
-        SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
+        SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
+        SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+
+        Util::ReleaseTextureData(data);
+
+        return true;
+    }
+
+    bool Texture2D::LoadHdr(const std::filesystem::path & filepath)
+    {
+        if (filepath.extension() != ".hdr")
+        {
+            fprintf(stderr, "This function is meant for loading HDR images only.\n");
+            return false;
+        }
+
+        auto data = Util::LoadTextureDataHdr(filepath, m_metadata);
+
+        if (!data)
+        {
+            fprintf(stderr, "Texture failed to load at path: %s\n", filepath.generic_string().c_str());
+            return false;
+        }
+
+        GLenum format          = GL_RGB;
+        GLenum internal_format = GL_RGB16F;
+
+        glCreateTextures       (GLenum(TextureType::Texture2D), 1, &m_obj_name);
+        glTextureStorage2D     (m_obj_name, 1 /* levels */, internal_format, m_metadata.width, m_metadata.height);
+        glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_FLOAT, data);
+        glGenerateTextureMipmap(m_obj_name);
+
+        SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::LINEAR);
+        SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
         SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
         SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
 

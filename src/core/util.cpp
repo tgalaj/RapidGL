@@ -62,10 +62,10 @@ namespace RGL
     }
 
 
-    unsigned char* Util::LoadTextureData(std::string_view filepath, ImageData & image_data, int desired_number_of_channels)
+    unsigned char* Util::LoadTextureData(const std::filesystem::path& filepath, ImageData & image_data, int desired_number_of_channels)
     {
         int width, height, channels_in_file;
-        unsigned char* data = stbi_load(std::string(filepath).c_str(), &width, &height, &channels_in_file, desired_number_of_channels);
+        unsigned char* data = stbi_load(filepath.generic_string().c_str(), &width, &height, &channels_in_file, desired_number_of_channels);
 
         if (data)
         {
@@ -92,7 +92,27 @@ namespace RGL
         return data;
     }
 
+    float* Util::LoadTextureDataHdr(const std::filesystem::path& filepath, ImageData& image_data, int desired_number_of_channels)
+    {
+        int width, height, channels_in_file;
+        float* data = stbi_loadf(filepath.generic_string().c_str(), &width, &height, &channels_in_file, desired_number_of_channels);
+
+        if (data)
+        {
+            image_data.width    = width;
+            image_data.height   = height;
+            image_data.channels = desired_number_of_channels == 0 ? channels_in_file : desired_number_of_channels;
+        }
+
+        return data;
+    }
+
     void Util::ReleaseTextureData(unsigned char* data)
+    {
+        stbi_image_free(data);
+    }
+
+    void Util::ReleaseTextureData(float* data)
     {
         stbi_image_free(data);
     }
