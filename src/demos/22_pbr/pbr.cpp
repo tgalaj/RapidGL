@@ -21,6 +21,17 @@ PBR::PBR()
 
 PBR::~PBR()
 {
+    if (m_skybox_vao != 0)
+    {
+        glDeleteVertexArrays(1, &m_skybox_vao);
+        m_skybox_vao = 0;
+    }
+
+    if (m_skybox_vbo != 0)
+    {
+        glDeleteBuffers(1, &m_skybox_vbo);
+        m_skybox_vbo = 0;
+    }
 }
 
 void PBR::init_app()
@@ -28,13 +39,15 @@ void PBR::init_app()
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.05, 0.05, 0.05, 1.0);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_MULTISAMPLE);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(1.5, 0.0, 10.0);
+    m_camera->setPosition(-11.5, 4.2, 16.5);
+    m_camera->setOrientation(glm::quat(0.94, 0.1, 0.31, 0.034));
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
@@ -89,6 +102,17 @@ void PBR::init_app()
     /* Add textures to the objects. */
     auto envmap_hdr = std::make_shared<RGL::Texture2D>();
     envmap_hdr->LoadHdr(RGL::FileSystem::getPath("textures/skyboxes/IBL/Newport_Loft.hdr"));
+    auto envmap_metadata = envmap_hdr->GetMetadata();
+
+    GenSkyboxGeometry();
+
+    m_env_cubemap_rt = std::make_shared<CubeMapRenderTarget>();
+    m_env_cubemap_rt->set_position(glm::vec3(0.0));
+    m_env_cubemap_rt->generate_rt(512, 512);
+
+    m_irradiance_cubemap_rt = std::make_shared<CubeMapRenderTarget>();
+    m_irradiance_cubemap_rt->set_position(glm::vec3(0.0));
+    m_irradiance_cubemap_rt->generate_rt(32, 32);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -104,7 +128,19 @@ void PBR::init_app()
     m_spot_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-spot.frag");
     m_spot_light_shader->link();
 
+    m_equirectangular_to_cubemap_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "equirectangular_to_cubemap.frag");
+    m_equirectangular_to_cubemap_shader->link();
+
+    m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
+    m_background_shader->link();
+
+    m_irradiance_convolution_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "irradiance_convolution.frag");
+    m_irradiance_convolution_shader->link();
+
     m_tmo_ps = std::make_shared<PostprocessFilter>(RGL::Window::getWidth(), RGL::Window::getHeight());
+
+    HdrEquirectangularToCubemap(m_env_cubemap_rt, envmap_hdr);
+    IrradianceConvolution(m_irradiance_cubemap_rt);
 }
 
 void PBR::input()
@@ -147,6 +183,14 @@ void PBR::input()
             std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
         }
     }
+
+    if (RGL::Input::getKeyUp(RGL::KeyCode::F3))
+    {
+        std::cout << "******** Camera properties : ********\n"
+                  << " Position:    [" << m_camera->position().x << ", " << m_camera->position().y << ", " << m_camera->position().z << "]\n"
+                  << " Orientation: [" << m_camera->orientation().x << ", " << m_camera->orientation().y << ", " << m_camera->orientation().z << ", " << m_camera->orientation().w << "]\n"
+                  << "*************************************n\n";
+    }
 }
 
 void PBR::update(double delta_time)
@@ -155,24 +199,141 @@ void PBR::update(double delta_time)
     m_camera->update(delta_time);
 }
 
+void PBR::HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt, const std::shared_ptr<RGL::Texture2D>& m_equirectangular_map)
+{
+    /* Update all faces per frame */
+    m_equirectangular_to_cubemap_shader->bind();
+    m_equirectangular_to_cubemap_shader->setUniform("u_projection", cubemap_rt->m_projection);
+
+    glViewport(0, 0, cubemap_rt->m_width, cubemap_rt->m_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, cubemap_rt->m_fbo_id);
+    m_equirectangular_map->Bind(1);
+
+    for (uint8_t side = 0; side < 6; ++side)
+    {
+        m_equirectangular_to_cubemap_shader->setUniform("u_view", cubemap_rt->m_view_transforms[side]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, cubemap_rt->m_cubemap_texture_id, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glBindVertexArray(m_skybox_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+    glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
+}
+
+void PBR::IrradianceConvolution(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt)
+{
+    /* Update all faces per frame */
+    m_irradiance_convolution_shader->bind();
+    m_irradiance_convolution_shader->setUniform("u_projection", cubemap_rt->m_projection);
+
+    glViewport(0, 0, cubemap_rt->m_width, cubemap_rt->m_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, cubemap_rt->m_fbo_id);
+    m_env_cubemap_rt->bindTexture(1);
+
+    for (uint8_t side = 0; side < 6; ++side)
+    {
+        m_irradiance_convolution_shader->setUniform("u_view", cubemap_rt->m_view_transforms[side]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, cubemap_rt->m_cubemap_texture_id, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glBindVertexArray(m_skybox_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+    glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
+}
+
+void PBR::GenSkyboxGeometry()
+{
+    m_skybox_vao = 0;
+    m_skybox_vbo = 0;
+
+    glCreateVertexArrays(1, &m_skybox_vao);
+    glCreateBuffers(1, &m_skybox_vbo);
+
+    std::vector<float> skybox_positions = {
+        // positions          
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+
+    /* Set up buffer objects */
+    glNamedBufferStorage(m_skybox_vbo, skybox_positions.size() * sizeof(skybox_positions[0]), skybox_positions.data(), 0 /*flags*/);
+
+    /* Set up VAO */
+    glEnableVertexArrayAttrib(m_skybox_vao, 0 /*index*/);
+
+    /* Separate attribute format */
+    glVertexArrayAttribFormat(m_skybox_vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, GL_FALSE, 0 /*relativeoffset*/);
+    glVertexArrayAttribBinding(m_skybox_vao, 0 /*index*/, 0 /*bindingindex*/);
+    glVertexArrayVertexBuffer(m_skybox_vao, 0 /*bindingindex*/, m_skybox_vbo, 0 /*offset*/, sizeof(glm::vec3) /*stride*/);
+}
+
 void PBR::render()
 {
     /* Put render specific code here. Don't update variables here! */
     m_tmo_ps->bindFilterFBO();
 
     m_ambient_light_shader->bind();
+    m_ambient_light_shader->setUniform("u_cam_pos", m_camera->position());
     m_ambient_light_shader->setUniform("u_albedo", glm::vec3(0.5, 0.0, 0.0f));
     m_ambient_light_shader->setUniform("u_ao",     0.9f);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    for (unsigned i = 0; i < 7 * 7; ++i)
+    m_irradiance_cubemap_rt->bindTexture(5);
+    for (unsigned row = 0; row < 7; ++row)
     {
-        //m_ambient_light_shader->setUniform("model", m_objects_model_matrices[i]);
-        m_ambient_light_shader->setUniform("u_mvp", view_projection * m_objects_model_matrices[i]);
+        m_ambient_light_shader->setUniform("u_metallic", float(row)/7.0f);
+        for (unsigned col = 0; col < 7; ++col)
+        {
+            m_ambient_light_shader->setUniform("u_roughness", glm::clamp(float(col) / 7.0f, 0.05f, 1.0f));
 
-        m_sphere_model.Render();
+            uint32_t idx = col + row * 7;
+            m_ambient_light_shader->setUniform("u_mvp", view_projection * m_objects_model_matrices[idx]);
+
+            m_sphere_model.Render();
+        }
     }
 
     /*
@@ -262,8 +423,16 @@ void PBR::render()
 
     /* Enable writing to the depth buffer. */
     glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
     glDisable(GL_BLEND);
+
+    m_background_shader->bind();
+    m_background_shader->setUniform("u_projection", m_camera->m_projection);
+    m_background_shader->setUniform("u_view", glm::mat4(glm::mat3(m_camera->m_view)));
+    m_env_cubemap_rt->bindTexture();
+    //m_irradiance_cubemap_rt->bindTexture();
+    glBindVertexArray(m_skybox_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     m_tmo_ps->render(m_exposure, m_gamma, m_a, m_d, m_hdr_max, m_mid_in, m_mid_out);
 }

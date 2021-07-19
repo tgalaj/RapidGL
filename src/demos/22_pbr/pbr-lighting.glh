@@ -6,6 +6,7 @@ layout (location = 0) in vec2 in_texcoord;
 layout (location = 1) in vec3 in_world_pos;
 layout (location = 2) in vec3 in_normal;
 
+layout (binding = 5) uniform samplerCube u_irradiance_map;
 // layout(binding = 0) uniform sampler2D albedo_map;
 // layout(binding = 1) uniform sampler2D normal_map;
 // layout(binding = 2) uniform sampler2D metallic_map;
@@ -50,6 +51,11 @@ vec3 fresnelSchlick(float cos_theta, vec3 F0)
     return F0 + (1.0 - F0) * pow(max(1.0 - cos_theta, 0.0), 5.0);
 }
 
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
+}  
+
 float distributionGGX(vec3 n, vec3 h, float roughness)
 {
     float a = roughness * roughness;
@@ -86,6 +92,22 @@ float geometrySmith(vec3 n, vec3 wo, vec3 wi, float roughness)
     return ggx1 * ggx2;
 }
 
+vec3 indirectLightingDiffuse(vec3 normal, vec3 world_pos)
+{
+    vec3 wo = normalize(u_cam_pos - world_pos);
+
+    // fresnel reflectance
+    vec3 F0 = vec3(0.04);
+         F0 = mix(F0, u_albedo, u_metallic);
+    vec3 ks = fresnelSchlickRoughness(clamp(dot(normal, wo), 0.0, 1.0), F0, u_roughness);
+    vec3 kd = 1.0 - ks;
+    vec3 irradiance = texture(u_irradiance_map, normal).rgb;
+    vec3 diffuse = u_albedo * irradiance;
+    vec3 ambient = (kd * diffuse) * u_ao;
+
+    return ambient;
+}
+
 vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
 {
     vec3 wo = normalize(u_cam_pos - world_pos);
@@ -99,7 +121,7 @@ vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
     // fresnel reflectance
     vec3 F0 = vec3(0.04);
          F0 = mix(F0, u_albedo, u_metallic);
-    vec3 F  = fresnelSchlick(clamp(dot(h, wo), 0.0, 1.0), F0);
+    vec3 F  = fresnelSchlick(max(dot(h, wo), 0.0), F0);
 
     // cook-torrance brdf
     float NDF = distributionGGX(normal, h, u_roughness);
@@ -108,7 +130,7 @@ vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
     float NdotL    = max(dot(normal, wi), 0.0);
     vec3  num      = NDF * G * F;
     float denom    = 4.0 * max(dot(normal, wo), 0.0) * NdotL;
-    vec3  specular = num / max(denom, 1e-3);
+    vec3  specular = num / (denom + 1e-5);
 
     vec3 ks = F;
     vec3 kd = 1.0 - ks;

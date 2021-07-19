@@ -34,12 +34,12 @@ namespace RGL
             }
 
             printf(
-                "\n\n********** GL Debug Output **********\n"
+                "********** GL Debug Output **********\n"
                 " Source:     %s\n"
                 " Type:       %s\n"
                 " Severity:   %s\n"
                 " Debug call: %s\n"
-                "*************************************",
+                "*************************************\n\n",
                 getStringForSource(source).c_str(),
                 getStringForType(type).c_str(),
                 getStringForSeverity(severity).c_str(),

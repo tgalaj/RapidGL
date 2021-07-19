@@ -152,6 +152,100 @@ public:
     void render_gui()              override;
 
 private:
+    struct CubeMapRenderTarget
+    {
+        glm::mat4 m_view_transforms[6];
+        glm::mat4 m_projection;
+
+        GLuint    m_cubemap_texture_id = 0;
+        GLuint    m_fbo_id             = 0;
+        GLuint    m_rbo_id             = 0;
+        glm::vec3 m_position           = glm::vec3(0.0f);
+        GLuint m_width, m_height;
+
+        ~CubeMapRenderTarget() { cleanup(); }
+
+        void set_position(const glm::vec3 pos)
+        {
+            m_position = pos;
+            m_view_transforms[0] = glm::lookAt(pos, pos + glm::vec3( 1,  0,  0), glm::vec3(0, -1,  0));
+            m_view_transforms[1] = glm::lookAt(pos, pos + glm::vec3(-1,  0,  0), glm::vec3(0, -1,  0));
+            m_view_transforms[2] = glm::lookAt(pos, pos + glm::vec3( 0,  1,  0), glm::vec3(0,  0,  1));
+            m_view_transforms[3] = glm::lookAt(pos, pos + glm::vec3( 0, -1,  0), glm::vec3(0,  0, -1));
+            m_view_transforms[4] = glm::lookAt(pos, pos + glm::vec3( 0,  0,  1), glm::vec3(0, -1,  0));
+            m_view_transforms[5] = glm::lookAt(pos, pos + glm::vec3( 0,  0, -1), glm::vec3(0, -1,  0));
+
+            m_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        }
+
+        void bindTexture(GLuint unit = 0)
+        {
+            glBindTextureUnit(unit, m_cubemap_texture_id);
+        }
+
+        void cleanup()
+        {
+            if (m_cubemap_texture_id != 0)
+            {
+                glDeleteTextures(1, &m_cubemap_texture_id);
+            }
+
+            if (m_fbo_id != 0)
+            {
+                glDeleteFramebuffers(1, &m_fbo_id);
+            }
+
+            if (m_rbo_id != 0)
+            {
+                glDeleteRenderbuffers(1, &m_rbo_id);
+            }
+        }
+
+        void generate_rt(uint32_t width, uint32_t height)
+        {
+            m_width  = width;
+            m_height = height;
+
+            glGenTextures(1, &m_cubemap_texture_id);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubemap_texture_id);
+
+            for (uint8_t i = 0; i < 6; ++i)
+            {
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, m_width, m_height, 0, GL_RGB, GL_FLOAT, 0);
+            }
+
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+            glGenFramebuffers(1, &m_fbo_id);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, m_cubemap_texture_id, 0);
+
+            glGenRenderbuffers(1, &m_rbo_id);
+            glBindRenderbuffer(GL_RENDERBUFFER, m_rbo_id);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_width, m_height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo_id);
+
+            glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    }; 
+
+    void HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt, const std::shared_ptr<RGL::Texture2D> & m_equirectangular_map);
+    void IrradianceConvolution      (const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt);
+    void GenSkyboxGeometry();
+
+    std::shared_ptr<CubeMapRenderTarget> m_env_cubemap_rt;
+    std::shared_ptr<CubeMapRenderTarget> m_irradiance_cubemap_rt;
+
+    std::shared_ptr<RGL::Shader> m_equirectangular_to_cubemap_shader;
+    std::shared_ptr<RGL::Shader> m_irradiance_convolution_shader;
+    std::shared_ptr<RGL::Shader> m_background_shader;
+
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_ambient_light_shader;
     std::shared_ptr<RGL::Shader> m_directional_light_shader;
@@ -176,4 +270,6 @@ private:
     float m_hdr_max;
     float m_mid_in;
     float m_mid_out;
+
+    GLuint m_skybox_vao, m_skybox_vbo;
 };

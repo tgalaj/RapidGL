@@ -3,6 +3,7 @@
 
 void main()
 {
-    vec3 ambient = vec3(0.03) * u_albedo * u_ao;
+    
+    vec3 ambient = indirectLightingDiffuse(normalize(in_normal), in_world_pos);
     frag_color = vec4(ambient, 1.0);
 } 

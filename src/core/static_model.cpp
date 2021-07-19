@@ -484,7 +484,7 @@ namespace RGL
     {
         VertexData vertex_data;
 
-        float r2 = radius * 0.5f;
+        float r2 = radius;
 
         vertex_data.positions =
         {

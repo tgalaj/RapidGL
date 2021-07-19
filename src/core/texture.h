@@ -71,6 +71,8 @@ namespace RGL
         virtual void SetCompareMode(TextureCompareMode mode);
         virtual void SetCompareFunc(TextureCompareFunc func);
         virtual void SetAnisotropy(float anisotropy);
+        
+        virtual ImageData GetMetadata() const { return m_metadata; };
 
     protected:
         Texture() : m_type(TextureType::NONE), m_obj_name(0) {}
