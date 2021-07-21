@@ -36,5 +36,5 @@ void main()
 	color = vec4(map(color.r), map(color.g), map(color.b), color.a);
 	color.a = 1.0;
 	color = clamp(color, 0.0, 1.0);
-	frag_color = gammaCorrect(color);
+	frag_color = vec4(gammaCorrect(color).rgb, 1.0);
 }

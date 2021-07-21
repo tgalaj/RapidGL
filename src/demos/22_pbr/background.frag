@@ -7,6 +7,6 @@ layout (binding = 0) uniform samplerCube environment_map;
 
 void main()
 {
-    vec3 envColor = texture(environment_map, -in_world_pos).rgb;
+    vec3 envColor = textureLod(environment_map, -in_world_pos, 0.0).rgb;
     frag_color = vec4(envColor, 1.0);
 }

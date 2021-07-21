@@ -46,8 +46,9 @@ void PBR::init_app()
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
-    m_camera->setPosition(-11.5, 4.2, 16.5);
-    m_camera->setOrientation(glm::quat(0.94, 0.1, 0.31, 0.034));
+    m_camera->setPosition(-12.25, 6.2, -14.65);
+    m_camera->setOrientation(glm::quat(-0.256, -0.036, -0.95, -0.14));
+   
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
@@ -56,19 +57,19 @@ void PBR::init_app()
 
     m_point_light_properties[0].color       = glm::vec3(1.0, 1.0, 1.0);
     m_point_light_properties[0].intensity   = 1000.0f;
-    m_point_light_properties[0].position    = glm::vec3(-10.0, 10.0, 10.0);
+    m_point_light_properties[0].position    = glm::vec3(-10.0, 10.0, -10.0);
 
     m_point_light_properties[1].color     = glm::vec3(1.0, 1.0, 1.0);
     m_point_light_properties[1].intensity = 1000.0f;
-    m_point_light_properties[1].position  = glm::vec3(10.0, 10.0, 10.0);
+    m_point_light_properties[1].position  = glm::vec3(10.0, 10.0, -10.0);
 
     m_point_light_properties[2].color     = glm::vec3(1.0, 1.0, 1.0);
     m_point_light_properties[2].intensity = 1000.0f;
-    m_point_light_properties[2].position  = glm::vec3(-10.0, -10.0, 10.0);
+    m_point_light_properties[2].position  = glm::vec3(-10.0, -10.0, -10.0);
 
     m_point_light_properties[3].color     = glm::vec3(1.0, 1.0, 1.0);
     m_point_light_properties[3].intensity = 1000.0f;
-    m_point_light_properties[3].position  = glm::vec3(10.0, -10.0, 10.0);
+    m_point_light_properties[3].position  = glm::vec3(10.0, -10.0, -10.0);
 
     m_spot_light_properties.color       = glm::vec3(0.0, 0.0, 1.0);
     m_spot_light_properties.intensity   = 5.0f;
@@ -108,11 +109,18 @@ void PBR::init_app()
 
     m_env_cubemap_rt = std::make_shared<CubeMapRenderTarget>();
     m_env_cubemap_rt->set_position(glm::vec3(0.0));
-    m_env_cubemap_rt->generate_rt(512, 512);
+    m_env_cubemap_rt->generate_rt(512, 512, true);
 
     m_irradiance_cubemap_rt = std::make_shared<CubeMapRenderTarget>();
     m_irradiance_cubemap_rt->set_position(glm::vec3(0.0));
     m_irradiance_cubemap_rt->generate_rt(32, 32);
+
+    m_prefiltered_env_map_rt = std::make_shared<CubeMapRenderTarget>();
+    m_prefiltered_env_map_rt->set_position(glm::vec3(0.0));
+    m_prefiltered_env_map_rt->generate_rt(128, 128, true);
+
+    m_brdf_lut_rt = std::make_shared<Texture2DRenderTarget>();
+    m_brdf_lut_rt->generate_rt(512, 512);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -131,16 +139,29 @@ void PBR::init_app()
     m_equirectangular_to_cubemap_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "equirectangular_to_cubemap.frag");
     m_equirectangular_to_cubemap_shader->link();
 
-    m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
-    m_background_shader->link();
-
     m_irradiance_convolution_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "irradiance_convolution.frag");
     m_irradiance_convolution_shader->link();
 
+    m_prefilter_env_map_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "prefilter_cubemap.frag");
+    m_prefilter_env_map_shader->link();
+
+    m_precompute_brdf = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
+    m_precompute_brdf->link();
+
+    m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
+    m_background_shader->link();
+
     m_tmo_ps = std::make_shared<PostprocessFilter>(RGL::Window::getWidth(), RGL::Window::getHeight());
 
+    // Precomputations
     HdrEquirectangularToCubemap(m_env_cubemap_rt, envmap_hdr);
+    
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_env_cubemap_rt->m_cubemap_texture_id);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
     IrradianceConvolution(m_irradiance_cubemap_rt);
+    PrefilterCubemap(m_prefiltered_env_map_rt);
+    PrecomputeBRDF(m_brdf_lut_rt);
 }
 
 void PBR::input()
@@ -243,6 +264,60 @@ void PBR::IrradianceConvolution(const std::shared_ptr<CubeMapRenderTarget>& cube
     glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
 }
 
+void PBR::PrefilterCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt)
+{
+    m_prefilter_env_map_shader->bind();
+    m_prefilter_env_map_shader->setUniform("u_projection", cubemap_rt->m_projection);
+    
+    m_env_cubemap_rt->bindTexture(1);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, cubemap_rt->m_fbo_id);
+
+    uint8_t max_mip_levels = 5;
+    for (uint8_t mip = 0; mip < max_mip_levels; ++mip)
+    {
+        // resize the framebuffer according to mip-level size.
+        uint32_t mip_width  = cubemap_rt->m_width  * std::pow(0.5, mip);
+        uint32_t mip_height = cubemap_rt->m_height * std::pow(0.5, mip);
+
+        glBindRenderbuffer(GL_RENDERBUFFER, cubemap_rt->m_rbo_id);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
+        glViewport(0, 0, mip_width, mip_height);
+
+        float roughness = float(mip) / float(max_mip_levels - 1);
+        m_prefilter_env_map_shader->setUniform("u_roughness", roughness);
+
+        for (uint8_t side = 0; side < 6; ++side)
+        {
+            m_prefilter_env_map_shader->setUniform("u_view", cubemap_rt->m_view_transforms[side]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, cubemap_rt->m_cubemap_texture_id, mip);
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glBindVertexArray(m_skybox_vao);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
+}
+
+void PBR::PrecomputeBRDF(const std::shared_ptr<Texture2DRenderTarget>& rt)
+{
+    GLuint m_dummy_vao_id;
+    glCreateVertexArrays(1, &m_dummy_vao_id);
+
+    rt->bindRenderTarget();
+    m_precompute_brdf->bind();
+
+    glBindVertexArray(m_dummy_vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glDeleteVertexArrays(1, &m_dummy_vao_id);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
+}
+
 void PBR::GenSkyboxGeometry()
 {
     m_skybox_vao = 0;
@@ -316,12 +391,15 @@ void PBR::render()
     m_ambient_light_shader->bind();
     m_ambient_light_shader->setUniform("u_cam_pos", m_camera->position());
     m_ambient_light_shader->setUniform("u_albedo", glm::vec3(0.5, 0.0, 0.0f));
-    m_ambient_light_shader->setUniform("u_ao",     0.9f);
+    m_ambient_light_shader->setUniform("u_ao",     1.0f);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
     m_irradiance_cubemap_rt->bindTexture(5);
+    m_prefiltered_env_map_rt->bindTexture(6);
+    m_brdf_lut_rt->bindTexture(7);
+
     for (unsigned row = 0; row < 7; ++row)
     {
         m_ambient_light_shader->setUniform("u_metallic", float(row)/7.0f);
@@ -330,6 +408,8 @@ void PBR::render()
             m_ambient_light_shader->setUniform("u_roughness", glm::clamp(float(col) / 7.0f, 0.05f, 1.0f));
 
             uint32_t idx = col + row * 7;
+            m_ambient_light_shader->setUniform("u_model", m_objects_model_matrices[idx]);
+            m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_objects_model_matrices[idx]))));
             m_ambient_light_shader->setUniform("u_mvp", view_projection * m_objects_model_matrices[idx]);
 
             m_sphere_model.Render();
@@ -431,6 +511,7 @@ void PBR::render()
     m_background_shader->setUniform("u_view", glm::mat4(glm::mat3(m_camera->m_view)));
     m_env_cubemap_rt->bindTexture();
     //m_irradiance_cubemap_rt->bindTexture();
+    //m_prefiltered_env_map_rt->bindTexture();
     glBindVertexArray(m_skybox_vao);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 

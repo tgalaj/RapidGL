@@ -152,6 +152,75 @@ public:
     void render_gui()              override;
 
 private:
+    struct Texture2DRenderTarget
+    {
+        GLuint m_texture_id = 0;
+        GLuint m_fbo_id = 0;
+        GLuint m_rbo_id = 0;
+        GLuint m_width = 0, m_height = 0;
+
+        ~Texture2DRenderTarget() { cleanup(); }
+
+        void bindTexture(GLuint unit = 0)
+        {
+            glBindTextureUnit(unit, m_texture_id);
+        }
+
+        void bindRenderTarget()
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
+            glViewport(0, 0, m_width, m_height);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        }
+
+        void cleanup()
+        {
+            if (m_texture_id != 0)
+            {
+                glDeleteTextures(1, &m_texture_id);
+            }
+
+            if (m_fbo_id != 0)
+            {
+                glDeleteFramebuffers(1, &m_fbo_id);
+            }
+
+            if (m_rbo_id != 0)
+            {
+                glDeleteRenderbuffers(1, &m_rbo_id);
+            }
+        }
+
+        void generate_rt(uint32_t width, uint32_t height)
+        {
+            m_width = width;
+            m_height = height;
+
+            glGenTextures(1, &m_texture_id);
+            glBindTexture(GL_TEXTURE_2D, m_texture_id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, m_width, m_height, 0, GL_RG, GL_FLOAT, 0);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glGenFramebuffers(1, &m_fbo_id);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture_id, 0);
+
+            glGenRenderbuffers(1, &m_rbo_id);
+            glBindRenderbuffer(GL_RENDERBUFFER, m_rbo_id);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, m_width, m_height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo_id);
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+    };
+
     struct CubeMapRenderTarget
     {
         glm::mat4 m_view_transforms[6];
@@ -201,7 +270,7 @@ private:
             }
         }
 
-        void generate_rt(uint32_t width, uint32_t height)
+        void generate_rt(uint32_t width, uint32_t height, bool gen_mip_levels = false)
         {
             m_width  = width;
             m_height = height;
@@ -215,10 +284,13 @@ private:
             }
 
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, gen_mip_levels ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+            if (gen_mip_levels) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
             glGenFramebuffers(1, &m_fbo_id);
             glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
@@ -226,7 +298,7 @@ private:
 
             glGenRenderbuffers(1, &m_rbo_id);
             glBindRenderbuffer(GL_RENDERBUFFER, m_rbo_id);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_width, m_height);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, m_width, m_height);
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo_id);
 
             glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -237,13 +309,19 @@ private:
 
     void HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt, const std::shared_ptr<RGL::Texture2D> & m_equirectangular_map);
     void IrradianceConvolution      (const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt);
+    void PrefilterCubemap           (const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt);
+    void PrecomputeBRDF             (const std::shared_ptr<Texture2DRenderTarget>& rt);
     void GenSkyboxGeometry();
 
     std::shared_ptr<CubeMapRenderTarget> m_env_cubemap_rt;
     std::shared_ptr<CubeMapRenderTarget> m_irradiance_cubemap_rt;
+    std::shared_ptr<CubeMapRenderTarget> m_prefiltered_env_map_rt;
+    std::shared_ptr<Texture2DRenderTarget> m_brdf_lut_rt;
 
     std::shared_ptr<RGL::Shader> m_equirectangular_to_cubemap_shader;
     std::shared_ptr<RGL::Shader> m_irradiance_convolution_shader;
+    std::shared_ptr<RGL::Shader> m_prefilter_env_map_shader;
+    std::shared_ptr<RGL::Shader> m_precompute_brdf;
     std::shared_ptr<RGL::Shader> m_background_shader;
 
     std::shared_ptr<RGL::Camera> m_camera;
