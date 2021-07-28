@@ -11,11 +11,17 @@ layout (binding = 5) uniform samplerCube u_irradiance_map;
 layout (binding = 6) uniform samplerCube u_prefiltered_map;
 layout (binding = 7) uniform sampler2D   u_brdf_lut;
 
-// layout(binding = 0) uniform sampler2D albedo_map;
-// layout(binding = 1) uniform sampler2D normal_map;
-// layout(binding = 2) uniform sampler2D metallic_map;
-// layout(binding = 3) uniform sampler2D roughness_map;
-// layout(binding = 4) uniform sampler2D ao_map;
+layout(binding = 0) uniform sampler2D u_albedo_map;
+layout(binding = 1) uniform sampler2D u_normal_map;
+layout(binding = 2) uniform sampler2D u_metallic_map;
+layout(binding = 3) uniform sampler2D u_roughness_map;
+layout(binding = 4) uniform sampler2D u_ao_map;
+
+uniform bool u_has_albedo_map;
+uniform bool u_has_normal_map;
+uniform bool u_has_metallic_map;
+uniform bool u_has_roughness_map;
+uniform bool u_has_ao_map;
 
 uniform vec3  u_cam_pos;
 
@@ -40,15 +46,33 @@ struct PointLight
 {
     BaseLight base;
     vec3 position;
-    float range;
+    float radius;
 };
 
 struct SpotLight
 {
     PointLight point;
     vec3 direction;
-    float cutoff;
+    float inner_angle;
+    float outer_angle;
 };
+
+vec3 getNormalFromMap()
+{
+    vec3 tangent_normal = texture(u_normal_map, in_texcoord).xyz * 2.0 - 1.0;
+
+    vec3 Q1  = dFdx(in_world_pos);
+    vec3 Q2  = dFdy(in_world_pos);
+    vec2 st1 = dFdx(in_texcoord);
+    vec2 st2 = dFdy(in_texcoord);
+
+    vec3 N   = normalize(in_normal);
+    vec3 T   = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B   = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangent_normal);
+}
 
 vec3 fresnelSchlick(float cos_theta, vec3 F0)
 {
@@ -98,50 +122,58 @@ float geometrySmith(vec3 n, vec3 wo, vec3 wi, float roughness)
 
 vec3 indirectLightingDiffuse(vec3 normal, vec3 world_pos)
 {
+    vec3  albedo    = u_has_albedo_map    ? texture(u_albedo_map, in_texcoord).rgb  : u_albedo;
+    float metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).r  : u_metallic;
+    float roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).r : u_roughness;
+    float ao        = u_has_ao_map        ? texture(u_ao_map, in_texcoord).r        : u_ao;
+          normal    = u_has_normal_map    ? getNormalFromMap()                      : normal;
+
     vec3 wo = normalize(u_cam_pos - world_pos);
     vec3 r  = reflect(-wo, normal);
 
     // fresnel reflectance
     vec3 F0 = vec3(0.04);
-         F0 = mix(F0, u_albedo, u_metallic);
+         F0 = mix(F0, albedo, metallic);
 
-    vec3 F  = fresnelSchlickRoughness(max(dot(normal, wo), 0.0), F0, u_roughness);
+    vec3 F  = fresnelSchlickRoughness(max(dot(normal, wo), 0.0), F0, roughness);
     vec3 ks = F;
     vec3 kd = 1.0 - ks;
-         kd = kd * (1.0 - u_metallic);
+         kd = kd * (1.0 - metallic);
     
     // diffuse IBL term
     vec3 irradiance = texture(u_irradiance_map, normal).rgb;
-    vec3 diffuse    = u_albedo * irradiance;
+    vec3 diffuse    = albedo * irradiance;
 
     // specular IBL term
-    vec3 prefiletered_color = textureLod(u_prefiltered_map, r, u_roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf               = texture(u_brdf_lut, vec2(max(dot(normal, wo), 0.0), u_roughness)).rg;
+    vec3 prefiletered_color = textureLod(u_prefiltered_map, r, roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf               = texture(u_brdf_lut, vec2(max(dot(normal, wo), 0.0), roughness)).rg;
     vec3 specular           =  prefiletered_color * (F * brdf.x + brdf.y);
 
     // total indirect lighting
-    vec3 ambient = (kd * diffuse + specular) * u_ao;
+    vec3 ambient = (kd * diffuse + specular) * ao;
     return ambient;
 }
 
 vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
 {
-    vec3 wo = normalize(u_cam_pos - world_pos);
-    vec3 wi = normalize(direction);
-    vec3 h  = normalize(wo + wi);
+    vec3  albedo    = u_has_albedo_map    ? texture(u_albedo_map, in_texcoord).rgb  : u_albedo;
+    float metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).r  : u_metallic;
+    float roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).r : u_roughness;
+          normal    = u_has_normal_map    ? getNormalFromMap()                      : normal;
 
-    float dist        = length(direction);
-    float attenuation = 1.0 / (dist * dist);
-    vec3  radiance    = base.color * base.intensity * attenuation;
+    vec3 wo       = normalize(u_cam_pos - world_pos);
+    vec3 wi       = normalize(direction);
+    vec3 h        = normalize(wo + wi);
+    vec3 radiance = base.color * base.intensity;
 
     // fresnel reflectance
     vec3 F0 = vec3(0.04);
-         F0 = mix(F0, u_albedo, u_metallic);
+         F0 = mix(F0, albedo, metallic);
     vec3 F  = fresnelSchlick(max(dot(h, wo), 0.0), F0);
 
     // cook-torrance brdf
-    float NDF = distributionGGX(normal, h, u_roughness);
-    float G   = geometrySmith(normal, wo, wi, u_roughness);
+    float NDF = distributionGGX(normal, h, roughness);
+    float G   = geometrySmith(normal, wo, wi, roughness);
 
     float NdotL    = max(dot(normal, wi), 0.0);
     vec3  num      = NDF * G * F;
@@ -150,9 +182,31 @@ vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
 
     vec3 ks = F;
     vec3 kd = 1.0 - ks;
-         kd = kd * (1.0 - u_metallic);
+         kd = kd * (1.0 - metallic);
 
-    return (kd * u_albedo / PI + specular) * radiance * NdotL;
+    return (kd * albedo / PI + specular) * radiance * NdotL;
+}
+
+float getSquareFalloffAttenuation(vec3 pos_to_light, float light_inv_radius) 
+{
+    float distance_square = dot(pos_to_light, pos_to_light);
+    float factor          = distance_square * light_inv_radius * light_inv_radius;
+    float smooth_factor   = max(1.0 - factor * factor, 0.0);
+
+    return (smooth_factor * smooth_factor) / max(distance_square, 1e-4);
+}
+
+float getSpotAngleAttenuation(vec3 l, vec3 light_dir, float inner_angle, float outer_angle) 
+{
+    // the scale and offset computations can be done CPU-side
+    float cos_outer   = cos(outer_angle);
+    float spot_scale  = 1.0 / max(cos(inner_angle) - cos_outer, 1e-4);
+    float spot_offset = -cos_outer * spot_scale;
+
+    float cd          = dot(normalize(-light_dir), l);
+    float attenuation = clamp(cd * spot_scale + spot_offset, 0.0, 1.0);
+
+    return attenuation * attenuation;
 }
 
 vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 world_pos)
@@ -162,29 +216,16 @@ vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 world_pos)
 
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 world_pos)
 {
-    vec3  light_direction   = light.position - world_pos;
-    //float distance_to_point = length(light_direction);
+    vec3  light_direction = light.position - world_pos;
+    float attenuation     = getSquareFalloffAttenuation(light_direction, 1.0 / light.radius);
 
-    //if(distance_to_point > light.range)
-    //{
-    //    return vec4(0.0);
-    //}`
-
-    return pbr(light.base, light_direction, normal, world_pos);
+    return pbr(light.base, light_direction, normal, world_pos) * attenuation;
 }
 
 vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 world_pos)
 {
-    vec3  light_direction = normalize(world_pos - light.point.position);
-    float theta           = dot(light_direction, light.direction);
-    
-    vec3 color = vec3(0.0);
-    
-    if(theta > light.cutoff)
-    {
-        float smoothing_factor = 1.0 - ((1.0 - theta) / (1.0 - light.cutoff));
-              color            = calcPointLight(light.point, normal, world_pos) * smoothing_factor;
-    }
+    vec3  l           = normalize(world_pos - light.point.position);
+    float attenuation = getSpotAngleAttenuation(l, -light.direction, light.inner_angle, light.outer_angle);
 
-    return color;
+    return calcPointLight(light.point, normal, world_pos) * attenuation;
 }

@@ -147,13 +147,6 @@ Order Independent Transparency using linked lists (per pixel) with MSAA.
 <img src="screenshots/21_oit.png" width="50%" height="50%" alt="Order Independent Transparency (OIT)" />
 
 ### Physically Based Rendering (PBR)
+Including directional and punctual lights (spot and point) with square falloff attenuation. The demo supports textured and non-textured objects.
+
 <img src="screenshots/22_pbr.png" width="50%" height="50%" alt="Physically Based Rendering (PBR)" />
-
-### Variance Soft Shadow Mapping (https://jankautz.com/publications/VSSM_PG2010.pdf)
-TODO
-
-### Cascaded Shadow Mapping
-TODO
-
-### Clustered Shading
-TODO

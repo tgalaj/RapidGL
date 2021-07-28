@@ -34,13 +34,14 @@ struct DirectionalLight : BaseLight
 struct PointLight : BaseLight
 {
     glm::vec3 position;
-    float range;
+    float radius;
 };
 
 struct SpotLight : PointLight
 {
     glm::vec3 direction;
-    float cutoff;
+    float inner_angle;
+    float outer_angle;
 
     void setDirection(float azimuth, float elevation)
     {
@@ -70,8 +71,8 @@ struct PostprocessFilter
 
         glCreateTextures(GL_TEXTURE_2D, 1, &m_tex_id);
         glTextureStorage2D(m_tex_id, 1, GL_RGB32F, width, height);
-        glTextureParameteri(m_tex_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTextureParameteri(m_tex_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTextureParameteri(m_tex_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTextureParameteri(m_tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glCreateRenderbuffers(1, &m_rbo_id);
         glNamedRenderbufferStorage(m_rbo_id, GL_DEPTH24_STENCIL8, width, height);
@@ -119,7 +120,7 @@ struct PostprocessFilter
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void render(float exposure, float gamma, float a, float d, float hdr_max, float mid_in, float mid_out)
+    void render(float exposure, float gamma)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -127,11 +128,6 @@ struct PostprocessFilter
         m_shader->bind();
         m_shader->setUniform("u_exposure", exposure);
         m_shader->setUniform("u_gamma",    gamma);
-        m_shader->setUniform("u_a",        a);
-        m_shader->setUniform("u_d",        d);
-        m_shader->setUniform("u_hdr_max",  hdr_max);
-        m_shader->setUniform("u_mid_in",   mid_in);
-        m_shader->setUniform("u_mid_out",  mid_out);
         bindTexture();
 
         glBindVertexArray(m_dummy_vao_id);
@@ -310,8 +306,13 @@ private:
     void HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt, const std::shared_ptr<RGL::Texture2D> & m_equirectangular_map);
     void IrradianceConvolution      (const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt);
     void PrefilterCubemap           (const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt);
+    void PrecomputeIndirectLight    (const std::filesystem::path & hdri_map_filepath);
     void PrecomputeBRDF             (const std::shared_ptr<Texture2DRenderTarget>& rt);
     void GenSkyboxGeometry();
+
+    void RenderSpheres();
+    void RenderTexturedModels();
+    void RenderCerberusPistol();
 
     std::shared_ptr<CubeMapRenderTarget> m_env_cubemap_rt;
     std::shared_ptr<CubeMapRenderTarget> m_irradiance_cubemap_rt;
@@ -333,6 +334,12 @@ private:
     RGL::StaticModel m_sphere_model;
     std::vector<glm::mat4> m_objects_model_matrices;
 
+    RGL::StaticModel m_textured_models[5];
+    glm::mat4 m_textured_models_model_matrices[5];
+
+    RGL::StaticModel m_cerberus_model;
+    glm::mat4 m_cerberus_model_matrix;
+
     DirectionalLight m_dir_light_properties;
     PointLight       m_point_light_properties[4];
     SpotLight        m_spot_light_properties;
@@ -342,12 +349,15 @@ private:
 
     std::shared_ptr<PostprocessFilter> m_tmo_ps;
     float m_exposure; 
-    float m_gamma; 
-    float m_a;
-    float m_d;
-    float m_hdr_max;
-    float m_mid_in;
-    float m_mid_out;
+    float m_gamma;
+
+    float m_background_lod_level;
+    std::string m_hdr_maps_names[3] = { "colorful_studio_4k.hdr", "phalzer_forest_01_4k.hdr", "sunset_fairway_4k.hdr" };
+    uint8_t m_current_hdr_map_idx   = 2;
+
+    enum class Scene { SPHERES, TEXTURED, CERBERUS_PISTOL };
+    Scene m_current_scene = Scene::TEXTURED;
+    std::string m_scene_names[3] = { "spheres", "textured", "cerberus pistol"};
 
     GLuint m_skybox_vao, m_skybox_vbo;
 };
