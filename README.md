@@ -150,3 +150,7 @@ Order Independent Transparency using linked lists (per pixel) with MSAA.
 Including directional and punctual lights (spot and point) with square falloff attenuation. The demo supports textured and non-textured objects.
 
 <img src="screenshots/22_pbr.png" width="50%" height="50%" alt="Physically Based Rendering (PBR)" />
+
+### Geometry Shader: face extrusion
+<img src="screenshots/23_gs_face_extrusion.gif" width="50%" height="50%" alt="Physically Based Rendering (PBR)" />
+
