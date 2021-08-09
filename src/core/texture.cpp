@@ -63,7 +63,7 @@ namespace RGL
         float max_anisotropy;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_anisotropy);
 
-        std::clamp(anisotropy, 1.0f, max_anisotropy);
+        glm::clamp(anisotropy, 1.0f, max_anisotropy);
         glSamplerParameterf(m_so_id, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
     }
 
