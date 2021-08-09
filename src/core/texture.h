@@ -35,6 +35,53 @@ namespace RGL
                                           EQUAL                = GL_EQUAL, 
                                           NOTEQUAL             = GL_NOTEQUAL };
 
+    class TextureSampler final
+    {
+    public:
+        TextureSampler();
+        virtual ~TextureSampler() { Release(); };
+
+        TextureSampler(const TextureSampler&) = delete;
+        TextureSampler& operator=(const TextureSampler&) = delete;
+
+        TextureSampler(TextureSampler&& other) noexcept : m_so_id(other.m_so_id), m_max_anisotropy(other.m_max_anisotropy)
+        {
+            other.m_so_id = 0;
+        }
+
+        TextureSampler& operator=(TextureSampler&& other) noexcept
+        {
+            if (this != &other)
+            {
+                Release();
+                std::swap(m_so_id, other.m_so_id);
+                std::swap(m_max_anisotropy, other.m_max_anisotropy);
+            }
+        }
+        
+        void Create();
+        void SetFiltering(TextureFiltering type, TextureFilteringParam param);
+        void SetMinLod(float min);
+        void SetMaxLod(float max);
+        void SetWraping(TextureWrapingCoordinate coord, TextureWrapingParam param);
+        void SetBorderColor(float r, float g, float b, float a);
+        void SetCompareMode(TextureCompareMode mode);
+        void SetCompareFunc(TextureCompareFunc func);
+        void SetAnisotropy(float anisotropy);
+
+        void Bind(uint32_t texture_unit) { glBindSampler(texture_unit, m_so_id); }
+
+    private:
+        void Release()
+        {
+            glDeleteSamplers(1, &m_so_id);
+            m_so_id = 0;
+        }
+
+        GLuint m_so_id;
+        float m_max_anisotropy;
+    };
+
     class Texture
     {
     public:

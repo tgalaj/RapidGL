@@ -154,3 +154,5 @@ Including directional and punctual lights (spot and point) with square falloff a
 ### Geometry Shader: face extrusion
 <img src="screenshots/23_gs_face_extrusion.gif" width="50%" height="50%" alt="Physically Based Rendering (PBR)" />
 
+### Percentage Closer Soft Shadows
+<img src="screenshots/24_pcss.png" width="50%" height="50%" alt="Percentage Closer Soft Shadows" />

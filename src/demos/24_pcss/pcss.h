@@ -31,31 +31,6 @@ struct DirectionalLight : BaseLight
     }
 };
 
-struct PointLight : BaseLight
-{
-    glm::vec3 position;
-    float radius;
-};
-
-struct SpotLight : PointLight
-{
-    glm::vec3 direction;
-    float inner_angle;
-    float outer_angle;
-
-    void setDirection(float azimuth, float elevation)
-    {
-        float az = glm::radians(azimuth);
-        float el = glm::radians(elevation);
-
-        direction.x = glm::sin(el) * glm::cos(az);
-        direction.y = glm::cos(el);
-        direction.z = glm::sin(el) * glm::sin(az);
-
-        direction = glm::normalize(-direction);
-    }
-};
-
 struct PostprocessFilter
 {
     std::shared_ptr<RGL::Shader> m_shader;
@@ -326,18 +301,15 @@ private:
     std::shared_ptr<RGL::Camera> m_camera;
     std::shared_ptr<RGL::Shader> m_ambient_light_shader;
     std::shared_ptr<RGL::Shader> m_directional_light_shader;
-    std::shared_ptr<RGL::Shader> m_point_light_shader;
-    std::shared_ptr<RGL::Shader> m_spot_light_shader;
 
     RGL::StaticModel m_textured_models[5];
     glm::mat4 m_textured_models_model_matrices[5];
 
+    GLuint m_skybox_vao, m_skybox_vbo;
+
     DirectionalLight m_dir_light_properties;
-    PointLight       m_point_light_properties[4];
-    SpotLight        m_spot_light_properties;
-    
-    glm::vec2 m_dir_light_angles;   /* azimuth and elevation angles */
-    glm::vec2 m_spot_light_angles;  /* azimuth and elevation angles */
+    glm::vec2        m_dir_light_angles;   /* azimuth and elevation angles */
+    glm::vec2        m_spot_light_angles;  /* azimuth and elevation angles */
 
     std::shared_ptr<PostprocessFilter> m_tmo_ps;
     float m_exposure; 
@@ -347,18 +319,30 @@ private:
     std::string m_hdr_maps_names[2] = { "phalzer_forest_01_4k.hdr", "sunset_fairway_4k.hdr" };
     uint8_t m_current_hdr_map_idx   = 0;
 
-    GLuint m_skybox_vao, m_skybox_vbo;
-
-    // Shadows specific handles and data
+    // Shadows
     void CreateDirectionalShadowMap(uint32_t width, uint32_t height);
     void CreateShadowFBO(GLuint shadow_texture);
     void GenerateShadowMap(uint32_t width, uint32_t height);
+    GLuint GenerateRandomAnglesTexture3D(uint32_t size);
 
+    RGL::TextureSampler m_shadow_map_pcf_sampler;
     GLuint m_dir_shadow_map;
+    GLuint m_random_angles_tex3d_id;
     GLuint m_shadow_fbo;
-    glm::mat4 m_dir_light_matrix;
+
+    glm::mat4  m_dir_light_view_projection;
+    glm::mat4  m_dir_light_view; 
     glm::uvec2 m_dir_light_shadow_map_res;
-    float m_dir_shadow_frustum_size;
+    glm::vec2  m_dir_shadow_frustum_planes;
+    float      m_dir_shadow_frustum_size;
 
     std::shared_ptr<RGL::Shader> m_generate_shadow_map_shader;
+
+    // GUI
+    int m_blocker_search_samples = 128;
+    int m_pcf_filter_samples     = 128;
+    float m_light_radius_uv      = 0.1;
+
+    int m_blocker_search_samples_idx = 4;
+    int m_pcf_filter_samples_idx     = 4;
 };

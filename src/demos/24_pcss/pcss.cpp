@@ -7,16 +7,17 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 PCSS::PCSS()
-      : m_dir_light_angles        (10.0f, 10.0f),
-        m_spot_light_angles       (90.0f, -25.0f),
-        m_exposure                (0.3f),
-        m_gamma                   (3.6f),
-        m_background_lod_level    (1.2),
-        m_skybox_vao              (0),
-        m_skybox_vbo              (0),
-        m_dir_shadow_map          (0),
-        m_shadow_fbo              (0),
-        m_dir_shadow_frustum_size (20.0f)
+      : m_dir_light_angles         (-35.0f, 65.0f),
+        m_spot_light_angles        (90.0f, -25.0f),
+        m_exposure                 (0.3f),
+        m_gamma                    (3.6f),
+        m_background_lod_level     (1.2),
+        m_skybox_vao               (0),
+        m_skybox_vbo               (0),
+        m_dir_shadow_map           (0),
+        m_shadow_fbo               (0),
+        m_dir_shadow_frustum_size  (20.0f),
+        m_dir_shadow_frustum_planes(120, 250)
 {
 }
 
@@ -40,6 +41,12 @@ PCSS::~PCSS()
         m_dir_shadow_map = 0;
     }
 
+    if (m_random_angles_tex3d_id != 0)
+    {
+        glDeleteTextures(1, &m_random_angles_tex3d_id);
+        m_random_angles_tex3d_id = 0;
+    }
+
     if (m_shadow_fbo != 0)
     {
         glDeleteFramebuffers(1, &m_shadow_fbo);
@@ -52,7 +59,7 @@ void PCSS::init_app()
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.05, 0.05, 0.05, 1.0);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_LESS);
 
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -66,34 +73,6 @@ void PCSS::init_app()
     m_dir_light_properties.color     = glm::vec3(1.0f);
     m_dir_light_properties.intensity = 10.0f;
     m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
-
-    m_point_light_properties[0].color     = glm::vec3(1.0, 0.48, 0.0);
-    m_point_light_properties[0].intensity = 0.0f;
-    m_point_light_properties[0].position  = glm::vec3(-8.0, 5.0, -1.0);
-    m_point_light_properties[0].radius    = 10.0f; 
-
-    m_point_light_properties[1].color     = glm::vec3(1.0, 1.0, 1.0);
-    m_point_light_properties[1].intensity = 0.0f;
-    m_point_light_properties[1].position  = glm::vec3(10.0, 10.0, -10.0);
-    m_point_light_properties[1].radius     = 10.0f; 
-
-    m_point_light_properties[2].color     = glm::vec3(1.0, 1.0, 1.0);
-    m_point_light_properties[2].intensity = 0.0f;
-    m_point_light_properties[2].position  = glm::vec3(-10.0, -10.0, -10.0);
-    m_point_light_properties[2].radius     = 10.0f; 
-
-    m_point_light_properties[3].color     = glm::vec3(1.0, 1.0, 1.0);
-    m_point_light_properties[3].intensity = 0.0f;
-    m_point_light_properties[3].position  = glm::vec3(10.0, -10.0, -10.0);
-    m_point_light_properties[3].radius     = 10.0f; 
-
-    m_spot_light_properties.color       = glm::vec3(0.0, 1.0, 0.0);
-    m_spot_light_properties.intensity   = 0.0f;
-    m_spot_light_properties.position    = glm::vec3(-6, 8.0, 3.5);
-    m_spot_light_properties.radius      = 35.0f;
-    m_spot_light_properties.inner_angle = 30.0f;
-    m_spot_light_properties.outer_angle = 45.0f;
-    m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
 
     /* Create models. */
     m_textured_models[0].GenCube();
@@ -168,12 +147,6 @@ void PCSS::init_app()
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
 
-    m_point_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-point.frag");
-    m_point_light_shader->link();
-
-    m_spot_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-spot.frag");
-    m_spot_light_shader->link();
-
     m_equirectangular_to_cubemap_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "equirectangular_to_cubemap.frag");
     m_equirectangular_to_cubemap_shader->link();
 
@@ -217,6 +190,18 @@ void PCSS::init_app()
     CreateDirectionalShadowMap(m_dir_light_shadow_map_res.x, m_dir_light_shadow_map_res.y);
     CreateShadowFBO(m_dir_shadow_map);
 
+    m_shadow_map_pcf_sampler.Create();
+    m_shadow_map_pcf_sampler.SetFiltering(RGL::TextureFiltering::MIN, RGL::TextureFilteringParam::LINEAR);
+    m_shadow_map_pcf_sampler.SetFiltering(RGL::TextureFiltering::MIN, RGL::TextureFilteringParam::LINEAR);
+    m_shadow_map_pcf_sampler.SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
+    m_shadow_map_pcf_sampler.SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
+    m_shadow_map_pcf_sampler.SetBorderColor(1, 0, 0, 0);
+    m_shadow_map_pcf_sampler.SetCompareMode(RGL::TextureCompareMode::REF);
+    m_shadow_map_pcf_sampler.SetCompareFunc(RGL::TextureCompareFunc::LEQUAL);
+
+    uint32_t random_angles_size = 128;
+    m_random_angles_tex3d_id = GenerateRandomAnglesTexture3D(random_angles_size);
+
     dir = "../src/demos/24_pcss/";
     m_generate_shadow_map_shader = std::make_shared<RGL::Shader>(dir + "generate_shadow_map.vert", dir + "generate_shadow_map.frag");
     m_generate_shadow_map_shader->link();
@@ -224,9 +209,13 @@ void PCSS::init_app()
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting-shadow.vert", dir + "pbr-directional-shadow.frag");
     m_directional_light_shader->link();
 
-    auto view = glm::lookAt(-m_dir_light_properties.direction, glm::vec3(0.0), glm::vec3(0, 1, 0));
-    auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size);
-    m_dir_light_matrix = proj * view;
+    auto light_target = glm::vec3(0.0);
+    auto light_cam_pos = light_target - m_dir_light_properties.direction * 200.0f;
+    auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
+    auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
+    
+    m_dir_light_view            = view;
+    m_dir_light_view_projection = proj * view;
 
     glEnable(GL_CULL_FACE);  
 }
@@ -466,6 +455,81 @@ void PCSS::GenSkyboxGeometry()
     glVertexArrayVertexBuffer(m_skybox_vao, 0 /*bindingindex*/, m_skybox_vbo, 0 /*offset*/, sizeof(glm::vec3) /*stride*/);
 }
 
+void PCSS::CreateDirectionalShadowMap(uint32_t width, uint32_t height)
+{
+    GLfloat border[] = { 1.0, 0.0, 0.0, 0.0 };
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &m_dir_shadow_map);
+    glTextureStorage2D(m_dir_shadow_map, 1, GL_DEPTH_COMPONENT32F, width, height);
+
+    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTextureParameterfv(m_dir_shadow_map, GL_TEXTURE_BORDER_COLOR, border);
+}
+
+void PCSS::CreateShadowFBO(GLuint shadow_texture)
+{
+    glCreateFramebuffers(1, &m_shadow_fbo);
+    glNamedFramebufferTexture(m_shadow_fbo, GL_DEPTH_ATTACHMENT, shadow_texture, 0);
+
+    GLenum draw_buffers[] = { GL_NONE };
+    glNamedFramebufferDrawBuffers(m_shadow_fbo, 1, draw_buffers);
+}
+
+void PCSS::GenerateShadowMap(uint32_t width, uint32_t height)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_shadow_fbo);
+    glViewport(0, 0, width, height);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glCullFace(GL_FRONT);
+
+    m_generate_shadow_map_shader->bind();
+    m_generate_shadow_map_shader->setUniform("u_light_view_projection", m_dir_light_view_projection);
+
+    for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
+    {
+        m_generate_shadow_map_shader->setUniform("u_model", m_textured_models_model_matrices[i]);
+        m_textured_models[i].Render();
+    }
+    glCullFace(GL_BACK);
+}
+
+GLuint PCSS::GenerateRandomAnglesTexture3D(uint32_t size)
+{
+    int buffer_size = size * size * size;
+    auto data = std::make_unique<glm::vec2[]>(buffer_size);// glm::vec2[buffer_size];
+
+    for (int z = 0; z < size; ++z)
+    {
+        for (int y = 0; y < size; ++y)
+        {
+            for (int x = 0; x < size; ++x)
+            {
+                int index = x + y * size + z * size * size;
+
+                float random_angle = RGL::Util::RandomDouble(0.0, glm::two_pi<double>()); // Random angles in range [0, 2PI);
+                data[index] = glm::vec2(glm::cos(random_angle), glm::sin(random_angle)); // Map sine and cosine values to [0, 1] range
+            }
+        }
+    }
+
+    GLuint tex_id = 0;
+    glCreateTextures   (GL_TEXTURE_3D, 1, &tex_id);
+    glTextureStorage3D (tex_id, 1, GL_RG32F, size, size, size);
+    glTextureSubImage3D(tex_id, 0, 0, 0, 0, size, size, size, GL_RG, GL_FLOAT, data.get());
+    
+    glTextureParameteri(tex_id, GL_TEXTURE_WRAP_S,     GL_REPEAT);
+    glTextureParameteri(tex_id, GL_TEXTURE_WRAP_T,     GL_REPEAT);
+    glTextureParameteri(tex_id, GL_TEXTURE_WRAP_R,     GL_REPEAT);
+    glTextureParameteri(tex_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(tex_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    return tex_id;
+}
+
 void PCSS::RenderTexturedModels()
 {
     m_ambient_light_shader->bind();
@@ -512,10 +576,21 @@ void PCSS::RenderTexturedModels()
     m_directional_light_shader->setUniform("u_directional_light.base.color",     m_dir_light_properties.color);
     m_directional_light_shader->setUniform("u_directional_light.base.intensity", m_dir_light_properties.intensity);
     m_directional_light_shader->setUniform("u_directional_light.direction",      m_dir_light_properties.direction);
-    m_directional_light_shader->setUniform("u_light_matrix",                     m_dir_light_matrix);
+    m_directional_light_shader->setUniform("u_light_view_projection",            m_dir_light_view_projection);
+    m_directional_light_shader->setUniform("u_light_view",                       m_dir_light_view);
+
+    m_directional_light_shader->setUniform("u_blocker_search_samples", m_blocker_search_samples);
+    m_directional_light_shader->setUniform("u_pcf_samples",            m_pcf_filter_samples);
+    m_directional_light_shader->setUniform("u_light_radius_uv",        m_light_radius_uv); 
+    m_directional_light_shader->setUniform("u_light_near",             m_dir_shadow_frustum_planes.x);
+    m_directional_light_shader->setUniform("u_light_far",              m_dir_shadow_frustum_planes.y);
+
+    m_shadow_map_pcf_sampler.Bind(9);
 
     glBindTextureUnit(8, m_dir_shadow_map);
-
+    glBindTextureUnit(9, m_dir_shadow_map); 
+    glBindTextureUnit(10, m_random_angles_tex3d_id);
+   
     for (unsigned i = 0; i < std::size(m_textured_models_model_matrices); ++i)
     {
         m_directional_light_shader->setUniform("u_model",         m_textured_models_model_matrices[i]);
@@ -525,104 +600,10 @@ void PCSS::RenderTexturedModels()
         m_textured_models[i].Render();
     }
 
-    /* Render point lights */
-    m_point_light_shader->bind();
-    m_point_light_shader->setUniform("u_cam_pos",           m_camera->position());
-    m_point_light_shader->setUniform("u_has_albedo_map",    true);
-    m_point_light_shader->setUniform("u_has_normal_map",    true);
-    m_point_light_shader->setUniform("u_has_metallic_map",  true);
-    m_point_light_shader->setUniform("u_has_roughness_map", true);
-
-    for (uint8_t p = 0; p < std::size(m_point_light_properties); ++p)
-    {
-        m_point_light_shader->setUniform("u_point_light.base.color",     m_point_light_properties[p].color);
-        m_point_light_shader->setUniform("u_point_light.base.intensity", m_point_light_properties[p].intensity);
-        m_point_light_shader->setUniform("u_point_light.position",       m_point_light_properties[p].position);
-        m_point_light_shader->setUniform("u_point_light.radius",         m_point_light_properties[p].radius);
-
-        for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
-        {
-            m_point_light_shader->setUniform("u_model",         m_textured_models_model_matrices[i]);
-            m_point_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_textured_models_model_matrices[i]))));
-            m_point_light_shader->setUniform("u_mvp",           view_projection * m_textured_models_model_matrices[i]);
-
-            m_textured_models[i].Render();
-        }
-    }
-    /* Render spot lights */
-    m_spot_light_shader->bind();
-    m_spot_light_shader->setUniform("u_albedo",            glm::vec3(0.5, 0.0, 0.0f));
-    m_spot_light_shader->setUniform("u_cam_pos",           m_camera->position());
-    m_spot_light_shader->setUniform("u_has_albedo_map",    true);
-    m_spot_light_shader->setUniform("u_has_normal_map",    true);
-    m_spot_light_shader->setUniform("u_has_metallic_map",  true);
-    m_spot_light_shader->setUniform("u_has_roughness_map", true);
-
-    m_spot_light_shader->setUniform("u_spot_light.point.base.color",      m_spot_light_properties.color);
-    m_spot_light_shader->setUniform("u_spot_light.point.base.intensity",  m_spot_light_properties.intensity);
-    m_spot_light_shader->setUniform("u_spot_light.point.position",        m_spot_light_properties.position);
-    m_spot_light_shader->setUniform("u_spot_light.point.radius",          m_spot_light_properties.radius);
-    m_spot_light_shader->setUniform("u_spot_light.direction",             m_spot_light_properties.direction);
-    m_spot_light_shader->setUniform("u_spot_light.inner_angle",           glm::radians(m_spot_light_properties.inner_angle));
-    m_spot_light_shader->setUniform("u_spot_light.outer_angle",           glm::radians(m_spot_light_properties.outer_angle));
-
-    for (unsigned i = 0; i < std::size(m_textured_models_model_matrices); ++i)
-    {
-        m_spot_light_shader->setUniform("u_model",         m_textured_models_model_matrices[i]);
-        m_spot_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_textured_models_model_matrices[i]))));
-        m_spot_light_shader->setUniform("u_mvp",           view_projection * m_textured_models_model_matrices[i]);
-
-        m_textured_models[i].Render();
-    }
-
     /* Enable writing to the depth buffer. */
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
     glDisable(GL_BLEND);
-}
-
-void PCSS::CreateDirectionalShadowMap(uint32_t width, uint32_t height)
-{
-    GLfloat border[] = { 1.0, 0.0, 0.0, 0.0 };
-
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_dir_shadow_map);
-    glTextureStorage2D(m_dir_shadow_map, 1, GL_DEPTH_COMPONENT24, width, height);
-
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTextureParameterfv(m_dir_shadow_map, GL_TEXTURE_BORDER_COLOR, border);
-
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-}
-
-void PCSS::CreateShadowFBO(GLuint shadow_texture)
-{
-    glCreateFramebuffers(1, &m_shadow_fbo);
-    glNamedFramebufferTexture(m_shadow_fbo, GL_DEPTH_ATTACHMENT, shadow_texture, 0);
-
-    GLenum draw_buffers[] = { GL_NONE };
-    glNamedFramebufferDrawBuffers(m_shadow_fbo, 1, draw_buffers);
-}
-
-void PCSS::GenerateShadowMap(uint32_t width, uint32_t height)
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, m_shadow_fbo);
-    glViewport(0, 0, width, height);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    glCullFace(GL_FRONT);
-    m_generate_shadow_map_shader->bind();
-    m_generate_shadow_map_shader->setUniform("u_light_matrix", m_dir_light_matrix);
-
-    for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
-    {
-        m_generate_shadow_map_shader->setUniform("u_model", m_textured_models_model_matrices[i]);
-        m_textured_models[i].Render();
-    }
-    glCullFace(GL_BACK);
 }
 
 void PCSS::render()
@@ -705,6 +686,25 @@ void PCSS::render_gui()
             ImGui::EndCombo();
         }
 
+        ImGui::Spacing();
+
+        {
+            const char* listbox_items[] = { "25", "32", "64", "100", "128" };
+            const int   sample_counts[] = { 25, 32, 64, 100, 128 };
+
+            if (ImGui::ListBox("Blocker search samples", &m_blocker_search_samples_idx, listbox_items, std::size(listbox_items), 5))
+            {
+                m_blocker_search_samples = sample_counts[m_blocker_search_samples_idx];
+            }
+
+            if (ImGui::ListBox("PCF filter samples", &m_pcf_filter_samples_idx, listbox_items, std::size(listbox_items), 5))
+            {
+                m_pcf_filter_samples = sample_counts[m_pcf_filter_samples_idx];
+            }
+
+            ImGui::SliderFloat("Light radius", &m_light_radius_uv, 0.0, 1.0, "%.2f");
+        }
+
         ImGui::PopItemWidth();
 
         ImGui::Spacing();
@@ -722,46 +722,14 @@ void PCSS::render_gui()
                     if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
                     {
                         m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+                        
+                        auto light_target = glm::vec3(0.0);
+                        auto light_cam_pos = light_target - m_dir_light_properties.direction * 200.0f;
+                        auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
+                        auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
 
-                        auto view = glm::lookAt(-m_dir_light_properties.direction, glm::vec3(0.0), glm::vec3(0, 1, 0));
-                        auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size);
-                        m_dir_light_matrix = proj * view;
-                    }
-                }
-                ImGui::PopItemWidth();
-                ImGui::EndTabItem();
-            }
-            for(uint8_t i = 0; i < std::size(m_point_light_properties); ++i)
-            {
-                if (ImGui::BeginTabItem(std::string("Point" + std::to_string(i+1)).c_str()))
-                {
-                    ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-                    {
-                        ImGui::ColorEdit3 ("Color",              &m_point_light_properties[i].color[0]);
-                        ImGui::SliderFloat("Light intensity",    &m_point_light_properties[i].intensity, 0.0, 2000.0,  "%1.f");
-
-                        ImGui::SliderFloat ("Radius",                &m_point_light_properties[i].radius,                0.01, 100.0, "%.2f");
-                        ImGui::SliderFloat3("Position",              &m_point_light_properties[i].position[0],          -10.0,  10.0,  "%.1f");
-                    }
-                    ImGui::PopItemWidth();
-                    ImGui::EndTabItem();
-                }
-            }
-            if (ImGui::BeginTabItem("Spot"))
-            {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
-                {
-                    ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
-                    ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 2000.0, "%.1f");
-
-                    ImGui::SliderFloat("Radius",      &m_spot_light_properties.radius,       0.01, 100.0, "%.2f");
-                    ImGui::SliderFloat("Inner angle", &m_spot_light_properties.inner_angle,  0.0,  90.0,   "%.1f");
-                    ImGui::SliderFloat("Outer angle", &m_spot_light_properties.outer_angle,  0.0,  90.0,   "%.1f");
-                    ImGui::SliderFloat3("Position",   &m_spot_light_properties.position[0], -10.0, 10.0,  "%.1f");
-
-                    if (ImGui::SliderFloat2("Azimuth and Elevation", &m_spot_light_angles[0], -180.0, 180.0, "%.1f"))
-                    {
-                        m_spot_light_properties.setDirection(m_spot_light_angles.x, m_spot_light_angles.y);
+                        m_dir_light_view = view;
+                        m_dir_light_view_projection = proj * view;
                     }
                 }
                 ImGui::PopItemWidth();

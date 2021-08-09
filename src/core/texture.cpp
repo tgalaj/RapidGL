@@ -4,6 +4,71 @@
 
 namespace RGL
 {
+    // --------------------- Texture Sampler -------------------------
+    TextureSampler::TextureSampler() : m_so_id(0), m_max_anisotropy(1.0f) {}
+
+    void TextureSampler::Create()
+    {
+        glCreateSamplers(1, &m_so_id);
+
+        SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
+        SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+    }
+
+    void TextureSampler::SetFiltering(TextureFiltering type, TextureFilteringParam param)
+    {
+        if (type == TextureFiltering::MAG && param > TextureFilteringParam::LINEAR)
+        {
+            param = TextureFilteringParam::LINEAR;
+        }
+
+        glSamplerParameteri(m_so_id, GLenum(type), GLint(param));
+    }
+
+    void TextureSampler::SetMinLod(float min)
+    {
+        glSamplerParameterf(m_so_id, GL_TEXTURE_MIN_LOD, min);
+    }
+
+    void TextureSampler::SetMaxLod(float max)
+    {
+        glSamplerParameterf(m_so_id, GL_TEXTURE_MAX_LOD, max);
+    }
+
+    void TextureSampler::SetWraping(TextureWrapingCoordinate coord, TextureWrapingParam param)
+    {
+        glSamplerParameteri(m_so_id, GLenum(coord), GLint(param));
+    }
+
+    void TextureSampler::SetBorderColor(float r, float g, float b, float a)
+    {
+        float color[4] = { r, g, b, a };
+        glSamplerParameterfv(m_so_id, GL_TEXTURE_BORDER_COLOR, color);
+    }
+
+    void TextureSampler::SetCompareMode(TextureCompareMode mode)
+    {
+        glSamplerParameteri(m_so_id, GL_TEXTURE_COMPARE_MODE, GLint(mode));
+    }
+
+    void TextureSampler::SetCompareFunc(TextureCompareFunc func)
+    {
+        glSamplerParameteri(m_so_id, GL_TEXTURE_COMPARE_FUNC, GLint(func));
+    }
+
+    void TextureSampler::SetAnisotropy(float anisotropy)
+    {
+        float max_anisotropy;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_anisotropy);
+
+        std::clamp(anisotropy, 1.0f, max_anisotropy);
+        glSamplerParameterf(m_so_id, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
+    }
+
+    // --------------------- Texture -------------------------
+
     void Texture::SetFiltering(TextureFiltering type, TextureFilteringParam param)
     {
         if (type == TextureFiltering::MAG && param > TextureFilteringParam::LINEAR)
@@ -53,6 +118,8 @@ namespace RGL
         glm::clamp(anisotropy, 1.0f, max_anisotropy);
         glTextureParameterf(m_obj_name, GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
     }
+
+    // --------------------- Texture2D -------------------------
 
     bool Texture2D::Load(std::string_view filepath, bool is_srgb, uint32_t num_mipmaps)
     {
@@ -176,6 +243,8 @@ namespace RGL
         return true;
     }
 
+    // --------------------- Texture CubeMap -------------------------
+
     bool TextureCubeMap::Load(std::string* filepaths, bool is_srgb, uint32_t num_mipmaps)
     {
         constexpr int NUM_FACES = 6;
@@ -219,11 +288,11 @@ namespace RGL
 
         glGenerateTextureMipmap(m_obj_name);
 
-        SetFiltering(TextureFiltering::MIN, TextureFilteringParam::LINEAR_MIP_LINEAR);
-        SetFiltering(TextureFiltering::MAG, TextureFilteringParam::LINEAR);
-        SetWraping(TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
-        SetWraping(TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
-        SetWraping(TextureWrapingCoordinate::R, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::LINEAR_MIP_LINEAR);
+        SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
+        SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+        SetWraping  (TextureWrapingCoordinate::R, TextureWrapingParam::CLAMP_TO_EDGE);
 
         for (int i = 0; i < NUM_FACES; ++i)
         {
