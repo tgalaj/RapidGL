@@ -151,8 +151,14 @@ Including directional and punctual lights (spot and point) with square falloff a
 
 <img src="screenshots/22_pbr.png" width="50%" height="50%" alt="Physically Based Rendering (PBR)" />
 
-### Geometry Shader: face extrusion
+### Geometry Shader: Face Extrusion
 <img src="screenshots/23_gs_face_extrusion.gif" width="50%" height="50%" alt="Physically Based Rendering (PBR)" />
 
-### Percentage Closer Soft Shadows
+### Percentage Closer Soft Shadows (PCSS)
 <img src="screenshots/24_pcss.png" width="50%" height="50%" alt="Percentage Closer Soft Shadows" />
+
+### Cascaded Shadow Mapping with PCSS
+TODO
+
+### Clustered Shading
+TODO

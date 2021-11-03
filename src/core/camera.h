@@ -22,7 +22,11 @@ namespace RGL
                float z_far)
                : Camera()
         {
-            m_projection = glm::perspective(glm::radians(fov), aspect_ratio, z_near, z_far);
+            m_projection   = glm::perspective(glm::radians(fov), aspect_ratio, z_near, z_far);
+            m_aspect_ratio = aspect_ratio;
+            m_near         = z_near;
+            m_far          = z_far;
+            m_fov          = fov;
         }
 
         /*
@@ -36,7 +40,11 @@ namespace RGL
                float z_far)
                : Camera(true)
         {
-            m_projection = glm::ortho(left, right, bottom, top, z_near, z_far);
+            m_projection   = glm::ortho(left, right, bottom, top, z_near, z_far);
+            m_aspect_ratio = 1.0f;
+            m_near         = z_near;
+            m_far          = z_far;
+            m_fov          = 1.0f;
         }
 
         void setPosition(float x, float y, float z)
@@ -91,9 +99,13 @@ namespace RGL
             m_is_dirty    = true;
         }
 
-        glm::quat orientation()   const { return m_orientation; }
-        glm::vec3 position()      const { return m_position; }
-        glm::vec3 direction()     const { return m_direction; }
+        glm::quat orientation() const { return m_orientation; }
+        glm::vec3 position()    const { return m_position; }
+        glm::vec3 direction()   const { return m_direction; }
+        float AspectRatio()     const { return m_aspect_ratio; }
+        float NearPlane()       const { return m_near; }
+        float FarPlane()        const { return m_far; }
+        float FOV()             const { return m_fov; }
 
         void update(double dt);
 
@@ -135,6 +147,11 @@ namespace RGL
         glm::quat m_orientation;
         glm::vec3 m_position;
         glm::vec3 m_direction;
+        float m_near;
+        float m_far;
+        float m_aspect_ratio;
+        float m_fov; // in degrees
+
 
         glm::vec2 m_mouse_pressed_position;
         bool      m_is_dirty;

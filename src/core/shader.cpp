@@ -360,6 +360,21 @@ namespace RGL
         }
     }
 
+    void Shader::setUniform(const std::string& uniformName, float* values, unsigned count)
+    {
+        if (m_uniforms_locations.count(uniformName))
+        {
+            glProgramUniform1fv(m_program_id, m_uniforms_locations[uniformName], count, &values[0]);
+        }
+        else
+        {
+            if (getUniformLocation(uniformName))
+            {
+                glProgramUniform1fv(m_program_id, m_uniforms_locations[uniformName], count, &values[0]);
+            }
+        }
+    }
+
     void Shader::setUniform(const std::string & uniformName, glm::mat4 * matrices, unsigned count)
     {
         if (m_uniforms_locations.count(uniformName))

@@ -1,4 +1,4 @@
-#include "pcss.h"
+#include "cascaded_pcss.h"
 #include "filesystem.h"
 #include "input.h"
 #include "util.h"
@@ -6,7 +6,7 @@
 
 #include <glm/gtc/matrix_inverse.hpp>
 
-PCSS::PCSS()
+CascadedPCSS::CascadedPCSS()
       : m_dir_light_angles         (-35.0f, 65.0f),
         m_spot_light_angles        (90.0f, -25.0f),
         m_exposure                 (0.3f),
@@ -14,14 +14,14 @@ PCSS::PCSS()
         m_background_lod_level     (1.2),
         m_skybox_vao               (0),
         m_skybox_vbo               (0),
-        m_dir_shadow_map           (0),
         m_shadow_fbo               (0),
+        m_dir_shadow_maps          (0),
         m_dir_shadow_frustum_size  (20.0f),
         m_dir_shadow_frustum_planes(120, 250)
 {
 }
 
-PCSS::~PCSS()
+CascadedPCSS::~CascadedPCSS()
 {
     if (m_skybox_vao != 0)
     {
@@ -35,10 +35,10 @@ PCSS::~PCSS()
         m_skybox_vbo = 0;
     }
 
-    if (m_dir_shadow_map != 0)
+    if (m_dir_shadow_maps != 0)
     {
-        glDeleteTextures(1, &m_dir_shadow_map);
-        m_dir_shadow_map = 0;
+        glDeleteTextures(1, &m_dir_shadow_maps);
+        m_dir_shadow_maps = 0;
     }
 
     if (m_random_angles_tex3d_id != 0)
@@ -54,7 +54,7 @@ PCSS::~PCSS()
     }
 }
 
-void PCSS::init_app()
+void CascadedPCSS::init_app()
 {
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.05, 0.05, 0.05, 1.0);
@@ -65,27 +65,37 @@ void PCSS::init_app()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 50.0);
     m_camera->setPosition(-10.3, 7.6, -5.42);
     m_camera->setOrientation(glm::quat(-0.3, -0.052, -0.931, -0.165));
-   
+
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
     m_dir_light_properties.intensity = 10.0f;
-    m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+    //m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
+    m_dir_light_properties.direction = glm::vec3(1.0, -1.0, 0.0);
 
     /* Create models. */
     m_textured_models[0].GenCube();
-    m_textured_models[1].GenCube();
-    m_textured_models[2].GenCone(2.0, 1.0, 64, 64);
-    m_textured_models[3].GenPQTorusKnot(256, 64, 2, 3, 0.75, 0.25);
-    m_textured_models[4].GenSphere(1.0, 64);
+    m_textured_models[1].Load(RGL::FileSystem::getPath("models/hk/hk.obj"));
 
-    m_textured_models_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 0.0,   0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(6.0, 0.1, 6.0));
-    m_textured_models_model_matrices[1] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 2.0,   6.1)) * glm::scale(glm::mat4(1.0), glm::vec3(6.0, 2.0, 0.1));
-    m_textured_models_model_matrices[2] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 2.11, -3.5)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
-    m_textured_models_model_matrices[3] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 1.21,  0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
-    m_textured_models_model_matrices[4] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 1.11,  3.5)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
+    m_textured_models_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(24.0, 0.1, 24.0));
+    
+    // TODO: clean this stuff
+    float hk_unit_scale_factor = m_textured_models[1].GetUnitScaleFactor() * 2.0f;
+    float radius = hk_unit_scale_factor * 3.0f;
+    glm::vec3 offset = glm::vec3(1, 0, 1);
+    glm::vec3 start_pos = -((radius + offset) * (10 - 1.0f)) / 2.0f;
+
+    for (uint32_t y = 0; y < 10; ++y)
+    {
+        for (uint32_t x = 0; x < 10; ++x)
+        {
+            glm::vec3 position = start_pos + glm::vec3(x, 0.0, y) * (radius + offset);
+            position.y = 0.0f;
+            m_textured_models_model_matrices[1 + x + y * 10] = glm::translate(glm::mat4(1.0), position) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(hk_unit_scale_factor));
+        }
+    }
 
     /* Add textures to the objects. */
     auto concrete_albedo_map    = std::make_shared<RGL::Texture2D>(); concrete_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_color.png"), true);
@@ -94,53 +104,17 @@ void PCSS::init_app()
     auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_roughness.png"));
     auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_ao.png"));
 
-    auto plastic_albedo_map    = std::make_shared<RGL::Texture2D>(); plastic_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_color.png"), true);
-    auto plastic_normal_map    = std::make_shared<RGL::Texture2D>(); plastic_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_normal.png"));
-    auto plastic_metallic_map  = std::make_shared<RGL::Texture2D>(); plastic_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_metallic.png"));
-    auto plastic_roughness_map = std::make_shared<RGL::Texture2D>(); plastic_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_roughness.png"));
-    auto plastic_ao_map        = std::make_shared<RGL::Texture2D>(); plastic_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_ao.png"));
-
-    auto gold_albedo_map    = std::make_shared<RGL::Texture2D>(); gold_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_albedo.png"), true);
-    auto gold_normal_map    = std::make_shared<RGL::Texture2D>(); gold_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_normal-ogl.png"));
-    auto gold_metallic_map  = std::make_shared<RGL::Texture2D>(); gold_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_metallic.png"));
-    auto gold_roughness_map = std::make_shared<RGL::Texture2D>(); gold_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_roughness.png"));
-    auto gold_ao_map        = std::make_shared<RGL::Texture2D>(); gold_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_metallic.png"));
-
-    auto granite_albedo_map    = std::make_shared<RGL::Texture2D>(); granite_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_albedo.png"), true);
-    auto granite_normal_map    = std::make_shared<RGL::Texture2D>(); granite_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_normal-ogl.png"));
-    auto granite_metallic_map  = std::make_shared<RGL::Texture2D>(); granite_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_metallic.png"));
-    auto granite_roughness_map = std::make_shared<RGL::Texture2D>(); granite_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_roughness.png"));
-    auto granite_ao_map        = std::make_shared<RGL::Texture2D>(); granite_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_ao.png"));
-
     m_textured_models[0].AddTexture(concrete_albedo_map,    0);
     m_textured_models[0].AddTexture(concrete_normal_map,    1);
     m_textured_models[0].AddTexture(concrete_metallic_map,  2);
     m_textured_models[0].AddTexture(concrete_roughness_map, 3);
     m_textured_models[0].AddTexture(concrete_ao_map,        4);
 
-    m_textured_models[1].AddTexture(concrete_albedo_map,    0);
-    m_textured_models[1].AddTexture(concrete_normal_map,    1);
-    m_textured_models[1].AddTexture(concrete_metallic_map,  2);
-    m_textured_models[1].AddTexture(concrete_roughness_map, 3);
-    m_textured_models[1].AddTexture(concrete_ao_map,        4);
+    auto hk_albedo_map = std::make_shared<RGL::Texture2D>(); hk_albedo_map->Load(RGL::FileSystem::getPath("models/hk/albedo.png"), true);
+    auto hk_normal_map = std::make_shared<RGL::Texture2D>(); hk_normal_map->Load(RGL::FileSystem::getPath("models/hk/normal.png"));
 
-    m_textured_models[2].AddTexture(plastic_albedo_map,    0);
-    m_textured_models[2].AddTexture(plastic_normal_map,    1);
-    m_textured_models[2].AddTexture(plastic_metallic_map,  2);
-    m_textured_models[2].AddTexture(plastic_roughness_map, 3);
-    m_textured_models[2].AddTexture(plastic_ao_map,        4);
-    
-    m_textured_models[3].AddTexture(gold_albedo_map,    0);
-    m_textured_models[3].AddTexture(gold_normal_map,    1);
-    m_textured_models[3].AddTexture(gold_metallic_map,  2);
-    m_textured_models[3].AddTexture(gold_roughness_map, 3);
-    m_textured_models[3].AddTexture(gold_ao_map,        4);
-
-    m_textured_models[4].AddTexture(granite_albedo_map,    0);
-    m_textured_models[4].AddTexture(granite_normal_map,    1);
-    m_textured_models[4].AddTexture(granite_metallic_map,  2);
-    m_textured_models[4].AddTexture(granite_roughness_map, 3);
-    m_textured_models[4].AddTexture(granite_ao_map,        4);
+    m_textured_models[1].AddTexture(hk_albedo_map, 0);
+    m_textured_models[1].AddTexture(hk_normal_map, 1);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -186,9 +160,33 @@ void PCSS::init_app()
     PrecomputeBRDF(m_brdf_lut_rt);
 
     // Shadows
-    m_dir_light_shadow_map_res = glm::uvec2(1024);
-    CreateDirectionalShadowMap(m_dir_light_shadow_map_res.x, m_dir_light_shadow_map_res.y);
-    CreateShadowFBO(m_dir_shadow_map);
+    dir = "../src/demos/25_cascaded_pcss/";
+    m_generate_shadow_map_shader = std::make_shared<RGL::Shader>(dir + "generate_csm.vert", dir + "generate_csm.frag", dir + "generate_csm.geom");
+    m_generate_shadow_map_shader->link();
+
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting-shadow.vert", dir + "pbr-directional-shadow.frag");
+    m_directional_light_shader->link();
+
+    m_visualize_shadow_map_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "visualize_csm_depth.frag");
+    m_visualize_shadow_map_shader->link();
+
+    // TODO: use log splits from the shadows book
+    m_dir_light_view_projection_matrices.resize(NUM_CASCADES);
+    m_dir_light_view_matrices.resize(NUM_CASCADES);
+    m_cascade_splits.resize(NUM_CASCADES + 1);
+    m_cascade_splits = { m_camera->NearPlane(), 15.0, 30.0, m_camera->FarPlane() };
+
+    for (uint32_t i = 0; i < NUM_CASCADES; ++i)
+    {
+        auto split_view_space = glm::vec4(0.0, 0.0, -m_cascade_splits[i + 1], 1.0);
+        auto split_clip_space = m_camera->m_projection * split_view_space;
+
+        // printf("<%.2f, %.2f, %.2f, %.2f>\n", split_clip_space.x, split_clip_space.y, split_clip_space.z, split_clip_space.w);
+        m_directional_light_shader->setUniform("u_cascade_end_clip_space[" + std::to_string(i) + "]", split_clip_space.z);
+    }
+
+    m_dir_light_shadow_map_res = glm::uvec2(1024 * 4);
+    CreateShadowFBO(m_dir_light_shadow_map_res.x, m_dir_light_shadow_map_res.y);
 
     m_shadow_map_pcf_sampler.Create();
     m_shadow_map_pcf_sampler.SetFiltering(RGL::TextureFiltering::MIN, RGL::TextureFilteringParam::LINEAR);
@@ -202,25 +200,20 @@ void PCSS::init_app()
     uint32_t random_angles_size = 128;
     m_random_angles_tex3d_id = GenerateRandomAnglesTexture3D(random_angles_size);
 
-    dir = "../src/demos/24_pcss/";
-    m_generate_shadow_map_shader = std::make_shared<RGL::Shader>(dir + "generate_shadow_map.vert", dir + "generate_shadow_map.frag");
-    m_generate_shadow_map_shader->link();
-
-    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting-shadow.vert", dir + "pbr-directional-shadow.frag");
-    m_directional_light_shader->link();
-
-    auto light_target = glm::vec3(0.0);
-    auto light_cam_pos = light_target - m_dir_light_properties.direction * 200.0f;
-    auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
-    auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
-    
-    m_dir_light_view            = view;
-    m_dir_light_view_projection = proj * view;
-
     glEnable(GL_CULL_FACE);  
+
+    glCreateBuffers(1, &m_csm_frusta_vbo);
+    glNamedBufferStorage(m_csm_frusta_vbo, NUM_CASCADES * 12 * 2 * sizeof(glm::vec3), nullptr, GL_DYNAMIC_STORAGE_BIT);
+    
+    glCreateVertexArrays(1, &m_csm_frusta_vao);
+    glVertexArrayVertexBuffer(m_csm_frusta_vao, 0, m_csm_frusta_vbo, 0, sizeof(glm::vec3));
+
+    glEnableVertexArrayAttrib(m_csm_frusta_vao, 0);
+    glVertexArrayAttribFormat(m_csm_frusta_vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    glVertexArrayAttribBinding(m_csm_frusta_vao, 0, 0);
 }
 
-void PCSS::input()
+void CascadedPCSS::input()
 {
     /* Close the application when Esc is released. */
     if (RGL::Input::getKeyUp(RGL::KeyCode::Escape))
@@ -249,7 +242,7 @@ void PCSS::input()
     if (RGL::Input::getKeyUp(RGL::KeyCode::F1))
     {
         /* Specify filename of the screenshot. */
-        std::string filename = "24_pcss";
+        std::string filename = "25_cascaded_pcss";
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
@@ -270,13 +263,13 @@ void PCSS::input()
     }
 }
 
-void PCSS::update(double delta_time)
+void CascadedPCSS::update(double delta_time)
 {
     /* Update variables here. */
     m_camera->update(delta_time);
 }
 
-void PCSS::HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt, const std::shared_ptr<RGL::Texture2D>& m_equirectangular_map)
+void CascadedPCSS::HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt, const std::shared_ptr<RGL::Texture2D>& m_equirectangular_map)
 {
     /* Update all faces per frame */
     m_equirectangular_to_cubemap_shader->bind();
@@ -298,7 +291,7 @@ void PCSS::HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget
     glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
 }
 
-void PCSS::IrradianceConvolution(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt)
+void CascadedPCSS::IrradianceConvolution(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt)
 {
     /* Update all faces per frame */
     m_irradiance_convolution_shader->bind();
@@ -320,7 +313,7 @@ void PCSS::IrradianceConvolution(const std::shared_ptr<CubeMapRenderTarget>& cub
     glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
 }
 
-void PCSS::PrefilterCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt)
+void CascadedPCSS::PrefilterCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt)
 {
     m_prefilter_env_map_shader->bind();
     m_prefilter_env_map_shader->setUniform("u_projection", cubemap_rt->m_projection);
@@ -357,7 +350,7 @@ void PCSS::PrefilterCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_
     glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
 }
 
-void PCSS::PrecomputeIndirectLight(const std::filesystem::path& hdri_map_filepath)
+void CascadedPCSS::PrecomputeIndirectLight(const std::filesystem::path& hdri_map_filepath)
 {
     auto envmap_hdr = std::make_shared<RGL::Texture2D>();
     envmap_hdr->LoadHdr(hdri_map_filepath);
@@ -373,7 +366,7 @@ void PCSS::PrecomputeIndirectLight(const std::filesystem::path& hdri_map_filepat
     PrefilterCubemap(m_prefiltered_env_map_rt);
 }
 
-void PCSS::PrecomputeBRDF(const std::shared_ptr<Texture2DRenderTarget>& rt)
+void CascadedPCSS::PrecomputeBRDF(const std::shared_ptr<Texture2DRenderTarget>& rt)
 {
     GLuint m_dummy_vao_id;
     glCreateVertexArrays(1, &m_dummy_vao_id);
@@ -390,7 +383,7 @@ void PCSS::PrecomputeBRDF(const std::shared_ptr<Texture2DRenderTarget>& rt)
     glViewport(0, 0, RGL::Window::getWidth(), RGL::Window::getHeight());
 }
 
-void PCSS::GenSkyboxGeometry()
+void CascadedPCSS::GenSkyboxGeometry()
 {
     m_skybox_vao = 0;
     m_skybox_vbo = 0;
@@ -455,30 +448,37 @@ void PCSS::GenSkyboxGeometry()
     glVertexArrayVertexBuffer(m_skybox_vao, 0 /*bindingindex*/, m_skybox_vbo, 0 /*offset*/, sizeof(glm::vec3) /*stride*/);
 }
 
-void PCSS::CreateDirectionalShadowMap(uint32_t width, uint32_t height)
+void CascadedPCSS::CreateShadowFBO(uint32_t width, uint32_t height)
 {
-    GLfloat border[] = { 1.0, 0.0, 0.0, 0.0 };
+    glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &m_dir_shadow_maps);
+    glTextureStorage3D(m_dir_shadow_maps, 1, GL_DEPTH_COMPONENT32F, width, height, NUM_CASCADES);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_dir_shadow_map);
-    glTextureStorage2D(m_dir_shadow_map, 1, GL_DEPTH_COMPONENT32F, width, height);
+    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); 
+    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTextureParameteri(m_dir_shadow_map, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTextureParameterfv(m_dir_shadow_map, GL_TEXTURE_BORDER_COLOR, border);
-}
+    constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTextureParameterfv(m_dir_shadow_maps, GL_TEXTURE_BORDER_COLOR, bordercolor);
 
-void PCSS::CreateShadowFBO(GLuint shadow_texture)
-{
     glCreateFramebuffers(1, &m_shadow_fbo);
-    glNamedFramebufferTexture(m_shadow_fbo, GL_DEPTH_ATTACHMENT, shadow_texture, 0);
+    glNamedFramebufferTexture(m_shadow_fbo, GL_DEPTH_ATTACHMENT, m_dir_shadow_maps, 0);
 
     GLenum draw_buffers[] = { GL_NONE };
     glNamedFramebufferDrawBuffers(m_shadow_fbo, 1, draw_buffers);
+    glNamedFramebufferReadBuffer(m_shadow_fbo, GL_NONE);
+
+    int status = glCheckNamedFramebufferStatus(m_shadow_fbo, GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
+    }
+    else std::cout << "SUCCESS::FRAMEBUFFER:: Framebuffer is complete!\n";
+
 }
 
-void PCSS::GenerateShadowMap(uint32_t width, uint32_t height)
+
+void CascadedPCSS::GenerateShadowMap(uint32_t width, uint32_t height)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, m_shadow_fbo);
     glViewport(0, 0, width, height);
@@ -487,17 +487,29 @@ void PCSS::GenerateShadowMap(uint32_t width, uint32_t height)
     glCullFace(GL_FRONT);
 
     m_generate_shadow_map_shader->bind();
-    m_generate_shadow_map_shader->setUniform("u_light_view_projection", m_dir_light_view_projection);
+
+    calculate_frusta_matrices();
+    // m_dir_light_view_projection_matrices = get_light_space_matrices();
+    m_generate_shadow_map_shader->setUniform("u_light_view_projections", m_dir_light_view_projection_matrices.data(), m_dir_light_view_projection_matrices.size());
 
     for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
     {
         m_generate_shadow_map_shader->setUniform("u_model", m_textured_models_model_matrices[i]);
-        m_textured_models[i].Render();
+    
+        if (i > 1)
+        {
+            m_textured_models[1].Render();
+        }
+        else
+        {
+            m_textured_models[i].Render();
+        }
     }
+
     glCullFace(GL_BACK);
 }
 
-GLuint PCSS::GenerateRandomAnglesTexture3D(uint32_t size)
+GLuint CascadedPCSS::GenerateRandomAnglesTexture3D(uint32_t size)
 {
     int buffer_size = size * size * size;
     auto data = std::make_unique<glm::vec2[]>(buffer_size);// glm::vec2[buffer_size];
@@ -530,7 +542,155 @@ GLuint PCSS::GenerateRandomAnglesTexture3D(uint32_t size)
     return tex_id;
 }
 
-void PCSS::RenderTexturedModels()
+void CascadedPCSS::calculate_frusta_matrices()
+{
+    glm::mat4 view_inv = glm::inverse(m_camera->m_view);
+    // glm::mat4 light_view = glm::lookAt(glm::vec3(0, 0, 0) + m_dir_light_properties.direction * 20.0f, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+
+    float ar = m_camera->AspectRatio();
+    float inv_ar = 1.0 / ar;
+    float tan_half_h_fov = glm::tan(glm::radians(m_camera->FOV() / 2.0f));
+    float tan_half_v_fov = glm::tan(glm::radians(m_camera->FOV() * inv_ar / 2.0f));
+
+    for (uint32_t i = 0; i < NUM_CASCADES; ++i)
+    {
+        float xn = m_cascade_splits[i] * tan_half_h_fov;
+        float yn = m_cascade_splits[i] * tan_half_v_fov;
+        
+        float xf = m_cascade_splits[i + 1] * tan_half_h_fov;
+        float yf = m_cascade_splits[i + 1] * tan_half_v_fov;
+
+        glm::vec4 frustum_corners[NUM_FRUSTUM_CORNERS] = {
+            // near face
+            glm::vec4( xn,  yn, m_cascade_splits[i], 1.0),
+            glm::vec4(-xn,  yn, m_cascade_splits[i], 1.0),
+            glm::vec4( xn, -yn, m_cascade_splits[i], 1.0),
+            glm::vec4(-xn, -yn, m_cascade_splits[i], 1.0),
+
+            // far face
+            glm::vec4( xf,  yf, m_cascade_splits[i + 1], 1.0),
+            glm::vec4(-xf,  yf, m_cascade_splits[i + 1], 1.0),
+            glm::vec4( xf, -yf, m_cascade_splits[i + 1], 1.0),
+            glm::vec4(-xf, -yf, m_cascade_splits[i + 1], 1.0)
+        };
+
+        glm::vec3 center(0.0f);
+        for (const auto& c : frustum_corners)
+        {
+            center += glm::vec3(c);
+        }
+        center /= float(std::size(frustum_corners));
+        center = glm::vec3(view_inv * glm::vec4(center, 1.0));
+
+        // TODO: Something is wrong with the light_view matrix
+        // glm::mat4 light_view = glm::lookAt(center - m_dir_light_properties.direction, center, glm::vec3(0, 1, 0));
+        // glm::mat4 light_view = m_camera->m_view;
+        //glm::mat4 light_view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 0.0) + m_dir_light_properties.direction, glm::vec3(0, 1, 0));
+        glm::vec3 right = glm::vec3(1, 0, 0);
+        glm::vec3 up = glm::normalize(glm::cross(-m_dir_light_properties.direction, right));
+        glm::mat4 light_view = glm::lookAt(center, center + m_dir_light_properties.direction, up);
+
+        // glm::vec3 p1 = glm::normalize(glm::cross(-m_dir_light_properties.direction, glm::vec3(0, 0, 1)));
+        // glm::vec3 p2 = glm::normalize(glm::cross(-m_dir_light_properties.direction, p1));
+        // glm::mat4 light_view = glm::mat4(1.0);
+        // light_view[0] = glm::vec4(p1, 0.0);
+        // light_view[1] = glm::vec4(p2, 0.0);
+        // light_view[2] = glm::vec4(-m_dir_light_properties.direction, 0.0);
+
+        glm::vec4 frustum_corners_light[NUM_FRUSTUM_CORNERS];
+
+        float min_x =  std::numeric_limits<float>::infinity();
+        float max_x = -std::numeric_limits<float>::infinity();
+        float min_y =  std::numeric_limits<float>::infinity();
+        float max_y = -std::numeric_limits<float>::infinity();
+        float min_z =  std::numeric_limits<float>::infinity();
+        float max_z = -std::numeric_limits<float>::infinity();
+
+        float min_x_ws =  std::numeric_limits<float>::infinity();
+        float max_x_ws = -std::numeric_limits<float>::infinity();
+        float min_y_ws =  std::numeric_limits<float>::infinity();
+        float max_y_ws = -std::numeric_limits<float>::infinity();
+        float min_z_ws =  std::numeric_limits<float>::infinity();
+        float max_z_ws = -std::numeric_limits<float>::infinity();
+
+        for (uint32_t j = 0; j < NUM_FRUSTUM_CORNERS; ++j)
+        {
+            glm::vec4 v_w            = view_inv * frustum_corners[j]; // Transform to world space
+            frustum_corners_light[j] = light_view * v_w; // Transform to light's view space
+
+            min_x = glm::min(min_x, frustum_corners_light[j].x);
+            max_x = glm::max(max_x, frustum_corners_light[j].x);
+            min_y = glm::min(min_y, frustum_corners_light[j].y);
+            max_y = glm::max(max_y, frustum_corners_light[j].y);
+            min_z = glm::min(min_z, frustum_corners_light[j].z);
+            max_z = glm::max(max_z, frustum_corners_light[j].z);
+
+            min_x_ws = glm::min(min_x, v_w.x);
+            max_x_ws = glm::max(max_x, v_w.x);
+            min_y_ws = glm::min(min_y, v_w.y);
+            max_y_ws = glm::max(max_y, v_w.y);
+            min_z_ws = glm::min(min_z, v_w.z);
+            max_z_ws = glm::max(max_z, v_w.z);
+        }
+
+        m_ortho_frusta[i] = { min_x_ws, max_x_ws, min_y_ws, max_y_ws, min_z_ws, max_z_ws };
+        // m_ortho_frusta[i] = {-1, 1, -1, 1, -1, 1};
+
+        // if (i == 0) m_camera->m_view = light_view;
+        // if (i == 0) m_camera->m_projection = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z);
+        glm::vec3 extents(max_x - min_x, max_y - min_y, max_z - min_z);
+        glm::vec3 he = extents * 0.5f;
+        m_dir_light_view_projection_matrices[i] = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z) * light_view;
+    }
+}
+
+void CascadedPCSS::draw_csm_frusta()
+{
+    std::vector<glm::vec3> frusta_lines_points(2 * 12 * NUM_CASCADES);
+
+    for (uint32_t i = 0; i < NUM_CASCADES; ++i)
+    {
+        Frustum f = m_ortho_frusta[i];
+
+        // Near plane
+        frusta_lines_points[24 * i + 0] = glm::vec3(f.min_x, f.min_y, f.min_z);
+        frusta_lines_points[24 * i + 1] = glm::vec3(f.max_x, f.min_y, f.min_z);
+        frusta_lines_points[24 * i + 2] = glm::vec3(f.max_x, f.min_y, f.min_z);
+        frusta_lines_points[24 * i + 3] = glm::vec3(f.max_x, f.max_y, f.min_z);
+        frusta_lines_points[24 * i + 4] = glm::vec3(f.max_x, f.max_y, f.min_z);
+        frusta_lines_points[24 * i + 5] = glm::vec3(f.min_x, f.max_y, f.min_z);
+        frusta_lines_points[24 * i + 6] = glm::vec3(f.min_x, f.max_y, f.min_z);
+        frusta_lines_points[24 * i + 7] = glm::vec3(f.min_x, f.min_y, f.min_z);
+
+        // Far plane
+        frusta_lines_points[24 * i + 8]  = glm::vec3(f.min_x, f.min_y, f.max_z);
+        frusta_lines_points[24 * i + 9]  = glm::vec3(f.max_x, f.min_y, f.max_z);
+        frusta_lines_points[24 * i + 10] = glm::vec3(f.max_x, f.min_y, f.max_z);
+        frusta_lines_points[24 * i + 11] = glm::vec3(f.max_x, f.max_y, f.max_z);
+        frusta_lines_points[24 * i + 12] = glm::vec3(f.max_x, f.max_y, f.max_z);
+        frusta_lines_points[24 * i + 13] = glm::vec3(f.min_x, f.max_y, f.max_z);
+        frusta_lines_points[24 * i + 14] = glm::vec3(f.min_x, f.max_y, f.max_z);
+        frusta_lines_points[24 * i + 15] = glm::vec3(f.min_x, f.min_y, f.max_z);
+
+        // Left plane
+        frusta_lines_points[24 * i + 16] = glm::vec3(f.min_x, f.max_y, f.min_z);
+        frusta_lines_points[24 * i + 17] = glm::vec3(f.min_x, f.max_y, f.max_z);
+        frusta_lines_points[24 * i + 18] = glm::vec3(f.min_x, f.min_y, f.min_z);
+        frusta_lines_points[24 * i + 19] = glm::vec3(f.min_x, f.min_y, f.max_z);
+
+        // Right plane
+        frusta_lines_points[24 * i + 20] = glm::vec3(f.max_x, f.max_y, f.min_z);
+        frusta_lines_points[24 * i + 21] = glm::vec3(f.max_x, f.max_y, f.max_z);
+        frusta_lines_points[24 * i + 22] = glm::vec3(f.max_x, f.min_y, f.min_z);
+        frusta_lines_points[24 * i + 23] = glm::vec3(f.max_x, f.min_y, f.max_z);
+    }
+
+    glBindVertexArray(m_csm_frusta_vao);
+    glNamedBufferSubData(m_csm_frusta_vbo, 0, sizeof(frusta_lines_points[0]) * frusta_lines_points.size(), frusta_lines_points.data());
+    glDrawArrays(GL_LINES, 0, 12 * NUM_CASCADES);
+}
+
+void CascadedPCSS::RenderTexturedModels()
 {
     m_ambient_light_shader->bind();
     m_ambient_light_shader->setUniform("u_cam_pos",           m_camera->position());
@@ -553,7 +713,31 @@ void PCSS::RenderTexturedModels()
         m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_textured_models_model_matrices[i]))));
         m_ambient_light_shader->setUniform("u_mvp",           view_projection * m_textured_models_model_matrices[i]);
 
-        m_textured_models[i].Render();
+        if (i > 1)
+        {
+            m_textured_models[1].Render();
+        }
+        else
+        {
+            m_textured_models[i].Render();
+        }
+    }
+
+    m_ambient_light_shader->setUniform("u_has_albedo_map",    false);
+    m_ambient_light_shader->setUniform("u_has_metallic_map",  false);
+    m_ambient_light_shader->setUniform("u_has_roughness_map", false);
+    m_ambient_light_shader->setUniform("u_has_ao_map",        false);
+    m_ambient_light_shader->setUniform("u_metallic",          0.0f);
+    m_ambient_light_shader->setUniform("u_roughness",         1.0f);
+    m_ambient_light_shader->setUniform("u_ao",                1.0f);
+
+    if (m_draw_debug_frusta)
+    {
+        m_ambient_light_shader->setUniform("u_albedo",        glm::vec3(100.0, 0.0, 0.0));
+        m_ambient_light_shader->setUniform("u_model",         glm::mat4(1.0f));
+        m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(1.0f));
+        m_ambient_light_shader->setUniform("u_mvp",           view_projection);
+        draw_csm_frusta();
     }
 
     /*
@@ -567,38 +751,51 @@ void PCSS::RenderTexturedModels()
 
     /* Render directional light(s) */
     m_directional_light_shader->bind();
-    m_directional_light_shader->setUniform("u_cam_pos",           m_camera->position());
-    m_directional_light_shader->setUniform("u_has_albedo_map",    true);
-    m_directional_light_shader->setUniform("u_has_normal_map",    true);
-    m_directional_light_shader->setUniform("u_has_metallic_map",  true);
-    m_directional_light_shader->setUniform("u_has_roughness_map", true);
+    // m_directional_light_shader->setUniform("u_cam_pos",           m_camera->position());
+    // m_directional_light_shader->setUniform("u_has_albedo_map",    true);
+    // m_directional_light_shader->setUniform("u_has_normal_map",    true);
+    // m_directional_light_shader->setUniform("u_has_metallic_map",  true);
+    // m_directional_light_shader->setUniform("u_has_roughness_map", true);
 
-    m_directional_light_shader->setUniform("u_directional_light.base.color",     m_dir_light_properties.color);
-    m_directional_light_shader->setUniform("u_directional_light.base.intensity", m_dir_light_properties.intensity);
-    m_directional_light_shader->setUniform("u_directional_light.direction",      m_dir_light_properties.direction);
-    m_directional_light_shader->setUniform("u_light_view_projection",            m_dir_light_view_projection);
-    m_directional_light_shader->setUniform("u_light_view",                       m_dir_light_view);
+    // m_directional_light_shader->setUniform("u_directional_light.base.color",     m_dir_light_properties.color);
+    // m_directional_light_shader->setUniform("u_directional_light.base.intensity", m_dir_light_properties.intensity);
+    // m_directional_light_shader->setUniform("u_directional_light.direction",      m_dir_light_properties.direction);
+    m_directional_light_shader->setUniform("u_light_view_projections",           m_dir_light_view_projection_matrices.data(), m_dir_light_view_projection_matrices.size());
+    m_directional_light_shader->setUniform("u_light_views",                      m_dir_light_view_matrices.data(), m_dir_light_view_matrices.size());
 
-    m_directional_light_shader->setUniform("u_blocker_search_samples", m_blocker_search_samples);
-    m_directional_light_shader->setUniform("u_pcf_samples",            m_pcf_filter_samples);
-    m_directional_light_shader->setUniform("u_light_radius_uv",        m_light_radius_uv); 
-    m_directional_light_shader->setUniform("u_light_near",             m_dir_shadow_frustum_planes.x);
-    m_directional_light_shader->setUniform("u_light_far",              m_dir_shadow_frustum_planes.y);
-
+    // m_directional_light_shader->setUniform("u_blocker_search_samples", m_blocker_search_samples);
+    // m_directional_light_shader->setUniform("u_pcf_samples",            m_pcf_filter_samples);
+    // m_directional_light_shader->setUniform("u_light_radius_uv",        m_light_radius_uv); 
+    // m_directional_light_shader->setUniform("u_light_near",             m_dir_shadow_frustum_planes.x);
+    // m_directional_light_shader->setUniform("u_light_far",              m_dir_shadow_frustum_planes.y);
+ 
+    glBindTextureUnit(8, m_dir_shadow_maps);
+    glBindTextureUnit(9, m_dir_shadow_maps);
     m_shadow_map_pcf_sampler.Bind(9);
 
-    glBindTextureUnit(8, m_dir_shadow_map);
-    glBindTextureUnit(9, m_dir_shadow_map); 
     glBindTextureUnit(10, m_random_angles_tex3d_id);
-   
+
     for (unsigned i = 0; i < std::size(m_textured_models_model_matrices); ++i)
     {
         m_directional_light_shader->setUniform("u_model",         m_textured_models_model_matrices[i]);
         m_directional_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_textured_models_model_matrices[i]))));
         m_directional_light_shader->setUniform("u_mvp",           view_projection * m_textured_models_model_matrices[i]);
+        //m_directional_light_shader->setUniform("u_mv",            m_camera->m_view * m_textured_models_model_matrices[i]);
 
-        m_textured_models[i].Render();
+        if (i > 1)
+        {
+            m_textured_models[1].Render();
+        }
+        else
+        {
+            m_textured_models[i].Render();
+        }
     }
+
+    // m_directional_light_shader->setUniform("u_has_metallic_map",  false);
+    // m_directional_light_shader->setUniform("u_has_roughness_map", false);
+    // m_directional_light_shader->setUniform("u_metallic",          0.0f);
+    // m_directional_light_shader->setUniform("u_roughness",         1.0f);
 
     /* Enable writing to the depth buffer. */
     glDepthMask(GL_TRUE);
@@ -606,7 +803,7 @@ void PCSS::RenderTexturedModels()
     glDisable(GL_BLEND);
 }
 
-void PCSS::render()
+void CascadedPCSS::render()
 {
     // Generate shadow map
     GenerateShadowMap(m_dir_light_shadow_map_res.x, m_dir_light_shadow_map_res.y);
@@ -629,9 +826,25 @@ void PCSS::render()
     glCullFace(GL_BACK);
 
     m_tmo_ps->render(m_exposure, m_gamma);
+
+    // visualize shadow maps
+    if (m_draw_debug_visualize_shadow_maps)
+    {
+        glBindVertexArray(m_tmo_ps->m_dummy_vao_id);
+        glBindTextureUnit(0, m_dir_shadow_maps);
+        m_visualize_shadow_map_shader->bind();
+
+        for(uint32_t i = 0; i < NUM_CASCADES; ++i)
+        {
+            static uint32_t width = RGL::Window::getWidth() * 0.2;
+            glViewport(width * i, 0, width, width);
+            m_visualize_shadow_map_shader->setUniform("u_layer", int(i));
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+    }
 }
 
-void PCSS::render_gui()
+void CascadedPCSS::render_gui()
 {
     /* This method is responsible for rendering GUI using ImGUI. */
 
@@ -690,6 +903,11 @@ void PCSS::render_gui()
 
         ImGui::Spacing();
 
+        ImGui::Checkbox("Draw debug lights' frusta", &m_draw_debug_frusta);
+        ImGui::Checkbox("Show shadow maps", &m_draw_debug_visualize_shadow_maps);
+
+        ImGui::Spacing();
+
         {
             const char* listbox_items[] = { "25", "32", "64", "100", "128" };
             const int   sample_counts[] = { 25, 32, 64, 100, 128 };
@@ -730,8 +948,9 @@ void PCSS::render_gui()
                         auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
                         auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
 
-                        m_dir_light_view = view;
-                        m_dir_light_view_projection = proj * view;
+                        // TODO:
+                        // m_dir_light_view = view;
+                        // m_dir_light_view_projection = proj * view;
                     }
                 }
                 ImGui::PopItemWidth();
