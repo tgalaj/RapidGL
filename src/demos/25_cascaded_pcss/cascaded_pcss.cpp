@@ -618,7 +618,7 @@ void CascadedPCSS::update_csm_frusta()
             float distance = glm::length(frustum_corners[i] - frustum_center);
             radius = glm::max(radius, distance);
         }
-        radius = std::ceilf(radius * 16.0f) / 16.0f;
+        radius = ceilf(radius * 16.0f) / 16.0f;
 
         glm::vec3 max_extents = glm::vec3(radius);
         glm::vec3 min_extents = -max_extents;
