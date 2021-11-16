@@ -15,7 +15,7 @@ uniform mat4 u_light_views[NUM_CASCADES];
 layout (location = 0) out vec2 out_texcoord;
 layout (location = 1) out vec3 out_world_pos;
 layout (location = 2) out vec3 out_normal;
-layout (location = 3) out float out_clip_space_pos_z;
+layout (location = 3) out vec3 out_view_pos;
 layout (location = 4) out vec4 out_pos_light_view_space[NUM_CASCADES];
 layout (location = 7) out vec4 out_pos_light_clip_space[NUM_CASCADES];
 
@@ -32,5 +32,5 @@ void main()
     }
 
     gl_Position = u_mvp * vec4(in_pos, 1.0);
-    out_clip_space_pos_z = gl_Position.z;
+    out_view_pos = vec3(u_mv * vec4(in_pos, 1.0));
 }

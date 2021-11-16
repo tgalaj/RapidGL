@@ -110,6 +110,12 @@ struct PostprocessFilter
     }
 };
 
+struct BoundingBox
+{
+    glm::vec3 min;
+    glm::vec3 max;
+};
+
 class PCSS : public RGL::CoreApp
 {
 public:
@@ -307,6 +313,8 @@ private:
 
     GLuint m_skybox_vao, m_skybox_vbo;
 
+    BoundingBox m_scene_bbox;
+
     DirectionalLight m_dir_light_properties;
     glm::vec2        m_dir_light_angles;   /* azimuth and elevation angles */
     glm::vec2        m_spot_light_angles;  /* azimuth and elevation angles */
@@ -324,6 +332,7 @@ private:
     void CreateShadowFBO(GLuint shadow_texture);
     void GenerateShadowMap(uint32_t width, uint32_t height);
     GLuint GenerateRandomAnglesTexture3D(uint32_t size);
+    void UpdateLightMatrix();
 
     RGL::TextureSampler m_shadow_map_pcf_sampler;
     GLuint m_dir_shadow_map;
@@ -341,7 +350,7 @@ private:
     // GUI
     int m_blocker_search_samples = 128;
     int m_pcf_filter_samples     = 128;
-    float m_light_radius_uv      = 0.1;
+    float m_light_radius_uv;
 
     int m_blocker_search_samples_idx = 4;
     int m_pcf_filter_samples_idx     = 4;

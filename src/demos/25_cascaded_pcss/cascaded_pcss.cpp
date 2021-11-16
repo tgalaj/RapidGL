@@ -5,6 +5,7 @@
 #include "gui/gui.h"
 
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/epsilon.hpp>
 
 CascadedPCSS::CascadedPCSS()
       : m_dir_light_angles         (-35.0f, 65.0f),
@@ -16,8 +17,7 @@ CascadedPCSS::CascadedPCSS()
         m_skybox_vbo               (0),
         m_shadow_fbo               (0),
         m_dir_shadow_maps          (0),
-        m_dir_shadow_frustum_size  (20.0f),
-        m_dir_shadow_frustum_planes(120, 250)
+        m_light_radius_uv          (0.5f)
 {
 }
 
@@ -65,35 +65,35 @@ void CascadedPCSS::init_app()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 50.0);
+    m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.1, 100.0);
     m_camera->setPosition(-10.3, 7.6, -5.42);
     m_camera->setOrientation(glm::quat(-0.3, -0.052, -0.931, -0.165));
 
     /* Initialize lights' properties */
     m_dir_light_properties.color     = glm::vec3(1.0f);
-    m_dir_light_properties.intensity = 10.0f;
-    //m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
-    m_dir_light_properties.direction = glm::vec3(1.0, -1.0, 0.0);
+    m_dir_light_properties.intensity = 4.0f;
+    m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
 
     /* Create models. */
-    m_textured_models[0].GenCube();
-    m_textured_models[1].Load(RGL::FileSystem::getPath("models/hk/hk.obj"));
-
-    m_textured_models_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(24.0, 0.1, 24.0));
+    m_plane_model.GenCube();
+    m_hk_model.Load(RGL::FileSystem::getPath("models/hk/hk.obj"));
     
-    // TODO: clean this stuff
-    float hk_unit_scale_factor = m_textured_models[1].GetUnitScaleFactor() * 2.0f;
-    float radius = hk_unit_scale_factor * 3.0f;
-    glm::vec3 offset = glm::vec3(1, 0, 1);
-    glm::vec3 start_pos = -((radius + offset) * (10 - 1.0f)) / 2.0f;
+    m_models_with_model_matrices.push_back( { &m_plane_model, glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(24.0, 0.1, 24.0)) } );
 
-    for (uint32_t y = 0; y < 10; ++y)
+    float hk_unit_scale_factor = m_hk_model.GetUnitScaleFactor() * 2.0f;
+    float hk_radius            = hk_unit_scale_factor * 5.0f;
+    float space_size           = 0.5 * hk_radius;
+    glm::ivec2 grid_size       = { 11, 11 };
+
+    glm::vec3 offset = glm::vec3(hk_radius + space_size);
+    glm::vec3 start_pos = glm::vec3(-offset.x * float(grid_size.x / 2), 0.0, -offset.y * float(grid_size.y / 2));
+
+    for (uint32_t y = 0; y < grid_size.y; ++y)
     {
-        for (uint32_t x = 0; x < 10; ++x)
+        for (uint32_t x = 0; x < grid_size.x; ++x)
         {
-            glm::vec3 position = start_pos + glm::vec3(x, 0.0, y) * (radius + offset);
-            position.y = 0.0f;
-            m_textured_models_model_matrices[1 + x + y * 10] = glm::translate(glm::mat4(1.0), position) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(hk_unit_scale_factor));
+            glm::vec3 position = start_pos + glm::vec3(x, 0.0, y) * offset;
+            m_models_with_model_matrices.push_back( { &m_hk_model, glm::translate(glm::mat4(1.0), position) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(hk_unit_scale_factor)) } );
         }
     }
 
@@ -104,17 +104,17 @@ void CascadedPCSS::init_app()
     auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_roughness.png"));
     auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_ao.png"));
 
-    m_textured_models[0].AddTexture(concrete_albedo_map,    0);
-    m_textured_models[0].AddTexture(concrete_normal_map,    1);
-    m_textured_models[0].AddTexture(concrete_metallic_map,  2);
-    m_textured_models[0].AddTexture(concrete_roughness_map, 3);
-    m_textured_models[0].AddTexture(concrete_ao_map,        4);
+    m_plane_model.AddTexture(concrete_albedo_map,    0);
+    m_plane_model.AddTexture(concrete_normal_map,    1);
+    m_plane_model.AddTexture(concrete_metallic_map,  2);
+    m_plane_model.AddTexture(concrete_roughness_map, 3);
+    m_plane_model.AddTexture(concrete_ao_map,        4);
 
     auto hk_albedo_map = std::make_shared<RGL::Texture2D>(); hk_albedo_map->Load(RGL::FileSystem::getPath("models/hk/albedo.png"), true);
     auto hk_normal_map = std::make_shared<RGL::Texture2D>(); hk_normal_map->Load(RGL::FileSystem::getPath("models/hk/normal.png"));
 
-    m_textured_models[1].AddTexture(hk_albedo_map, 0);
-    m_textured_models[1].AddTexture(hk_normal_map, 1);
+    m_hk_model.AddTexture(hk_albedo_map, 0);
+    m_hk_model.AddTexture(hk_normal_map, 1);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -170,20 +170,8 @@ void CascadedPCSS::init_app()
     m_visualize_shadow_map_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "visualize_csm_depth.frag");
     m_visualize_shadow_map_shader->link();
 
-    // TODO: use log splits from the shadows book
     m_dir_light_view_projection_matrices.resize(NUM_CASCADES);
     m_dir_light_view_matrices.resize(NUM_CASCADES);
-    m_cascade_splits.resize(NUM_CASCADES + 1);
-    m_cascade_splits = { m_camera->NearPlane(), 15.0, 30.0, m_camera->FarPlane() };
-
-    for (uint32_t i = 0; i < NUM_CASCADES; ++i)
-    {
-        auto split_view_space = glm::vec4(0.0, 0.0, -m_cascade_splits[i + 1], 1.0);
-        auto split_clip_space = m_camera->m_projection * split_view_space;
-
-        // printf("<%.2f, %.2f, %.2f, %.2f>\n", split_clip_space.x, split_clip_space.y, split_clip_space.z, split_clip_space.w);
-        m_directional_light_shader->setUniform("u_cascade_end_clip_space[" + std::to_string(i) + "]", split_clip_space.z);
-    }
 
     m_dir_light_shadow_map_res = glm::uvec2(1024 * 4);
     CreateShadowFBO(m_dir_light_shadow_map_res.x, m_dir_light_shadow_map_res.y);
@@ -453,8 +441,8 @@ void CascadedPCSS::CreateShadowFBO(uint32_t width, uint32_t height)
     glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &m_dir_shadow_maps);
     glTextureStorage3D(m_dir_shadow_maps, 1, GL_DEPTH_COMPONENT32F, width, height, NUM_CASCADES);
 
-    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); 
     glTextureParameteri(m_dir_shadow_maps, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
@@ -471,12 +459,9 @@ void CascadedPCSS::CreateShadowFBO(uint32_t width, uint32_t height)
     int status = glCheckNamedFramebufferStatus(m_shadow_fbo, GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
+        std::cerr << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
     }
-    else std::cout << "SUCCESS::FRAMEBUFFER:: Framebuffer is complete!\n";
-
 }
-
 
 void CascadedPCSS::GenerateShadowMap(uint32_t width, uint32_t height)
 {
@@ -485,27 +470,18 @@ void CascadedPCSS::GenerateShadowMap(uint32_t width, uint32_t height)
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glCullFace(GL_FRONT);
-
     m_generate_shadow_map_shader->bind();
 
-    calculate_frusta_matrices();
-    // m_dir_light_view_projection_matrices = get_light_space_matrices();
+    update_csm_splits();
+    update_csm_frusta();
+
     m_generate_shadow_map_shader->setUniform("u_light_view_projections", m_dir_light_view_projection_matrices.data(), m_dir_light_view_projection_matrices.size());
 
-    for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
+    for (uint32_t i = 0; i < m_models_with_model_matrices.size(); ++i)
     {
-        m_generate_shadow_map_shader->setUniform("u_model", m_textured_models_model_matrices[i]);
-    
-        if (i > 1)
-        {
-            m_textured_models[1].Render();
-        }
-        else
-        {
-            m_textured_models[i].Render();
-        }
+        m_generate_shadow_map_shader->setUniform("u_model", m_models_with_model_matrices[i].second);
+        m_models_with_model_matrices[i].first->Render();
     }
-
     glCullFace(GL_BACK);
 }
 
@@ -542,152 +518,145 @@ GLuint CascadedPCSS::GenerateRandomAnglesTexture3D(uint32_t size)
     return tex_id;
 }
 
-void CascadedPCSS::calculate_frusta_matrices()
+void CascadedPCSS::update_csm_splits()
 {
-    glm::mat4 view_inv = glm::inverse(m_camera->m_view);
-    // glm::mat4 light_view = glm::lookAt(glm::vec3(0, 0, 0) + m_dir_light_properties.direction * 20.0f, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+    float near_clip  = m_camera->NearPlane();
+    float far_clip   = m_camera->FarPlane();
+    float clip_range = far_clip - near_clip;
+    float ratio      = far_clip / near_clip;
 
-    float ar = m_camera->AspectRatio();
-    float inv_ar = 1.0 / ar;
-    float tan_half_h_fov = glm::tan(glm::radians(m_camera->FOV() / 2.0f));
-    float tan_half_v_fov = glm::tan(glm::radians(m_camera->FOV() * inv_ar / 2.0f));
-
-    for (uint32_t i = 0; i < NUM_CASCADES; ++i)
+    if (m_split_scheme == SplitScheme::UNIFORM)
     {
-        float xn = m_cascade_splits[i] * tan_half_h_fov;
-        float yn = m_cascade_splits[i] * tan_half_v_fov;
-        
-        float xf = m_cascade_splits[i + 1] * tan_half_h_fov;
-        float yf = m_cascade_splits[i + 1] * tan_half_v_fov;
-
-        glm::vec4 frustum_corners[NUM_FRUSTUM_CORNERS] = {
-            // near face
-            glm::vec4( xn,  yn, m_cascade_splits[i], 1.0),
-            glm::vec4(-xn,  yn, m_cascade_splits[i], 1.0),
-            glm::vec4( xn, -yn, m_cascade_splits[i], 1.0),
-            glm::vec4(-xn, -yn, m_cascade_splits[i], 1.0),
-
-            // far face
-            glm::vec4( xf,  yf, m_cascade_splits[i + 1], 1.0),
-            glm::vec4(-xf,  yf, m_cascade_splits[i + 1], 1.0),
-            glm::vec4( xf, -yf, m_cascade_splits[i + 1], 1.0),
-            glm::vec4(-xf, -yf, m_cascade_splits[i + 1], 1.0)
-        };
-
-        glm::vec3 center(0.0f);
-        for (const auto& c : frustum_corners)
+        for (uint32_t i = 0; i < NUM_CASCADES; ++i)
         {
-            center += glm::vec3(c);
+            float p = (i + 1) / float(NUM_CASCADES);
+            float d = near_clip + clip_range * p;
+
+            m_cascade_splits[i] = (d - near_clip) / clip_range; // to [0, 1] range
         }
-        center /= float(std::size(frustum_corners));
-        center = glm::vec3(view_inv * glm::vec4(center, 1.0));
+    }
 
-        // TODO: Something is wrong with the light_view matrix
-        // glm::mat4 light_view = glm::lookAt(center - m_dir_light_properties.direction, center, glm::vec3(0, 1, 0));
-        // glm::mat4 light_view = m_camera->m_view;
-        //glm::mat4 light_view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 0.0) + m_dir_light_properties.direction, glm::vec3(0, 1, 0));
-        glm::vec3 right = glm::vec3(1, 0, 0);
-        glm::vec3 up = glm::normalize(glm::cross(-m_dir_light_properties.direction, right));
-        glm::mat4 light_view = glm::lookAt(center, center + m_dir_light_properties.direction, up);
-
-        // glm::vec3 p1 = glm::normalize(glm::cross(-m_dir_light_properties.direction, glm::vec3(0, 0, 1)));
-        // glm::vec3 p2 = glm::normalize(glm::cross(-m_dir_light_properties.direction, p1));
-        // glm::mat4 light_view = glm::mat4(1.0);
-        // light_view[0] = glm::vec4(p1, 0.0);
-        // light_view[1] = glm::vec4(p2, 0.0);
-        // light_view[2] = glm::vec4(-m_dir_light_properties.direction, 0.0);
-
-        glm::vec4 frustum_corners_light[NUM_FRUSTUM_CORNERS];
-
-        float min_x =  std::numeric_limits<float>::infinity();
-        float max_x = -std::numeric_limits<float>::infinity();
-        float min_y =  std::numeric_limits<float>::infinity();
-        float max_y = -std::numeric_limits<float>::infinity();
-        float min_z =  std::numeric_limits<float>::infinity();
-        float max_z = -std::numeric_limits<float>::infinity();
-
-        float min_x_ws =  std::numeric_limits<float>::infinity();
-        float max_x_ws = -std::numeric_limits<float>::infinity();
-        float min_y_ws =  std::numeric_limits<float>::infinity();
-        float max_y_ws = -std::numeric_limits<float>::infinity();
-        float min_z_ws =  std::numeric_limits<float>::infinity();
-        float max_z_ws = -std::numeric_limits<float>::infinity();
-
-        for (uint32_t j = 0; j < NUM_FRUSTUM_CORNERS; ++j)
+    if (m_split_scheme == SplitScheme::LOG)
+    {
+        for (uint32_t i = 0; i < NUM_CASCADES; ++i)
         {
-            glm::vec4 v_w            = view_inv * frustum_corners[j]; // Transform to world space
-            frustum_corners_light[j] = light_view * v_w; // Transform to light's view space
+            float p = (i + 1) / float(NUM_CASCADES);
+            float d = near_clip * std::pow(ratio, p);
 
-            min_x = glm::min(min_x, frustum_corners_light[j].x);
-            max_x = glm::max(max_x, frustum_corners_light[j].x);
-            min_y = glm::min(min_y, frustum_corners_light[j].y);
-            max_y = glm::max(max_y, frustum_corners_light[j].y);
-            min_z = glm::min(min_z, frustum_corners_light[j].z);
-            max_z = glm::max(max_z, frustum_corners_light[j].z);
-
-            min_x_ws = glm::min(min_x, v_w.x);
-            max_x_ws = glm::max(max_x, v_w.x);
-            min_y_ws = glm::min(min_y, v_w.y);
-            max_y_ws = glm::max(max_y, v_w.y);
-            min_z_ws = glm::min(min_z, v_w.z);
-            max_z_ws = glm::max(max_z, v_w.z);
+            m_cascade_splits[i] = (d - near_clip) / clip_range; // to [0, 1] range
         }
+    }
 
-        m_ortho_frusta[i] = { min_x_ws, max_x_ws, min_y_ws, max_y_ws, min_z_ws, max_z_ws };
-        // m_ortho_frusta[i] = {-1, 1, -1, 1, -1, 1};
+    // Calculate split depths based on view camera frustum
+    // Practical splits: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
+    if (m_split_scheme == SplitScheme::PRACTICAL)
+    {
+        for (uint32_t i = 0; i < NUM_CASCADES; ++i)
+        {
+            float p   = (i + 1) / float(NUM_CASCADES);
+            float log = near_clip * std::pow(ratio, p);
+            float uni = near_clip + clip_range * p;
+            float d   = m_cascade_split_lambda * (log - uni) + uni;
 
-        // if (i == 0) m_camera->m_view = light_view;
-        // if (i == 0) m_camera->m_projection = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z);
-        glm::vec3 extents(max_x - min_x, max_y - min_y, max_z - min_z);
-        glm::vec3 he = extents * 0.5f;
-        m_dir_light_view_projection_matrices[i] = glm::ortho(min_x, max_x, min_y, max_y, min_z, max_z) * light_view;
+            m_cascade_splits[i] = (d - near_clip) / clip_range; // to [0, 1] range
+        }
     }
 }
 
-void CascadedPCSS::draw_csm_frusta()
+void CascadedPCSS::update_csm_frusta()
 {
-    std::vector<glm::vec3> frusta_lines_points(2 * 12 * NUM_CASCADES);
+    float near_clip     = m_camera->NearPlane();
+    float far_clip      = m_camera->FarPlane();
+    float clip_range    = far_clip - near_clip;
+    glm::vec3 light_dir = m_dir_light_properties.direction;
+
+    // Calculate orthographic projection matrix for each cascade
+    float last_split_dist  = 0.0;
+    float avg_frustum_size = 0.0;
 
     for (uint32_t i = 0; i < NUM_CASCADES; ++i)
     {
-        Frustum f = m_ortho_frusta[i];
+        float split_dist = m_cascade_splits[i];
 
-        // Near plane
-        frusta_lines_points[24 * i + 0] = glm::vec3(f.min_x, f.min_y, f.min_z);
-        frusta_lines_points[24 * i + 1] = glm::vec3(f.max_x, f.min_y, f.min_z);
-        frusta_lines_points[24 * i + 2] = glm::vec3(f.max_x, f.min_y, f.min_z);
-        frusta_lines_points[24 * i + 3] = glm::vec3(f.max_x, f.max_y, f.min_z);
-        frusta_lines_points[24 * i + 4] = glm::vec3(f.max_x, f.max_y, f.min_z);
-        frusta_lines_points[24 * i + 5] = glm::vec3(f.min_x, f.max_y, f.min_z);
-        frusta_lines_points[24 * i + 6] = glm::vec3(f.min_x, f.max_y, f.min_z);
-        frusta_lines_points[24 * i + 7] = glm::vec3(f.min_x, f.min_y, f.min_z);
+        glm::vec3 frustum_corners[8] = {
+			glm::vec3(-1.0f,  1.0f, -1.0f),
+			glm::vec3( 1.0f,  1.0f, -1.0f),
+			glm::vec3( 1.0f, -1.0f, -1.0f),
+			glm::vec3(-1.0f, -1.0f, -1.0f),
+			glm::vec3(-1.0f,  1.0f,  1.0f),
+			glm::vec3( 1.0f,  1.0f,  1.0f),
+			glm::vec3( 1.0f, -1.0f,  1.0f),
+			glm::vec3(-1.0f, -1.0f,  1.0f),
+		};
 
-        // Far plane
-        frusta_lines_points[24 * i + 8]  = glm::vec3(f.min_x, f.min_y, f.max_z);
-        frusta_lines_points[24 * i + 9]  = glm::vec3(f.max_x, f.min_y, f.max_z);
-        frusta_lines_points[24 * i + 10] = glm::vec3(f.max_x, f.min_y, f.max_z);
-        frusta_lines_points[24 * i + 11] = glm::vec3(f.max_x, f.max_y, f.max_z);
-        frusta_lines_points[24 * i + 12] = glm::vec3(f.max_x, f.max_y, f.max_z);
-        frusta_lines_points[24 * i + 13] = glm::vec3(f.min_x, f.max_y, f.max_z);
-        frusta_lines_points[24 * i + 14] = glm::vec3(f.min_x, f.max_y, f.max_z);
-        frusta_lines_points[24 * i + 15] = glm::vec3(f.min_x, f.min_y, f.max_z);
+        // Project frustum corners into world space
+        glm::mat4 inv_cam = glm::inverse(m_camera->m_projection * m_camera->m_view);
+        for (uint32_t i = 0; i < 8; ++i)
+        {
+            glm::vec4 corner_world_space = inv_cam * glm::vec4(frustum_corners[i], 1.0f);
+            frustum_corners[i] = corner_world_space / corner_world_space.w;
+        }
 
-        // Left plane
-        frusta_lines_points[24 * i + 16] = glm::vec3(f.min_x, f.max_y, f.min_z);
-        frusta_lines_points[24 * i + 17] = glm::vec3(f.min_x, f.max_y, f.max_z);
-        frusta_lines_points[24 * i + 18] = glm::vec3(f.min_x, f.min_y, f.min_z);
-        frusta_lines_points[24 * i + 19] = glm::vec3(f.min_x, f.min_y, f.max_z);
+        for (uint32_t i = 0; i < 4; ++i)
+        {
+            glm::vec3 dist         = frustum_corners[i + 4] - frustum_corners[i];
+            frustum_corners[i + 4] = frustum_corners[i] + (dist * split_dist);
+            frustum_corners[i]     = frustum_corners[i] + (dist * last_split_dist);
+        }
 
-        // Right plane
-        frusta_lines_points[24 * i + 20] = glm::vec3(f.max_x, f.max_y, f.min_z);
-        frusta_lines_points[24 * i + 21] = glm::vec3(f.max_x, f.max_y, f.max_z);
-        frusta_lines_points[24 * i + 22] = glm::vec3(f.max_x, f.min_y, f.min_z);
-        frusta_lines_points[24 * i + 23] = glm::vec3(f.max_x, f.min_y, f.max_z);
+        // Calc frustum center
+        glm::vec3 frustum_center = glm::vec3(0.0f);
+        for (uint32_t i = 0; i < 8; ++i)
+        {
+            frustum_center += frustum_corners[i];
+        }
+        frustum_center /= 8.0f;
+
+        float radius = 0.0f;
+        for (uint32_t i = 0; i < 8; ++i)
+        {
+            float distance = glm::length(frustum_corners[i] - frustum_center);
+            radius = glm::max(radius, distance);
+        }
+        radius = std::ceilf(radius * 16.0f) / 16.0f;
+
+        glm::vec3 max_extents = glm::vec3(radius);
+        glm::vec3 min_extents = -max_extents;
+
+        glm::mat4 light_view_matrix  = glm::lookAt(frustum_center - light_dir * -min_extents.z, frustum_center, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 light_ortho_matrix = glm::ortho(min_extents.x, max_extents.x, min_extents.y, max_extents.y, 0.0f, max_extents.z - min_extents.z);
+
+        float split_depth = (m_camera->NearPlane() + split_dist * clip_range) * -1.0f;
+        m_directional_light_shader->setUniform("u_cascade_splits[" + std::to_string(i) + "]", split_depth);
+
+        avg_frustum_size = glm::max(avg_frustum_size, max_extents.x - min_extents.x);
+
+        m_dir_light_view_matrices[i]            = light_view_matrix;
+        m_dir_light_view_projection_matrices[i] = light_ortho_matrix * light_view_matrix;
+        m_dir_shadow_frustum_planes[i]          = glm::vec2(min_extents.z, max_extents.z);
+
+        if (m_stable_csm)
+        {
+            glm::vec4 shadow_origin = glm::vec4(0.0, 0.0, 0.0, 1.0);
+            shadow_origin = m_dir_light_view_projection_matrices[i] * shadow_origin;
+            shadow_origin = shadow_origin * (m_dir_light_shadow_map_res.x / 2.0f);
+            
+            glm::vec4 rounded_origin = glm::round(shadow_origin);
+            glm::vec4 round_offset = rounded_origin - shadow_origin;
+            round_offset = round_offset * (2.0f / m_dir_light_shadow_map_res.x);
+            round_offset.z = 0.0f;
+            round_offset.w = 0.0f;
+
+            glm::mat4& shadow_proj = light_ortho_matrix;
+            shadow_proj[3] += round_offset;
+
+            m_dir_light_view_projection_matrices[i] = shadow_proj * light_view_matrix;
+        }
+
+        last_split_dist = split_dist;
     }
 
-    glBindVertexArray(m_csm_frusta_vao);
-    glNamedBufferSubData(m_csm_frusta_vbo, 0, sizeof(frusta_lines_points[0]) * frusta_lines_points.size(), frusta_lines_points.data());
-    glDrawArrays(GL_LINES, 0, 12 * NUM_CASCADES);
+    m_directional_light_shader->setUniform("u_light_radius_uv", m_light_radius_uv / avg_frustum_size);
 }
 
 void CascadedPCSS::RenderTexturedModels()
@@ -707,20 +676,13 @@ void CascadedPCSS::RenderTexturedModels()
     m_prefiltered_env_map_rt->bindTexture(6);
     m_brdf_lut_rt->bindTexture(7);
 
-    for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
+    for (uint32_t i = 0; i < m_models_with_model_matrices.size(); ++i)
     {
-        m_ambient_light_shader->setUniform("u_model",         m_textured_models_model_matrices[i]);
-        m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_textured_models_model_matrices[i]))));
-        m_ambient_light_shader->setUniform("u_mvp",           view_projection * m_textured_models_model_matrices[i]);
+        m_ambient_light_shader->setUniform("u_model",         m_models_with_model_matrices[i].second);
+        m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_models_with_model_matrices[i].second))));
+        m_ambient_light_shader->setUniform("u_mvp",           view_projection * m_models_with_model_matrices[i].second);
 
-        if (i > 1)
-        {
-            m_textured_models[1].Render();
-        }
-        else
-        {
-            m_textured_models[i].Render();
-        }
+        m_models_with_model_matrices[i].first->Render();
     }
 
     m_ambient_light_shader->setUniform("u_has_albedo_map",    false);
@@ -730,15 +692,6 @@ void CascadedPCSS::RenderTexturedModels()
     m_ambient_light_shader->setUniform("u_metallic",          0.0f);
     m_ambient_light_shader->setUniform("u_roughness",         1.0f);
     m_ambient_light_shader->setUniform("u_ao",                1.0f);
-
-    if (m_draw_debug_frusta)
-    {
-        m_ambient_light_shader->setUniform("u_albedo",        glm::vec3(100.0, 0.0, 0.0));
-        m_ambient_light_shader->setUniform("u_model",         glm::mat4(1.0f));
-        m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(1.0f));
-        m_ambient_light_shader->setUniform("u_mvp",           view_projection);
-        draw_csm_frusta();
-    }
 
     /*
      * Disable writing to the depth buffer and additively
@@ -751,51 +704,44 @@ void CascadedPCSS::RenderTexturedModels()
 
     /* Render directional light(s) */
     m_directional_light_shader->bind();
-    // m_directional_light_shader->setUniform("u_cam_pos",           m_camera->position());
-    // m_directional_light_shader->setUniform("u_has_albedo_map",    true);
-    // m_directional_light_shader->setUniform("u_has_normal_map",    true);
-    // m_directional_light_shader->setUniform("u_has_metallic_map",  true);
-    // m_directional_light_shader->setUniform("u_has_roughness_map", true);
+    m_directional_light_shader->setUniform("u_cam_pos",           m_camera->position());
+    m_directional_light_shader->setUniform("u_has_albedo_map",    true);
+    m_directional_light_shader->setUniform("u_has_normal_map",    true);
+    m_directional_light_shader->setUniform("u_has_metallic_map",  true);
+    m_directional_light_shader->setUniform("u_has_roughness_map", true);
 
-    // m_directional_light_shader->setUniform("u_directional_light.base.color",     m_dir_light_properties.color);
-    // m_directional_light_shader->setUniform("u_directional_light.base.intensity", m_dir_light_properties.intensity);
-    // m_directional_light_shader->setUniform("u_directional_light.direction",      m_dir_light_properties.direction);
+    m_directional_light_shader->setUniform("u_directional_light.base.color",     m_dir_light_properties.color);
+    m_directional_light_shader->setUniform("u_directional_light.base.intensity", m_dir_light_properties.intensity);
+    m_directional_light_shader->setUniform("u_directional_light.direction",      m_dir_light_properties.direction);
     m_directional_light_shader->setUniform("u_light_view_projections",           m_dir_light_view_projection_matrices.data(), m_dir_light_view_projection_matrices.size());
     m_directional_light_shader->setUniform("u_light_views",                      m_dir_light_view_matrices.data(), m_dir_light_view_matrices.size());
+    
+    m_directional_light_shader->setUniform("u_blocker_search_samples", m_blocker_search_samples);
+    m_directional_light_shader->setUniform("u_pcf_samples",            m_pcf_filter_samples);
+    m_directional_light_shader->setUniform("u_light_frustum_planes",   &m_dir_shadow_frustum_planes[0], std::size(m_dir_shadow_frustum_planes));
+    m_directional_light_shader->setUniform("u_show_cascades",          m_show_cascades);
+    m_directional_light_shader->setUniform("u_hard_shadows",           m_hard_shadows);
 
-    // m_directional_light_shader->setUniform("u_blocker_search_samples", m_blocker_search_samples);
-    // m_directional_light_shader->setUniform("u_pcf_samples",            m_pcf_filter_samples);
-    // m_directional_light_shader->setUniform("u_light_radius_uv",        m_light_radius_uv); 
-    // m_directional_light_shader->setUniform("u_light_near",             m_dir_shadow_frustum_planes.x);
-    // m_directional_light_shader->setUniform("u_light_far",              m_dir_shadow_frustum_planes.y);
- 
     glBindTextureUnit(8, m_dir_shadow_maps);
     glBindTextureUnit(9, m_dir_shadow_maps);
-    m_shadow_map_pcf_sampler.Bind(9);
+    m_shadow_map_pcf_sampler.Bind(9); // Bind PCF shadow sampler
 
     glBindTextureUnit(10, m_random_angles_tex3d_id);
 
-    for (unsigned i = 0; i < std::size(m_textured_models_model_matrices); ++i)
+    for (uint32_t i = 0; i < m_models_with_model_matrices.size(); ++i)
     {
-        m_directional_light_shader->setUniform("u_model",         m_textured_models_model_matrices[i]);
-        m_directional_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_textured_models_model_matrices[i]))));
-        m_directional_light_shader->setUniform("u_mvp",           view_projection * m_textured_models_model_matrices[i]);
-        //m_directional_light_shader->setUniform("u_mv",            m_camera->m_view * m_textured_models_model_matrices[i]);
+        m_directional_light_shader->setUniform("u_model",         m_models_with_model_matrices[i].second);
+        m_directional_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_models_with_model_matrices[i].second))));
+        m_directional_light_shader->setUniform("u_mvp",           view_projection * m_models_with_model_matrices[i].second);
+        m_directional_light_shader->setUniform("u_mv",            m_camera->m_view * m_models_with_model_matrices[i].second);
 
-        if (i > 1)
-        {
-            m_textured_models[1].Render();
-        }
-        else
-        {
-            m_textured_models[i].Render();
-        }
+        m_models_with_model_matrices[i].first->Render();
     }
 
-    // m_directional_light_shader->setUniform("u_has_metallic_map",  false);
-    // m_directional_light_shader->setUniform("u_has_roughness_map", false);
-    // m_directional_light_shader->setUniform("u_metallic",          0.0f);
-    // m_directional_light_shader->setUniform("u_roughness",         1.0f);
+    m_directional_light_shader->setUniform("u_has_metallic_map",  false);
+    m_directional_light_shader->setUniform("u_has_roughness_map", false);
+    m_directional_light_shader->setUniform("u_metallic",          0.0f);
+    m_directional_light_shader->setUniform("u_roughness",         1.0f);
 
     /* Enable writing to the depth buffer. */
     glDepthMask(GL_TRUE);
@@ -846,12 +792,6 @@ void CascadedPCSS::render()
 
 void CascadedPCSS::render_gui()
 {
-    /* This method is responsible for rendering GUI using ImGUI. */
-
-    /* 
-     * It's possible to call render_gui() from the base class.
-     * It renders performance info overlay.
-     */
     CoreApp::render_gui();
 
     /* Create your own GUI using ImGUI here. */
@@ -875,6 +815,7 @@ void CascadedPCSS::render_gui()
 
         ImGui::Spacing();
 
+        ImGui::Text("# General");
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
         ImGui::SliderFloat("Exposure",             &m_exposure,             0.0, 10.0, "%.1f");
         ImGui::SliderFloat("Gamma",                &m_gamma,                0.0, 10.0, "%.1f");
@@ -902,22 +843,40 @@ void CascadedPCSS::render_gui()
         }
 
         ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::Text("# CSM settings");
+        {
+            static int idx = int(m_split_scheme);
+            static const char* items[] = { "uniform", "log", "practical" };
+            if (ImGui::Combo("Split scheme", &idx, items, std::size(items)))
+            {
+                m_split_scheme = SplitScheme(idx);
+            }
+        }
 
-        ImGui::Checkbox("Draw debug lights' frusta", &m_draw_debug_frusta);
+        if (m_split_scheme == SplitScheme::PRACTICAL)
+        {
+            ImGui::SliderFloat("Split lambda", &m_cascade_split_lambda, 0.1, 1.0);
+        }
+
         ImGui::Checkbox("Show shadow maps", &m_draw_debug_visualize_shadow_maps);
+        ImGui::Checkbox("Show cascades",    &m_show_cascades);
+        ImGui::Checkbox("Stable CSM",       &m_stable_csm);
+        ImGui::Checkbox("Hard shadows",     &m_hard_shadows);
 
         ImGui::Spacing();
-
+        ImGui::Spacing();
+        ImGui::Text("# Soft shadows settings");
         {
-            const char* listbox_items[] = { "25", "32", "64", "100", "128" };
-            const int   sample_counts[] = { 25, 32, 64, 100, 128 };
+            static const char* listbox_items[] = { "25", "32", "64", "100", "128" };
+            static const int   sample_counts[] = { 25, 32, 64, 100, 128 };
 
-            if (ImGui::ListBox("Blocker search samples", &m_blocker_search_samples_idx, listbox_items, std::size(listbox_items), 5))
+            if (ImGui::Combo("Blocker search samples", &m_blocker_search_samples_idx, listbox_items, std::size(listbox_items)))
             {
                 m_blocker_search_samples = sample_counts[m_blocker_search_samples_idx];
             }
 
-            if (ImGui::ListBox("PCF filter samples", &m_pcf_filter_samples_idx, listbox_items, std::size(listbox_items), 5))
+            if (ImGui::Combo("PCF filter samples", &m_pcf_filter_samples_idx, listbox_items, std::size(listbox_items)))
             {
                 m_pcf_filter_samples = sample_counts[m_pcf_filter_samples_idx];
             }
@@ -941,16 +900,9 @@ void CascadedPCSS::render_gui()
                     
                     if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
                     {
-                        m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
-                        
-                        auto light_target = glm::vec3(0.0);
-                        auto light_cam_pos = light_target - m_dir_light_properties.direction * 200.0f;
-                        auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
-                        auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
+                        if(glm::epsilonEqual(m_dir_light_angles.y, 0.0f, 1e-5f)) m_dir_light_angles.y = 1e-5f;
 
-                        // TODO:
-                        // m_dir_light_view = view;
-                        // m_dir_light_view_projection = proj * view;
+                        m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
                     }
                 }
                 ImGui::PopItemWidth();

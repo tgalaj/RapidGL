@@ -38,12 +38,12 @@ struct PostprocessFilter
 {
     std::shared_ptr<RGL::Shader> m_shader;
 
-    GLuint m_fbo_id;
-    GLuint m_rbo_id;
-    GLuint m_tex_id;
-    GLuint m_dummy_vao_id;
+    GLuint m_fbo_id{};
+    GLuint m_rbo_id{};
+    GLuint m_tex_id{};
+    GLuint m_dummy_vao_id{};
 
-    PostprocessFilter(uint32_t width, uint32_t height)
+    PostprocessFilter(const uint32_t width, const uint32_t height)
     {
         glCreateFramebuffers(1, &m_fbo_id);
 
@@ -87,18 +87,18 @@ struct PostprocessFilter
         }
     }
 
-    void bindTexture(GLuint unit = 0)
+    void bindTexture(GLuint unit = 0) const
     {
         glBindTextureUnit(unit, m_tex_id);
     }
 
-    void bindFilterFBO()
+    void bindFilterFBO() const
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void render(float exposure, float gamma)
+    void render(float exposure, float gamma) const
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -111,16 +111,6 @@ struct PostprocessFilter
         glBindVertexArray(m_dummy_vao_id);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
-};
-
-struct Frustum
-{
-    float min_x;
-    float max_x;
-    float min_y;
-    float max_y;
-    float min_z;
-    float max_z;
 };
 
 class CascadedPCSS : public RGL::CoreApp
@@ -145,19 +135,19 @@ private:
 
         ~Texture2DRenderTarget() { cleanup(); }
 
-        void bindTexture(GLuint unit = 0)
+        void bindTexture(GLuint unit = 0) const
         {
             glBindTextureUnit(unit, m_texture_id);
         }
 
-        void bindRenderTarget()
+        void bindRenderTarget() const
         {
             glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
             glViewport(0, 0, m_width, m_height);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
 
-        void cleanup()
+        void cleanup() const
         {
             if (m_texture_id != 0)
             {
@@ -207,14 +197,14 @@ private:
 
     struct CubeMapRenderTarget
     {
-        glm::mat4 m_view_transforms[6];
-        glm::mat4 m_projection;
+        glm::mat4 m_view_transforms[6]{};
+        glm::mat4 m_projection{};
 
         GLuint    m_cubemap_texture_id = 0;
         GLuint    m_fbo_id             = 0;
         GLuint    m_rbo_id             = 0;
         glm::vec3 m_position           = glm::vec3(0.0f);
-        GLuint m_width, m_height;
+        GLuint m_width{}, m_height{};
 
         ~CubeMapRenderTarget() { cleanup(); }
 
@@ -231,12 +221,12 @@ private:
             m_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         }
 
-        void bindTexture(GLuint unit = 0)
+        void bindTexture(GLuint unit = 0) const
         {
             glBindTextureUnit(unit, m_cubemap_texture_id);
         }
 
-        void cleanup()
+        void cleanup() const
         {
             if (m_cubemap_texture_id != 0)
             {
@@ -315,10 +305,11 @@ private:
     std::shared_ptr<RGL::Shader> m_ambient_light_shader;
     std::shared_ptr<RGL::Shader> m_directional_light_shader;
 
-    RGL::StaticModel m_textured_models[1 + 100];
-    glm::mat4 m_textured_models_model_matrices[1 + 100];
+    std::vector<std::pair<RGL::StaticModel*, glm::mat4>> m_models_with_model_matrices;
+    RGL::StaticModel m_plane_model;
+    RGL::StaticModel m_hk_model;
 
-    GLuint m_skybox_vao, m_skybox_vbo;
+    GLuint m_skybox_vao{}, m_skybox_vbo{};
 
     DirectionalLight m_dir_light_properties;
     glm::vec2        m_dir_light_angles;   /* azimuth and elevation angles */
@@ -337,8 +328,8 @@ private:
     void GenerateShadowMap(uint32_t width, uint32_t height);
     GLuint GenerateRandomAnglesTexture3D(uint32_t size);
 
-    void calculate_frusta_matrices();
-    void draw_csm_frusta();
+    void update_csm_splits();
+    void update_csm_frusta();
 
     GLuint m_csm_frusta_vao;
     GLuint m_csm_frusta_vbo;
@@ -348,11 +339,10 @@ private:
     GLuint m_dir_shadow_maps;
     
     glm::uvec2 m_dir_light_shadow_map_res;
-    glm::vec2  m_dir_shadow_frustum_planes;
-    float      m_dir_shadow_frustum_size;
+    glm::vec2  m_dir_shadow_frustum_planes[NUM_CASCADES];
 
-    Frustum m_ortho_frusta[NUM_CASCADES];
-    std::vector<float> m_cascade_splits;
+    float m_cascade_splits[NUM_CASCADES];
+
     std::vector<glm::mat4> m_dir_light_view_projection_matrices;
     std::vector<glm::mat4> m_dir_light_view_matrices;
 
@@ -363,10 +353,15 @@ private:
     // GUI
     int m_blocker_search_samples = 128;
     int m_pcf_filter_samples     = 128;
-    float m_light_radius_uv      = 0.03;
+    float m_light_radius_uv;
 
-    int m_blocker_search_samples_idx = 4;
-    int m_pcf_filter_samples_idx     = 4;
-    bool m_draw_debug_visualize_shadow_maps = true;
-    bool m_draw_debug_frusta = true;
+    int m_blocker_search_samples_idx        = 4;
+    int m_pcf_filter_samples_idx            = 4;
+    float m_cascade_split_lambda            = 0.55f;
+    bool m_draw_debug_visualize_shadow_maps = false;
+    bool m_show_cascades                    = false;
+    bool m_hard_shadows                     = false;
+    bool m_stable_csm                       = true;
+
+    enum class SplitScheme { UNIFORM, LOG, PRACTICAL } m_split_scheme = SplitScheme::PRACTICAL;
 };

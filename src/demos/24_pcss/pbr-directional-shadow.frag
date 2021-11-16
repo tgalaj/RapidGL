@@ -447,6 +447,7 @@ void findBlocker(out float accum_blocker_depth,
 
         // Here use sampler without HW PCF filtering
         offset *= searchRegionRadiusUV;
+
         float shadow_map_depth = texture(s_shadow_map, uv + offset).r;
 
         if (shadow_map_depth < biased_depth)
@@ -483,9 +484,8 @@ float shadowPCF(vec2 uv, float z0, float bias, float filter_radius_uv)
         // Add random rotation to the offset 
         offset = vec2(random_rotation.x * offset.x - random_rotation.y * offset.y,
                       random_rotation.y * offset.x + random_rotation.x * offset.y);
-
         offset *= filter_radius_uv;
- 
+
         sum += texture(s_shadow_map_pcf, vec3(uv + offset, z0 - bias));
     }
 

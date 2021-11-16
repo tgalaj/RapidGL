@@ -3,7 +3,7 @@
 
 const int NUM_CASCADES = 3;
 
-layout (location = 3) in float in_clip_space_pos_z;
+layout (location = 3) in vec3 in_view_pos;
 layout (location = 4) in vec4 in_pos_light_view_space[NUM_CASCADES];
 layout (location = 7) in vec4 in_pos_light_clip_space[NUM_CASCADES];
 
@@ -13,21 +13,24 @@ layout (binding = 8)  uniform sampler2DArray       s_shadow_map;
 layout (binding = 9)  uniform sampler2DArrayShadow s_shadow_map_pcf;
 layout (binding = 10) uniform sampler3D            s_random_angles;
 
-uniform vec3 u_offset_tex_size;
-uniform float u_radius;
-
 uniform int   u_blocker_search_samples;
 uniform float u_light_radius_uv;
-uniform float u_light_near;
-uniform float u_light_far;
 uniform int   u_pcf_samples;
-uniform float u_cascade_end_clip_space[NUM_CASCADES];
+uniform vec2  u_light_frustum_planes[NUM_CASCADES];
+uniform float u_cascade_splits[NUM_CASCADES];
+uniform vec2  u_split_scale[NUM_CASCADES];
+uniform vec2  u_split_translate[NUM_CASCADES];
+uniform bool  u_show_cascades;
+uniform bool  u_hard_shadows;
 
+float light_near_plane;
+float light_far_plane;
+float light_radius;
 float correction_factor = 1.0;
 
-vec3 cascade_debug_colors[NUM_CASCADES] = vec3[](vec3(0.1, 0.0, 0.0), 
-                                                 vec3(0.0, 0.1, 0.0), 
-                                                 vec3(0.0, 0.0, 0.1));
+vec3 cascade_debug_colors[NUM_CASCADES] = vec3[](vec3(1.0, 0.25, 0.25), 
+                                                 vec3(0.25, 1.0, 0.25), 
+                                                 vec3(0.25, 0.25, 1.0));
 
 const vec2 Poisson25[25] = vec2[](
     vec2(-0.978698,  -0.0884121),
@@ -391,7 +394,7 @@ const vec2 Poisson128[128] = vec2[](
 // Using similar triangles from the surface point to the area light
 float searchRegionRadiusUV(float z_world)
 {
-    return u_light_radius_uv * (z_world - u_light_near) / z_world;
+    return light_radius * (z_world - light_near_plane) / z_world;
 }
 
 // ------------------------------------------------------------------
@@ -399,7 +402,7 @@ float searchRegionRadiusUV(float z_world)
 // Using similar triangles between the area light, the blocking plane and the surface point
 float penumbraRadiusUV(float z_receiver, float z_blocker)
 {
-    return u_light_radius_uv * (z_receiver - z_blocker) / z_blocker;
+    return light_radius * (z_receiver - z_blocker) / z_blocker;
 }
 
 // ------------------------------------------------------------------
@@ -407,14 +410,14 @@ float penumbraRadiusUV(float z_receiver, float z_blocker)
 // Project UV size to the near plane of the light
 float projectToLightUV(float size_uv, float z_world)
 {
-    return size_uv * u_light_near / z_world;
+    return size_uv * light_near_plane / z_world;
 }
 
 // ------------------------------------------------------------------
 
 float zClipToEye(float z)
 {
-    return u_light_far * u_light_near / (u_light_far - z * (u_light_far - u_light_near));
+    return light_far_plane * light_near_plane / (light_far_plane - z * (light_far_plane - light_near_plane));
 }
 
 // ------------------------------------------------------------------
@@ -490,12 +493,11 @@ float shadowPCF(vec2 uv, float z0, float bias, float filter_radius_uv, uint casc
             offset = Poisson128[i];
 
         // Add random rotation to the offset 
+        offset *= filter_radius_uv;
         offset = vec2(random_rotation.x * offset.x - random_rotation.y * offset.y,
                       random_rotation.y * offset.x + random_rotation.x * offset.y);
-
-        offset *= filter_radius_uv;
  
-        sum += texture(s_shadow_map_pcf, vec4(uv + offset, z0 - bias, cascade_index));
+        sum += texture(s_shadow_map_pcf, vec4(uv + offset, cascade_index, z0 - bias));
     }
 
     return sum / float(u_pcf_samples);
@@ -540,63 +542,64 @@ float shadowOcclusionSoft(uint cascade_index)
     // transform to [0,1] range
     proj_coords = proj_coords * 0.5 + 0.5;
 
-    if (proj_coords.z > 1.0) return 1.0;
-
     // get depth of current fragment from light's perspective
     float current_depth = proj_coords.z;
+    if (current_depth > 1.0) return 1.0;
 
     // check whether current frag pos is in shadow
-    float bias = max(0.0001 * (1.0 - dot(normalize(in_normal), -u_directional_light.direction)), 0.000001);
+    float bias = max(0.001 * (1.0 - dot(normalize(in_normal), -u_directional_light.direction)), 0.00001);
     
     vec4 pos_vs = in_pos_light_view_space[cascade_index];
     pos_vs.xyz /= pos_vs.w;
 
+    light_near_plane = u_light_frustum_planes[cascade_index].x;
+    light_far_plane  = u_light_frustum_planes[cascade_index].y;
+    light_radius     = u_light_radius_uv / (pow(float(NUM_CASCADES), cascade_index) * float(NUM_CASCADES));
+
     return shadowPCSS(proj_coords.xy, current_depth, bias, -(pos_vs.z), cascade_index);
 }
 
-float shadowOcclusionHard(int cascade_index)
+float shadowOcclusionHard(uint cascade_index)
 {
     vec3 proj_coords = in_pos_light_clip_space[cascade_index].xyz / in_pos_light_clip_space[cascade_index].w;
     
     // transform to [0,1] range
     proj_coords = proj_coords * 0.5 + 0.5;
 
-    if (proj_coords.z > 1.0) return 1.0;
-
     // get depth of current fragment from light's perspective
     float current_depth = proj_coords.z;
+    if (current_depth > 1.0) return 1.0;
 
     // check whether current frag pos is in shadow
-    float bias = max(0.0001 * (1.0 - dot(normalize(in_normal), -u_directional_light.direction)), 0.000001);
+    float bias = max(0.001 * (1.0 - dot(normalize(in_normal), -u_directional_light.direction)), 0.00001);
 
-    float depth = texture(s_shadow_map, vec3(proj_coords.xy, cascade_index)).r;
-
-    if (depth < current_depth + bias)
-        return 0.0;
-    else
-        return 1.0;
-
-    // return texture(s_shadow_map_pcf, vec4(proj_coords.xy, current_depth - bias, cascade_index));
+    return texture(s_shadow_map_pcf, vec4(proj_coords.xy, cascade_index, current_depth - bias));
 }
 
-// TODO: do hard shadows instead of soft ones for the debugging purposes!
 void main()
 {
-    float shadow                  = 0.0;
-    vec3  cascade_debug_indicator = vec3(1.0, 0.0, 1.0);
-    float frag_depth              = in_clip_space_pos_z;//(in_clip_pos.z / in_clip_pos.w) * 0.5 + 0.5;
-    int layer = -1;
+    vec3 cascade_debug_indicator = vec3(0.0, 0.0, 0.0);
+    uint cascade_index = 0;
 
-    for (int i = 0; i < NUM_CASCADES; ++i)
+    for (uint i = 0; i < NUM_CASCADES - 1; ++i)
     {
-        if (frag_depth <= u_cascade_end_clip_space[i])
+        if (in_view_pos.z < u_cascade_splits[i])
         {
-            shadow = shadowOcclusionHard(i);
-            cascade_debug_indicator = cascade_debug_colors[i];
-            layer = i;
-            break;
+            cascade_index = i + 1;
         }
     }
 
-    frag_color = vec4(cascade_debug_indicator * shadow, 1.0);// * calcDirectionalLight(u_directional_light, normalize(in_normal), in_world_pos), 1.0);
+    float shadow_factor = 0.0;
+    if (u_hard_shadows)
+    {
+         shadow_factor = shadowOcclusionHard(cascade_index);
+    }
+    else
+    {
+         shadow_factor = shadowOcclusionSoft(cascade_index);
+    }
+
+    if (u_show_cascades) cascade_debug_indicator = cascade_debug_colors[cascade_index];
+
+    frag_color = vec4(cascade_debug_indicator + shadow_factor * calcDirectionalLight(u_directional_light, normalize(in_normal), in_world_pos), 1.0);
 } 

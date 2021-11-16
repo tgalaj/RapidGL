@@ -157,7 +157,10 @@ Including directional and punctual lights (spot and point) with square falloff a
 ### Percentage Closer Soft Shadows (PCSS)
 <img src="screenshots/24_pcss.png" width="50%" height="50%" alt="Percentage Closer Soft Shadows" />
 
-### Cascaded Shadow Mapping with PCSS
+### Cascaded Percentage Closer Soft Shadows (CPCSS)
+<img src="screenshots/25_cascaded_pcss.png" width="50%" height="50%" alt="Cascaded Percentage Closer Soft Shadows" />
+
+### Bloom
 TODO
 
 ### Clustered Shading

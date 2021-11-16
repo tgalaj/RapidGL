@@ -17,7 +17,8 @@ PCSS::PCSS()
         m_dir_shadow_map           (0),
         m_shadow_fbo               (0),
         m_dir_shadow_frustum_size  (20.0f),
-        m_dir_shadow_frustum_planes(120, 250)
+        m_dir_shadow_frustum_planes(120, 250),
+        m_light_radius_uv          (0.5f)
 {
 }
 
@@ -86,6 +87,9 @@ void PCSS::init_app()
     m_textured_models_model_matrices[2] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 2.11, -3.5)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
     m_textured_models_model_matrices[3] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 1.21,  0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
     m_textured_models_model_matrices[4] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 1.11,  3.5)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
+
+    m_scene_bbox = { glm::vec3(-15), glm::vec3(15) }; //Note: in a real-life app, the scene's bounding box should be computed!
+    UpdateLightMatrix();
 
     /* Add textures to the objects. */
     auto concrete_albedo_map    = std::make_shared<RGL::Texture2D>(); concrete_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_color.png"), true);
@@ -208,14 +212,6 @@ void PCSS::init_app()
 
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting-shadow.vert", dir + "pbr-directional-shadow.frag");
     m_directional_light_shader->link();
-
-    auto light_target = glm::vec3(0.0);
-    auto light_cam_pos = light_target - m_dir_light_properties.direction * 200.0f;
-    auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
-    auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
-    
-    m_dir_light_view            = view;
-    m_dir_light_view_projection = proj * view;
 
     glEnable(GL_CULL_FACE);  
 }
@@ -530,6 +526,24 @@ GLuint PCSS::GenerateRandomAnglesTexture3D(uint32_t size)
     return tex_id;
 }
 
+void PCSS::UpdateLightMatrix()
+{
+    glm::vec3 light_dir = m_dir_light_properties.direction;
+
+    glm::vec3 max_extents = m_scene_bbox.max;
+    glm::vec3 min_extents = m_scene_bbox.min;
+    glm::vec3 scene_center = (max_extents + min_extents) * 0.5f;
+
+    glm::mat4 light_view_matrix  = glm::lookAt(scene_center - light_dir * -min_extents.z, scene_center, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 light_ortho_matrix = glm::ortho(min_extents.x, max_extents.x, min_extents.y, max_extents.y, 0.0f, max_extents.z - min_extents.z);
+
+    m_dir_shadow_frustum_size = max_extents.x - min_extents.x;
+
+    m_dir_light_view            = light_view_matrix;
+    m_dir_light_view_projection = light_ortho_matrix * light_view_matrix;
+    m_dir_shadow_frustum_planes = glm::vec2(min_extents.z, max_extents.z);
+}
+
 void PCSS::RenderTexturedModels()
 {
     m_ambient_light_shader->bind();
@@ -581,7 +595,7 @@ void PCSS::RenderTexturedModels()
 
     m_directional_light_shader->setUniform("u_blocker_search_samples", m_blocker_search_samples);
     m_directional_light_shader->setUniform("u_pcf_samples",            m_pcf_filter_samples);
-    m_directional_light_shader->setUniform("u_light_radius_uv",        m_light_radius_uv); 
+    m_directional_light_shader->setUniform("u_light_radius_uv",        m_light_radius_uv / (m_dir_shadow_frustum_size * 2.0f));
     m_directional_light_shader->setUniform("u_light_near",             m_dir_shadow_frustum_planes.x);
     m_directional_light_shader->setUniform("u_light_far",              m_dir_shadow_frustum_planes.y);
 
@@ -661,6 +675,7 @@ void PCSS::render_gui()
         }
 
         ImGui::Spacing();
+        ImGui::Text("# General");
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
         ImGui::SliderFloat("Exposure",             &m_exposure,             0.0, 10.0, "%.1f");
@@ -689,17 +704,19 @@ void PCSS::render_gui()
         }
 
         ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::Text("# PCSS settings");
 
         {
             const char* listbox_items[] = { "25", "32", "64", "100", "128" };
             const int   sample_counts[] = { 25, 32, 64, 100, 128 };
 
-            if (ImGui::ListBox("Blocker search samples", &m_blocker_search_samples_idx, listbox_items, std::size(listbox_items), 5))
+            if (ImGui::Combo("Blocker search samples", &m_blocker_search_samples_idx, listbox_items, std::size(listbox_items)))
             {
                 m_blocker_search_samples = sample_counts[m_blocker_search_samples_idx];
             }
 
-            if (ImGui::ListBox("PCF filter samples", &m_pcf_filter_samples_idx, listbox_items, std::size(listbox_items), 5))
+            if (ImGui::Combo("PCF filter samples", &m_pcf_filter_samples_idx, listbox_items, std::size(listbox_items)))
             {
                 m_pcf_filter_samples = sample_counts[m_pcf_filter_samples_idx];
             }
@@ -723,15 +740,11 @@ void PCSS::render_gui()
                     
                     if (ImGui::SliderFloat2("Azimuth and Elevation", &m_dir_light_angles[0], -180.0, 180.0, "%.1f"))
                     {
+                        if (glm::epsilonEqual(m_dir_light_angles.y, 0.0f, 1e-5f)) m_dir_light_angles.y = 1e-5f;
+
                         m_dir_light_properties.setDirection(m_dir_light_angles.x, m_dir_light_angles.y);
                         
-                        auto light_target = glm::vec3(0.0);
-                        auto light_cam_pos = light_target - m_dir_light_properties.direction * 200.0f;
-                        auto view = glm::lookAt(light_cam_pos, light_target, glm::vec3(0, 1, 0));
-                        auto proj = glm::ortho(-m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, -m_dir_shadow_frustum_size, m_dir_shadow_frustum_size, m_dir_shadow_frustum_planes.x, m_dir_shadow_frustum_planes.y);
-
-                        m_dir_light_view = view;
-                        m_dir_light_view_projection = proj * view;
+                        UpdateLightMatrix();
                     }
                 }
                 ImGui::PopItemWidth();
