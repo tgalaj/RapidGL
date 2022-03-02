@@ -17,7 +17,12 @@ CascadedPCSS::CascadedPCSS()
         m_skybox_vbo               (0),
         m_shadow_fbo               (0),
         m_dir_shadow_maps          (0),
-        m_light_radius_uv          (0.5f)
+        m_light_radius_uv          (0.5f),
+        m_csm_frusta_vao           (0),
+        m_csm_frusta_vbo           (0),
+        m_dir_shadow_frustum_planes{},
+        m_cascade_splits           {},
+        m_random_angles_tex3d_id   (0)
 {
 }
 
@@ -579,15 +584,15 @@ void CascadedPCSS::update_csm_frusta()
         float split_dist = m_cascade_splits[i];
 
         glm::vec3 frustum_corners[8] = {
-			glm::vec3(-1.0f,  1.0f, -1.0f),
-			glm::vec3( 1.0f,  1.0f, -1.0f),
-			glm::vec3( 1.0f, -1.0f, -1.0f),
-			glm::vec3(-1.0f, -1.0f, -1.0f),
-			glm::vec3(-1.0f,  1.0f,  1.0f),
-			glm::vec3( 1.0f,  1.0f,  1.0f),
-			glm::vec3( 1.0f, -1.0f,  1.0f),
-			glm::vec3(-1.0f, -1.0f,  1.0f),
-		};
+            glm::vec3(-1.0f,  1.0f, -1.0f),
+            glm::vec3( 1.0f,  1.0f, -1.0f),
+            glm::vec3( 1.0f, -1.0f, -1.0f),
+            glm::vec3(-1.0f, -1.0f, -1.0f),
+            glm::vec3(-1.0f,  1.0f,  1.0f),
+            glm::vec3( 1.0f,  1.0f,  1.0f),
+            glm::vec3( 1.0f, -1.0f,  1.0f),
+            glm::vec3(-1.0f, -1.0f,  1.0f),
+        };
 
         // Project frustum corners into world space
         glm::mat4 inv_cam = glm::inverse(m_camera->m_projection * m_camera->m_view);
@@ -782,7 +787,7 @@ void CascadedPCSS::render()
 
         for(uint32_t i = 0; i < NUM_CASCADES; ++i)
         {
-            static uint32_t width = RGL::Window::getWidth() * 0.2;
+            static uint32_t width = RGL::Window::getWidth() * 0.4;
             glViewport(width * i, 0, width, width);
             m_visualize_shadow_map_shader->setUniform("u_layer", int(i));
             glDrawArrays(GL_TRIANGLES, 0, 3);

@@ -150,6 +150,9 @@ namespace RGL
             internal_format = is_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         }
 
+        const GLuint max_num_mipmaps = GetMaxMipMapsLevels(m_metadata.width, m_metadata.height, 0);
+                     num_mipmaps     = num_mipmaps == 0 ? max_num_mipmaps : glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
+
         glCreateTextures       (GLenum(TextureType::Texture2D), 1, &m_obj_name);
         glTextureStorage2D     (m_obj_name, num_mipmaps /* levels */, internal_format, m_metadata.width, m_metadata.height);
         glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_UNSIGNED_BYTE, data);
@@ -194,6 +197,10 @@ namespace RGL
             internal_format = is_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         }
 
+        const GLuint max_num_mipmaps = GetMaxMipMapsLevels(m_metadata.width, m_metadata.height, 0);
+                     num_mipmaps     = num_mipmaps == 0 ? max_num_mipmaps : glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
+
+
         glCreateTextures       (GLenum(TextureType::Texture2D), 1, &m_obj_name);
         glTextureStorage2D     (m_obj_name, num_mipmaps /* levels */, internal_format, m_metadata.width, m_metadata.height);
         glTextureSubImage2D    (m_obj_name, 0 /* level */, 0 /* xoffset */, 0 /* yoffset */, m_metadata.width, m_metadata.height, format, GL_UNSIGNED_BYTE, data);
@@ -209,7 +216,7 @@ namespace RGL
         return true;
     }
 
-    bool Texture2D::LoadHdr(const std::filesystem::path & filepath)
+    bool Texture2D::LoadHdr(const std::filesystem::path & filepath, uint32_t num_mipmaps)
     {
         if (filepath.extension() != ".hdr")
         {
@@ -227,6 +234,9 @@ namespace RGL
 
         GLenum format          = GL_RGB;
         GLenum internal_format = GL_RGB16F;
+
+        const GLuint max_num_mipmaps = GetMaxMipMapsLevels(m_metadata.width, m_metadata.height, 0);
+             num_mipmaps     = num_mipmaps == 0 ? max_num_mipmaps : glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
 
         glCreateTextures       (GLenum(TextureType::Texture2D), 1, &m_obj_name);
         glTextureStorage2D     (m_obj_name, 1 /* levels */, internal_format, m_metadata.width, m_metadata.height);
@@ -265,8 +275,8 @@ namespace RGL
         GLuint m_format          = m_metadata.channels == 4 ? GL_RGBA         : GL_RGB;
         GLuint m_internal_format = is_srgb                  ? GL_SRGB8_ALPHA8 : GL_RGBA8;
 
-        const GLuint max_num_mipmaps = 1 + glm::floor(glm::log2(glm::max(float(m_metadata.width), float(m_metadata.height))));
-                     num_mipmaps     = glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
+        const GLuint max_num_mipmaps = GetMaxMipMapsLevels(m_metadata.width, m_metadata.height, 0);
+                     num_mipmaps     = num_mipmaps == 0 ? max_num_mipmaps : glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
 
         glCreateTextures  (GLenum(TextureType::TextureCubeMap), 1, &m_obj_name);
         glTextureStorage2D(m_obj_name, num_mipmaps, m_internal_format, m_metadata.width, m_metadata.height);

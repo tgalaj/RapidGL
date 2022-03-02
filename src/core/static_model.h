@@ -77,6 +77,8 @@ namespace RGL
                 std::swap(m_ibo_name,   other.m_ibo_name);
                 std::swap(m_draw_mode,  other.m_draw_mode);
             }
+
+            return *this;
         }
 
         virtual void AddAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor = 0);
@@ -89,8 +91,8 @@ namespace RGL
         virtual void Render(uint32_t num_instances = 0);
 
         /* Primitives */
-        virtual void GenCone       (float    height      = 3.0f, float    radius      = 1.5f, uint32_t slices = 10, uint32_t stacks = 10);
-        virtual void GenCube       (float    radius      = 1.0f);                     
+        virtual void GenCone       (float    height      = 3.0f, float radius         = 1.5f, uint32_t slices = 10, uint32_t stacks = 10);
+        virtual void GenCube       (float    radius      = 1.0f, float texcoord_scale = 1.0f);
         virtual void GenCubeMap    (float    radius      = 1.0f);                     
         virtual void GenCylinder   (float    height      = 3.0f, float    radius      = 1.5f, uint32_t slices = 10);
         virtual void GenPlane      (float    width       = 1.0f, float    height      = 1.0f, uint32_t slices = 5, uint32_t stacks = 5);
@@ -117,7 +119,7 @@ namespace RGL
         virtual void CalcTangentSpace(VertexData& vertex_data);
         virtual void GenPrimitive(VertexData& vertex_data, bool generate_tangents = true);
 
-        virtual void Release()
+        void Release()
         {
             m_unit_scale = 1.0;
 

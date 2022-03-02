@@ -1,0 +1,98 @@
+#version 460
+
+layout(binding = 0)			 uniform sampler2D u_input_texture;
+layout(rgba32f, binding = 0) uniform writeonly image2D u_output_image;
+
+uniform vec4  u_threshold; // x -> threshold, yzw -> (threshold - knee, 2.0 * knee, 0.25 * knee)
+uniform vec2  u_texel_size;
+uniform int   u_mip_level;
+uniform bool  u_use_threshold;
+
+vec4 quadratic_threshold(vec4 color, float threshold, vec3 curve)
+{
+	// Pixel brightness
+    float br = max(color.r, max(color.g, color.b));
+
+    // Under-threshold part: quadratic curve
+    float rq = clamp(br - curve.x, 0.0, curve.y);
+    rq = curve.z * rq * rq;
+
+    // Combine and apply the brightness response curve.
+    color *= max(rq, br - threshold) / max(br, 1e-5);
+
+    return color;
+}
+
+float luma(vec3 c)
+{
+    return dot(c, vec3(0.2126729, 0.7151522, 0.0721750));
+}
+
+// [Karis2013] proposed reducing the dynamic range before averaging
+vec4 karis_avg(vec4 c)
+{
+    return c / (1.0 + luma(c.rgb));
+}
+
+#define GROUP_SIZE         8
+#define GROUP_THREAD_COUNT (GROUP_SIZE * GROUP_SIZE)
+#define FILTER_SIZE        3
+#define FILTER_RADIUS      (FILTER_SIZE / 2)
+#define TILE_SIZE          (GROUP_SIZE + 2 * FILTER_RADIUS)
+#define TILE_PIXEL_COUNT   (TILE_SIZE * TILE_SIZE)
+
+shared vec4 sm_texels[TILE_PIXEL_COUNT];
+
+layout(local_size_x = GROUP_SIZE, local_size_y = GROUP_SIZE) in;
+void main()
+{
+	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID);
+    ivec2 base_index   = ivec2(gl_WorkGroupID) * GROUP_SIZE - FILTER_RADIUS;
+
+    // The first (TILE_PIXEL_COUNT - GROUP_THREAD_COUNT) threads load at most 2 texel values
+    for (int i = int(gl_LocalInvocationIndex); i < TILE_PIXEL_COUNT; i += GROUP_THREAD_COUNT)
+    {
+        vec2 uv        = (vec2(base_index) + 0.5) * u_texel_size;
+        vec2 uv_offset = vec2(i % TILE_SIZE, i / TILE_SIZE) * u_texel_size;
+        
+        vec4 color = textureLod(u_input_texture, uv + uv_offset, u_mip_level);
+        sm_texels[i] = color;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    // Based on [Jimenez14] http://goo.gl/eomGso
+    // center texel
+    uint sm_idx = (gl_LocalInvocationID.x + FILTER_RADIUS) + (gl_LocalInvocationID.y + FILTER_RADIUS) * TILE_SIZE;
+
+    vec4 A = sm_texels[sm_idx - TILE_SIZE - 1];
+    vec4 B = sm_texels[sm_idx - TILE_SIZE    ];
+    vec4 C = sm_texels[sm_idx - TILE_SIZE + 1];
+    vec4 F = sm_texels[sm_idx - 1            ];
+    vec4 G = sm_texels[sm_idx                ];
+    vec4 H = sm_texels[sm_idx + 1            ];
+    vec4 K = sm_texels[sm_idx + TILE_SIZE - 1];
+    vec4 L = sm_texels[sm_idx + TILE_SIZE    ];
+    vec4 M = sm_texels[sm_idx + TILE_SIZE + 1];
+
+    vec4 D = (A + B + G + F) * 0.25;
+    vec4 E = (B + C + H + G) * 0.25;
+    vec4 I = (F + G + L + K) * 0.25;
+    vec4 J = (G + H + M + L) * 0.25;
+
+    vec2 div = (1.0 / 4.0) * vec2(0.5, 0.125);
+
+    vec4 c =  karis_avg((D + E + I + J) * div.x);
+         c += karis_avg((A + B + G + F) * div.y);
+         c += karis_avg((B + C + H + G) * div.y);
+         c += karis_avg((F + G + L + K) * div.y);
+         c += karis_avg((G + H + M + L) * div.y);
+
+	if (u_use_threshold)
+    {
+        c = quadratic_threshold(c, u_threshold.x, u_threshold.yzw);
+    }
+
+	imageStore(u_output_image, pixel_coords, c);
+}

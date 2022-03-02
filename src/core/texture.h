@@ -39,7 +39,7 @@ namespace RGL
     {
     public:
         TextureSampler();
-        virtual ~TextureSampler() { Release(); };
+        ~TextureSampler() { Release(); };
 
         TextureSampler(const TextureSampler&) = delete;
         TextureSampler& operator=(const TextureSampler&) = delete;
@@ -57,6 +57,8 @@ namespace RGL
                 std::swap(m_so_id, other.m_so_id);
                 std::swap(m_max_anisotropy, other.m_max_anisotropy);
             }
+
+            return *this;
         }
         
         void Create();
@@ -121,6 +123,12 @@ namespace RGL
         
         virtual ImageData GetMetadata() const { return m_metadata; };
 
+        static uint8_t GetMaxMipMapsLevels(uint32_t width, uint32_t height, uint32_t depth)
+        {
+            uint8_t num_levels = 1 + std::floor(std::log2(std::max(width, std::max(height, depth))));
+            return  num_levels;
+        }
+
     protected:
         Texture() : m_type(TextureType::NONE), m_obj_name(0) {}
 
@@ -139,15 +147,15 @@ namespace RGL
     {
     public:
         Texture2D() = default;
-        bool Load(std::string_view filepath, bool is_srgb = false, uint32_t num_mipmaps = 1);
-        bool Load(unsigned char* memory_data, uint32_t data_size, bool is_srgb = false, uint32_t num_mipmaps = 1);
-        bool LoadHdr(const std::filesystem::path& filepath);
+        bool Load(std::string_view filepath, bool is_srgb = false, uint32_t num_mipmaps = 0);
+        bool Load(unsigned char* memory_data, uint32_t data_size, bool is_srgb = false, uint32_t num_mipmaps = 0);
+        bool LoadHdr(const std::filesystem::path& filepath, uint32_t num_mipmaps = 0);
     };
 
     class TextureCubeMap : public Texture
     {
     public:
         TextureCubeMap() = default;
-        bool Load(std::string* filepaths, bool is_srgb = false, uint32_t num_mipmaps = 1);
+        bool Load(std::string* filepaths, bool is_srgb = false, uint32_t num_mipmaps = 0);
     };
 }

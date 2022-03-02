@@ -480,7 +480,7 @@ namespace RGL
         GenPrimitive(vertex_data);
     }
 
-    void StaticModel::GenCube(float radius)
+    void StaticModel::GenCube(float radius, float texcoord_scale)
     {
         VertexData vertex_data;
 
@@ -554,35 +554,35 @@ namespace RGL
 
         vertex_data.texcoords =
         {
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(1.0f, 0.0f),
+            glm::vec2(0.0f, 0.0f) * texcoord_scale,
+            glm::vec2(0.0f, 1.0f) * texcoord_scale,
+            glm::vec2(1.0f, 1.0f) * texcoord_scale,
+            glm::vec2(1.0f, 0.0f) * texcoord_scale,
                     
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(1.0f, 1.0f),
+            glm::vec2(0.0f, 1.0f) * texcoord_scale,
+            glm::vec2(0.0f, 0.0f) * texcoord_scale,
+            glm::vec2(1.0f, 0.0f) * texcoord_scale,
+            glm::vec2(1.0f, 1.0f) * texcoord_scale,
                     
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(0.0f, 0.0f),
+            glm::vec2(1.0f, 0.0f) * texcoord_scale,
+            glm::vec2(1.0f, 1.0f) * texcoord_scale,
+            glm::vec2(0.0f, 1.0f) * texcoord_scale,
+            glm::vec2(0.0f, 0.0f) * texcoord_scale,
 
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(1.0f, 0.0f),
+            glm::vec2(0.0f, 0.0f) * texcoord_scale,
+            glm::vec2(0.0f, 1.0f) * texcoord_scale,
+            glm::vec2(1.0f, 1.0f) * texcoord_scale,
+            glm::vec2(1.0f, 0.0f) * texcoord_scale,
 
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 1.0f),
+            glm::vec2(0.0f, 0.0f) * texcoord_scale,
+            glm::vec2(1.0f, 0.0f) * texcoord_scale,
+            glm::vec2(1.0f, 1.0f) * texcoord_scale,
+            glm::vec2(0.0f, 1.0f) * texcoord_scale,
 
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f)
+            glm::vec2(1.0f, 0.0f) * texcoord_scale,
+            glm::vec2(0.0f, 0.0f) * texcoord_scale,
+            glm::vec2(0.0f, 1.0f) * texcoord_scale,
+            glm::vec2(1.0f, 1.0f) * texcoord_scale
         };
 
         vertex_data.indices = 
