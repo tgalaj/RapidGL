@@ -345,7 +345,6 @@ private:
 
     float m_threshold;
     float m_knee;
-    float m_sample_scale;
     float m_bloom_intensity;
     float m_bloom_dirt_intensity;
     bool  m_bloom_enabled;

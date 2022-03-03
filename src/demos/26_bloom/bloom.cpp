@@ -16,7 +16,6 @@ Bloom::Bloom()
         m_skybox_vbo          (0),
         m_threshold           (1.5),
         m_knee                (0.1),
-        m_sample_scale        (1.0),
         m_bloom_intensity     (1.0),
         m_bloom_dirt_intensity(1.0),
         m_bloom_enabled       (true)
@@ -612,9 +611,8 @@ void Bloom::render()
             mip_size.x = glm::max(1.0, glm::floor(float(m_tmo_ps->rt->m_width)  / glm::pow(2.0, i - 1)));
             mip_size.y = glm::max(1.0, glm::floor(float(m_tmo_ps->rt->m_height) / glm::pow(2.0, i - 1)));
 
-            m_upscale_shader->setUniform("u_sample_scale", m_sample_scale);
-            m_upscale_shader->setUniform("u_texel_size",   1.0f / glm::vec2(mip_size));
-            m_upscale_shader->setUniform("u_mip_level",    i);
+            m_upscale_shader->setUniform("u_texel_size", 1.0f / glm::vec2(mip_size));
+            m_upscale_shader->setUniform("u_mip_level",  i);
 
             m_tmo_ps->rt->bindImageForReadWrite(IMAGE_UNIT_WRITE, i - 1);
 
@@ -686,7 +684,6 @@ void Bloom::render_gui()
         ImGui::Checkbox   ("Bloom enabled",        &m_bloom_enabled);
         ImGui::SliderFloat("Bloom threshold",      &m_threshold,            0.0f, 15.0f, "%.1f");
         ImGui::SliderFloat("Bloom knee",           &m_knee,                 0.0f, 1.0f,  "%.1f");
-        ImGui::SliderFloat("Bloom sample scale",   &m_sample_scale,         0.1f, 5.0f,  "%.1f");
         ImGui::SliderFloat("Bloom intensity",      &m_bloom_intensity,      0.0f, 5.0f,  "%.1f");
         ImGui::SliderFloat("Bloom dirt intensity", &m_bloom_dirt_intensity, 0.0f, 10.0f, "%.1f");
 
@@ -707,7 +704,7 @@ void Bloom::render_gui()
                             m_light_boxes[i]->m_material.m_emission = m_point_lights_properties[i].color * m_point_lights_properties[i].intensity;
                         }
 
-                        if (ImGui::SliderFloat("Light intensity", &m_point_lights_properties[i].intensity, 0.0, 10.0, "%.2f"))
+                        if (ImGui::SliderFloat("Light intensity", &m_point_lights_properties[i].intensity, 0.0, 50.0, "%.2f"))
                         {
                             m_light_boxes[i]->m_material.m_emission = m_point_lights_properties[i].color * m_point_lights_properties[i].intensity;
                         }
