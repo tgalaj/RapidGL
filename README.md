@@ -162,6 +162,7 @@ Including directional and punctual lights (spot and point) with square falloff a
 
 ### Bloom
 Bloom implementation based on Call of Duty: Advanced  Warfare [Jimenez14](http://goo.gl/eomGso). Implemented using Compute Shaders with shared memory utilization for improved performance. Full bloom pass (1920x1080) takes ~8ms on NVidia GTX 1660 Ti with Max-Q Design.
+
 <img src="screenshots/26_bloom.png" width="50%" height="50%" alt="Bloom implementation based on Call of Duty: Advanced Warfare." />
 
 ### Clustered Shading
