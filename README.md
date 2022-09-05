@@ -1,4 +1,4 @@
-[![Build Status](https://app.travis-ci.com/Shot511/RapidGL.svg?branch=master)](https://app.travis-ci.com/Shot511/RapidGL)
+[![Build Status](https://github.com/Shot511/RapidGL/actions/workflows/cpp_cmake.yml/badge.svg)](https://github.com/Shot511/RapidGL/actions)
 
 # RapidGL
 Framework for rapid OpenGL demos prototyping.
