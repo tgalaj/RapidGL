@@ -191,6 +191,8 @@ private:
             rt = std::make_shared<Texture2DRenderTarget>();
             rt->create(width, height, GL_RGBA32F);
             glTextureParameteri(rt->m_texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+            glTextureParameteri(rt->m_texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(rt->m_texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
             glCreateVertexArrays(1, &m_dummy_vao_id);
         }

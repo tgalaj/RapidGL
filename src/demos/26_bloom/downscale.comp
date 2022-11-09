@@ -8,6 +8,9 @@ uniform vec2  u_texel_size;
 uniform int   u_mip_level;
 uniform bool  u_use_threshold;
 
+const float epsilon = 1.0e-4;
+
+// Curve = (threshold - knee, knee * 2.0, knee * 0.25)
 vec4 quadratic_threshold(vec4 color, float threshold, vec3 curve)
 {
 	// Pixel brightness
@@ -18,7 +21,7 @@ vec4 quadratic_threshold(vec4 color, float threshold, vec3 curve)
     rq = curve.z * rq * rq;
 
     // Combine and apply the brightness response curve.
-    color *= max(rq, br - threshold) / max(br, 1e-5);
+    color *= max(rq, br - threshold) / max(br, epsilon);
 
     return color;
 }
