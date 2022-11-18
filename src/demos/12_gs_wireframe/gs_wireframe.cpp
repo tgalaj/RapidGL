@@ -161,7 +161,7 @@ void GSWireframe::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         static float ambient_factor = m_ambient_color.r;
         if(ImGui::SliderFloat("Ambient color", &ambient_factor, 0.0, 1.0, "%.2f"))
         {
@@ -181,7 +181,7 @@ void GSWireframe::render_gui()
         {
             if (ImGui::BeginTabItem("Directional"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3("Color", &m_dir_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity", &m_dir_light_properties.intensity, 0.0, 10.0, "%.1f");

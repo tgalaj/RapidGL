@@ -238,7 +238,7 @@ void InstancedParticlesCS::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         {
             static std::string label = "Number of particles: " + std::to_string(m_total_particles);
             ImGui::Text(label.c_str());

@@ -238,7 +238,7 @@ void OIT::render_gui()
                         "Esc    - close the app\n\n");
         }
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::Spacing();
 
         ImGui::SliderFloat("Transparency", &m_transparency, 0.0, 1.0, "%.2f");

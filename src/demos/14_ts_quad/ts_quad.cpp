@@ -175,7 +175,7 @@ void Tessellation2D::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::ColorEdit4("Quad color", &m_quad_color[0]);
         ImGui::ColorEdit4("Line color", &m_line_color[0]);
         ImGui::SliderFloat("Line width", &m_line_width, 0.0f, 10.0f, "%.1f");

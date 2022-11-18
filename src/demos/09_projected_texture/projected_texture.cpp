@@ -260,7 +260,7 @@ void ProjectedTexture::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0,  "%.2f");
         ImGui::SliderFloat("Gamma",         &m_gamma,          0.0, 10.0, "%.1f");
 
@@ -271,7 +271,7 @@ void ProjectedTexture::render_gui()
         {
             if (ImGui::BeginTabItem("Spot and Projector"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 100.0, "%.1f");

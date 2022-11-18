@@ -174,7 +174,7 @@ void TessellationLoD::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderInt  ("Min tessellation level", &m_min_tess_level, 1,    20);
         ImGui::SliderInt  ("Max tessellation level", &m_max_tess_level, 1,    20);
         ImGui::SliderFloat("Min depth",              &m_min_depth,      0.0f, 20.0f, "%.1f");
@@ -187,7 +187,7 @@ void TessellationLoD::render_gui()
         {
             if (ImGui::BeginTabItem("Directional"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Light color",        &m_dir_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",    &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");

@@ -203,7 +203,7 @@ void SimpleFog::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0,  "%.2f");
         ImGui::SliderFloat("Gamma",         &m_gamma,          0.0, 10.0, "%.1f");
 
@@ -214,7 +214,7 @@ void SimpleFog::render_gui()
         {
             if (ImGui::BeginTabItem("Fog"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     if (ImGui::BeginCombo("Fog equation", m_fog_equation_names[int(m_fog_equation)].c_str()))
                     {
@@ -266,7 +266,7 @@ void SimpleFog::render_gui()
 
             if (ImGui::BeginTabItem("Directional"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",                 &m_dir_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",       &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");

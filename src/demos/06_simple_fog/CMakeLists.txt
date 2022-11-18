@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Tomasz Gałaj
+# Copyright (C) 2022 Tomasz Gałaj
 
 set(DEMO_NAME "06_simple_fog")
 
@@ -14,7 +14,6 @@ file(GLOB_RECURSE HEADER_FILES_EXE
 
 # Define the executable
 add_executable(${DEMO_NAME} ${HEADER_FILES_EXE} ${SOURCE_FILES_EXE})
-set_property(TARGET ${DEMO_NAME} PROPERTY CXX_STANDARD 17)
 
 # Define the include DIRs
 get_target_property(CORE_LIB_INCLUDE ${CORE_LIB_NAME} INCLUDE_DIRECTORIES)

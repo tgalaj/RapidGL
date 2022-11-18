@@ -441,7 +441,7 @@ void ToonOutline::render_gui()
                         "Esc    - close the app\n\n");
         }
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
 
         ImGui::Spacing();
 

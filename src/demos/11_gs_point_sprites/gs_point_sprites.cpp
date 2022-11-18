@@ -168,7 +168,7 @@ void GSPointSprites::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderFloat("Half quad width", &m_half_quad_width, 0.1f, 1.0f, "%.1f");
         ImGui::PopItemWidth();
         ImGui::Spacing();

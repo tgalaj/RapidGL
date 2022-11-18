@@ -159,7 +159,7 @@ void VertexDisplacement::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderFloat("Amplitude", &m_amplitude, 0.0, 4.0,  "%.1f");
         ImGui::SliderFloat("Velocity",  &m_velocity,  0.0, 20.0, "%.1f");
         ImGui::SliderFloat("Frequency", &m_frequency, 0.0, 20.0, "%.1f");
@@ -171,7 +171,7 @@ void VertexDisplacement::render_gui()
         {
             if (ImGui::BeginTabItem("Directional"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Light color",        &m_dir_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",    &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");

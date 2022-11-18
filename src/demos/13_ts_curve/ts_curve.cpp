@@ -180,7 +180,7 @@ void Tessellation1D::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::ColorEdit4("Points color", &m_points_color[0]);
         ImGui::ColorEdit4("Line color",   &m_line_color[0]);
         ImGui::SliderInt("No. segments",  &m_no_segments, 1, 50);

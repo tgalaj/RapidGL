@@ -256,7 +256,7 @@ void ProceduralNoise::render_gui()
         {
             if (ImGui::BeginTabItem("Decal"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::SliderFloat("Low threshold",  &m_low_threshold,  0, 1, "%.2f");
                     ImGui::SliderFloat("High threshold", &m_high_threshold, 0, 1, "%.2f");
@@ -266,7 +266,7 @@ void ProceduralNoise::render_gui()
             }
             if (ImGui::BeginTabItem("Cloud"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3("Sky color",   &m_sky_color[0]);
                     ImGui::ColorEdit3("Cloud color", &m_cloud_color[0]);
@@ -276,7 +276,7 @@ void ProceduralNoise::render_gui()
             }
             if (ImGui::BeginTabItem("Wood grain"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3("Dark wood color",  &m_dark_wood_color[0]);
                     ImGui::ColorEdit3("Light wood color", &m_light_wood_color[0]);

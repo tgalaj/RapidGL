@@ -334,7 +334,7 @@ void SimpleParticlesSystem::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         {
             static glm::vec2 emitter_dir_angles = { 0.0, 0.0 };
             if (ImGui::SliderFloat2("Emitter azimuth and elevation", &emitter_dir_angles[0], -180.0, 180.0, "%.1f"))

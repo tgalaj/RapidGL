@@ -8,32 +8,18 @@ This framework consists of two major parts:
 * **Demos**. Source files are located in ```src/demos```.
 
 ## How to build
-Make sure to clone the repository with one of the following commands (to also clone the dependencies):
+After cloning the repository, run one of the *.bat* scripts to generate Visual Studio 2019/2022 solution:
 
-```
-git clone --recurse-submodules -j8 https://github.com/Shot511/RapidGL.git
+* **setup_vs2019.bat** - to generate VS 2019 solution.
+* **setup_vs2022.bat** - to generate VS 2022 solution.
 
-OR
-
-git clone --recurse-submodules https://github.com/Shot511/RapidGL.git
-
-OR
-
-git clone --recursive https://github.com/Shot511/RapidGL.git
-```
-
-If you've already cloned the repo run the following command in the root directory to also clone dependencies:
-
-```git submodule update --init --recursive```
-
-
-Then run the following command in the root directory to generate project files:
+Or run the following command in the root directory to generate project files with the default build system for your system:
 
 ```
 cmake -B build
 ```
 
-These will create project with your system-default build system which will allow you to build and run the examples.
+Either of these approaches will create project files in the *build* directory.
 
 ## How to add a new demo using Template Project
 

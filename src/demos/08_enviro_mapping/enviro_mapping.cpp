@@ -323,7 +323,7 @@ void EnvironmentMapping::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderFloat("Ambient color", &m_ambient_factor, 0.0, 1.0,  "%.2f");
         ImGui::SliderFloat("Gamma",         &m_gamma,          0.0, 10.0, "%.1f");
 
@@ -364,7 +364,7 @@ void EnvironmentMapping::render_gui()
         {
             if (ImGui::BeginTabItem("Directional"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",                 &m_dir_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",       &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");

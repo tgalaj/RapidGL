@@ -884,7 +884,7 @@ void PBR::render_gui()
 
         ImGui::Spacing();
 
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         ImGui::SliderFloat("Exposure",             &m_exposure,             0.0, 10.0, "%.1f");
         ImGui::SliderFloat("Gamma",                &m_gamma,                0.0, 10.0, "%.1f");
         ImGui::SliderFloat("Background LOD level", &m_background_lod_level, 0.0, glm::log2(float(m_env_cubemap_rt->m_width)), "%.1f");
@@ -935,7 +935,7 @@ void PBR::render_gui()
         {
             if (ImGui::BeginTabItem("Directional"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",                 &m_dir_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",       &m_dir_light_properties.intensity, 0.0, 10.0,  "%.1f");
@@ -952,7 +952,7 @@ void PBR::render_gui()
             {
                 if (ImGui::BeginTabItem(std::string("Point" + std::to_string(i+1)).c_str()))
                 {
-                    ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                     {
                         ImGui::ColorEdit3 ("Color",              &m_point_light_properties[i].color[0]);
                         ImGui::SliderFloat("Light intensity",    &m_point_light_properties[i].intensity, 0.0, 2000.0,  "%1.f");
@@ -966,7 +966,7 @@ void PBR::render_gui()
             }
             if (ImGui::BeginTabItem("Spot"))
             {
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.5f);
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
                 {
                     ImGui::ColorEdit3 ("Color",              &m_spot_light_properties.color[0]);
                     ImGui::SliderFloat("Light intensity",    &m_spot_light_properties.intensity, 0.0, 2000.0, "%.1f");
