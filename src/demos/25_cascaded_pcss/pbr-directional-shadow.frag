@@ -9,9 +9,9 @@ layout (location = 7) in vec4 in_pos_light_clip_space[NUM_CASCADES];
 
 uniform DirectionalLight u_directional_light;
 
-layout (binding = 8)  uniform sampler2DArray       s_shadow_map;
-layout (binding = 9)  uniform sampler2DArrayShadow s_shadow_map_pcf;
-layout (binding = 10) uniform sampler3D            s_random_angles;
+layout (binding = 9)  uniform sampler2DArray       s_shadow_map;
+layout (binding = 10) uniform sampler2DArrayShadow s_shadow_map_pcf;
+layout (binding = 11) uniform sampler3D            s_random_angles;
 
 uniform int   u_blocker_search_samples;
 uniform float u_light_radius_uv;

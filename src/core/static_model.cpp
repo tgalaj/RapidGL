@@ -12,18 +12,74 @@ namespace RGL
     void StaticModel::Render(uint32_t num_instances)
     {
         glBindVertexArray(m_vao_name);
-    
-        for (unsigned int i = 0 ; i < m_mesh_parts.size() ; i++) 
+
+        for (unsigned int i = 0; i < m_mesh_parts.size(); i++)
         {
-            if(!m_textures.empty())
+            if (!m_materials.empty())
             {
                 const unsigned int material_index = m_mesh_parts[i].m_material_index;
 
-                assert(material_index < m_textures.size());
-                
-                for(auto & pair : m_textures[material_index])
+                assert(material_index < m_materials.size());
+
+                for (auto const& [texture_type, texture] : m_materials[material_index]->m_texture_map)
                 {
-                     pair.first->Bind(pair.second);
+                    texture->Bind(uint32_t(texture_type));
+                }
+            }
+
+            if (num_instances == 0)
+            {
+                glDrawElementsBaseVertex(GLenum(m_draw_mode),
+                                         m_mesh_parts[i].m_indices_count,
+                                         GL_UNSIGNED_INT,
+                                         (void*)(sizeof(unsigned int) * m_mesh_parts[i].m_base_index),
+                                         m_mesh_parts[i].m_base_vertex);
+            }
+            else
+            {
+                glDrawElementsInstancedBaseVertex(GLenum(m_draw_mode),
+                                                  m_mesh_parts[i].m_indices_count,
+                                                  GL_UNSIGNED_INT,
+                                                  (void*)(sizeof(unsigned int) * m_mesh_parts[i].m_base_index),
+                                                  num_instances,
+                                                  m_mesh_parts[i].m_base_vertex);
+            }
+        }
+
+        glBindTextureUnit(0, 0);
+    }
+
+    void StaticModel::Render(std::shared_ptr<Shader>& shader, uint32_t num_instances)
+    {
+        glBindVertexArray(m_vao_name);
+    
+        for (unsigned int i = 0 ; i < m_mesh_parts.size() ; i++) 
+        {
+            if (!m_materials.empty())
+            {
+                const unsigned int material_index = m_mesh_parts[i].m_material_index;
+
+                assert(material_index < m_materials.size());
+
+                for (auto const& [texture_type, texture] : m_materials[material_index]->m_texture_map)
+                {
+                    texture->Bind(uint32_t(texture_type));
+                }
+
+                // Set uniforms based on the data in the material
+                for (auto& [uniform_name, value] : m_materials[material_index]->m_bool_map)
+                {
+                    shader->setUniform(uniform_name, value);
+                }
+
+                for (auto& [uniform_name, value] : m_materials[material_index]->m_float_map)
+                {
+                    shader->setUniform(uniform_name, value);
+                }
+
+                for (auto& [uniform_name, value] : m_materials[material_index]->m_vec3_map)
+                {
+                    shader->setUniform(uniform_name, value);
                 }
             }
 
@@ -49,7 +105,7 @@ namespace RGL
         glBindTextureUnit(0, 0);
     }
 
-    bool StaticModel::Load(const std::filesystem::path& filepath, bool srgb_textures)
+    bool StaticModel::Load(const std::filesystem::path& filepath)
     {
         /* Release the previously loaded mesh if it was loaded. */
         if(m_vao_name)
@@ -61,6 +117,7 @@ namespace RGL
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(filepath.generic_string(), aiProcess_Triangulate              | 
                                                                             aiProcess_GenSmoothNormals         | 
+                                                                            aiProcess_GenUVCoords              |
                                                                             aiProcess_CalcTangentSpace         |
                                                                             aiProcess_FlipUVs                  |
                                                                             aiProcess_JoinIdenticalVertices    | 
@@ -73,13 +130,18 @@ namespace RGL
             return false;
         }
 
-        return ParseScene(scene, filepath, srgb_textures);
+        return ParseScene(scene, filepath);
     }
 
-    bool StaticModel::ParseScene(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures)
+    bool StaticModel::ParseScene(const aiScene* scene, const std::filesystem::path& filepath)
     {
         m_mesh_parts.resize(scene->mNumMeshes);
-        m_textures.resize(scene->mNumMaterials);
+        m_materials.resize(scene->mNumMaterials);
+
+        for (uint32_t i = 0; i < m_materials.size(); ++i)
+        {
+            m_materials[i] = std::make_shared<Material>();
+        }
 
         VertexData vertex_data;
 
@@ -89,7 +151,7 @@ namespace RGL
         /* Count the number of vertices and indices. */
         for (uint32_t i = 0; i < m_mesh_parts.size(); ++i)
         {
-            m_mesh_parts[i].m_material_index = scene->mMeshes[i]->mMaterialIndex;
+            m_mesh_parts[i].m_material_index = scene->mNumMaterials > 0 ? scene->mMeshes[i]->mMaterialIndex : INVALID_MATERIAL;
             m_mesh_parts[i].m_indices_count  = scene->mMeshes[i]->mNumFaces * 3;
             m_mesh_parts[i].m_base_vertex    = vertices_count;
             m_mesh_parts[i].m_base_index     = indices_count;
@@ -121,7 +183,7 @@ namespace RGL
         m_unit_scale = 1.0f / glm::compMax(max - min);
 
         /* Load materials. */
-        if (!LoadMaterials(scene, filepath, srgb_textures))
+        if (!LoadMaterials(scene, filepath))
         {
             fprintf(stderr, "Assimp error while loading mesh %s\n Error: Could not load the materials.\n", filepath.generic_string());
             return false;
@@ -162,7 +224,7 @@ namespace RGL
         }
     }
 
-    bool StaticModel::LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures)
+    bool StaticModel::LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath)
     {
         // Extract the directory part from the file name
         std::string::size_type last_slash_index = filepath.generic_string().rfind("/");
@@ -181,68 +243,122 @@ namespace RGL
             dir = filepath.generic_string().substr(0, last_slash_index);
         }
 
-        /* Check if the model has embedded textures. */
-        if (scene->HasTextures())
+        bool ret = true;
+
+        for (uint32_t i = 0; i < scene->mNumMaterials; ++i)
         {
-            for (uint32_t i = 0; i < scene->mNumTextures; ++i)
+            auto pMaterial = scene->mMaterials[i];
+
+            ret |= LoadMaterialTextures(scene, pMaterial, i, aiTextureType_BASE_COLOR,        Material::TextureType::ALBEDO,    dir);
+            ret |= LoadMaterialTextures(scene, pMaterial, i, aiTextureType_NORMALS,           Material::TextureType::NORMAL,    dir);
+            ret |= LoadMaterialTextures(scene, pMaterial, i, aiTextureType_EMISSIVE,          Material::TextureType::EMISSIVE,  dir);
+            ret |= LoadMaterialTextures(scene, pMaterial, i, aiTextureType_AMBIENT_OCCLUSION, Material::TextureType::AO,        dir);
+            ret |= LoadMaterialTextures(scene, pMaterial, i, aiTextureType_DIFFUSE_ROUGHNESS, Material::TextureType::ROUGHNESS, dir);
+            ret |= LoadMaterialTextures(scene, pMaterial, i, aiTextureType_METALNESS,         Material::TextureType::METALLIC,  dir);
+
+            /* Load material parameters */
+            aiColor3D color_rgb;
+            aiColor4D color_rgba;
+            float value;
+
+            if (AI_SUCCESS == pMaterial->Get(AI_MATKEY_BASE_COLOR, color_rgba))
             {
-                uint32_t data_size = scene->mTextures[i]->mHeight > 0 ? scene->mTextures[i]->mWidth * scene->mTextures[i]->mHeight : scene->mTextures[i]->mWidth;
+                m_materials[i]->AddVector3("u_albedo", glm::vec3(color_rgba.r, color_rgba.g, color_rgba.b));
+            }
+            if (AI_SUCCESS == pMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color_rgb))
+            {
+                m_materials[i]->AddVector3("u_emission", glm::vec3(color_rgb.r, color_rgb.g, color_rgb.b));
+            }
+            if (AI_SUCCESS == pMaterial->Get(AI_MATKEY_COLOR_AMBIENT, color_rgb))
+            {
+                m_materials[i]->AddFloat("u_ao", (color_rgb.r + color_rgb.g + color_rgb.b) / 3.0f);
+            }
+            if (AI_SUCCESS == pMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, value))
+            {
+                m_materials[i]->AddFloat("u_roughness", value);
+            }
+            if (AI_SUCCESS == pMaterial->Get(AI_MATKEY_METALLIC_FACTOR, value))
+            {
+                m_materials[i]->AddFloat("u_metallic", value);
+            }
+        }
 
-                auto texture = std::make_shared<Texture2D>();
-                if (texture->Load(reinterpret_cast<unsigned char*>(scene->mTextures[i]->pcData), data_size, srgb_textures))
+        return ret;
+    }
+
+    bool StaticModel::LoadMaterialTextures(const aiScene* scene, const aiMaterial* material, uint32_t material_index, aiTextureType type, Material::TextureType texture_type, const std::string& directory) const
+    {
+        if (material->GetTextureCount(type) > 0)
+        {
+            aiString path;
+            aiTextureMapMode texture_map_mode[3];
+            
+            // Only one texture of a given type is being loaded
+            if (material->GetTexture(type, 0, &path, NULL, NULL, NULL, NULL, texture_map_mode) == AI_SUCCESS)
+            {
+                bool is_srgb = (type == aiTextureType_DIFFUSE);
+
+                std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>();
+                const aiTexture* paiTexture = scene->GetEmbeddedTexture(path.C_Str());
+
+                if (paiTexture)
                 {
-                    if(scene->mTextures[i]->achFormatHint[0] & 0x01)
+                    // Load embedded
+                    uint32_t data_size = paiTexture->mHeight > 0 ? paiTexture->mWidth * paiTexture->mHeight : paiTexture->mWidth;
+                    
+                    if (texture->Load(reinterpret_cast<unsigned char*>(paiTexture->pcData), data_size, is_srgb))
                     {
-                        texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
-                        texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
-                    }
-                    m_textures[i].push_back({ texture, 0 });
+                        printf("Loaded embedded texture for the model '%s'\n", path.C_Str());
+                        m_materials[material_index]->AddTexture(texture_type, texture);
 
-                    printf("Loaded embedded texture for the model '%s'\n", filepath.generic_string().c_str());
+                        if (texture_map_mode[0] == aiTextureMapMode_Wrap)
+                        {
+                            texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+                            texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
+                        }
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Error loading embedded texture for the model %s.\n", path.C_Str());
+                        return false;
+                    }
                 }
                 else
                 {
-                    fprintf(stderr, "Error loading embedded texture for the model %s.\n", filepath.generic_string().c_str());
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            /* If not, load the materials and textures normally. */
-            for (uint32_t i = 0; i < scene->mNumMaterials; ++i)
-            {
-                auto pMaterial = scene->mMaterials[i];
+                    // Load from file
+                    std::string p(path.data);
 
-                if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0)
-                {
-                    aiString path;
-
-                    if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
+                    if (p.substr(0, 2) == ".\\")
                     {
-                        std::string p(path.data);
+                        p = p.substr(2, p.size() - 2);
+                    }
 
-                        if (p.substr(0, 2) == ".\\")
-                        {
-                            p = p.substr(2, p.size() - 2);
-                        }
+                    std::string full_path = directory + "/" + p;
+                    if (!texture->Load(full_path, is_srgb))
+                    {
+                        fprintf(stderr, "Error loading texture %s.\n", full_path.c_str());
+                        return false;
+                    }
+                    else
+                    {
+                        printf("Loaded texture '%s'\n", full_path.c_str());
+                        m_materials[material_index]->AddTexture(texture_type, texture);
 
-                        std::string full_path = dir + "/" + p;
-
-                        auto texture = std::make_shared<Texture2D>();
-                        if (!texture->Load(full_path, srgb_textures))
+                        if (texture_map_mode[0] == aiTextureMapMode_Wrap)
                         {
-                            fprintf(stderr, "Error loading texture %s.\n", full_path.c_str());
-                            return false;
-                        }
-                        else
-                        {
-                            printf("Loaded texture '%s'\n", full_path.c_str());
-                            m_textures[i].push_back({ texture, 0 });
+                            texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
+                            texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
                         }
                     }
                 }
             }
+
+            if (texture_type == Material::TextureType::ALBEDO)    m_materials[material_index]->AddBool("u_has_albedo_map",    true);
+            if (texture_type == Material::TextureType::NORMAL)    m_materials[material_index]->AddBool("u_has_normal_map",    true);
+            if (texture_type == Material::TextureType::EMISSIVE)  m_materials[material_index]->AddBool("u_has_emissive_map",  true);
+            if (texture_type == Material::TextureType::AO)        m_materials[material_index]->AddBool("u_has_ao_map",        true);
+            if (texture_type == Material::TextureType::METALLIC)  m_materials[material_index]->AddBool("u_has_metallic_map",  true);
+            if (texture_type == Material::TextureType::ROUGHNESS) m_materials[material_index]->AddBool("u_has_roughness_map", true);
         }
 
         return true;
@@ -327,22 +443,23 @@ namespace RGL
         }
     }
 
-    void StaticModel::AddTexture(const std::shared_ptr<Texture2D>& texture, uint32_t bindingindex, uint32_t mesh_id)
+    void StaticModel::AddTexture(const std::shared_ptr<Texture2D>& texture, Material::TextureType texture_type, uint32_t mesh_id)
     {
         assert(mesh_id < m_mesh_parts.size());
 
-        /* If the mesh part doesn't have any texture assigned, add the new one. */
+        /* If the mesh part doesn't have any material assigned, add the new one. */
         if (m_mesh_parts[mesh_id].m_material_index == INVALID_MATERIAL)
         {
-            TexturesContainer container = { {texture, bindingindex} };
-            m_textures.push_back(container);
-            m_mesh_parts[mesh_id].m_material_index = m_textures.size() - 1;
+            std::shared_ptr<Material> new_material = std::make_shared<Material>();
+            new_material->AddTexture(texture_type, texture);
+
+            m_materials.push_back(new_material);
+            m_mesh_parts[mesh_id].m_material_index = m_materials.size() - 1;
         }
-        /* If mesh part had already assigned a texture, add new one. */
         else
         {
             auto material_index = m_mesh_parts[mesh_id].m_material_index;
-            m_textures[material_index].push_back({texture, bindingindex});
+            m_materials[material_index]->AddTexture(texture_type, texture);
         }
     }
 

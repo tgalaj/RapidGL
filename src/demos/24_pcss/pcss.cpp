@@ -116,35 +116,35 @@ void PCSS::init_app()
     auto granite_roughness_map = std::make_shared<RGL::Texture2D>(); granite_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_roughness.png"));
     auto granite_ao_map        = std::make_shared<RGL::Texture2D>(); granite_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_ao.png"));
 
-    m_textured_models[0].AddTexture(concrete_albedo_map,    0);
-    m_textured_models[0].AddTexture(concrete_normal_map,    1);
-    m_textured_models[0].AddTexture(concrete_metallic_map,  2);
-    m_textured_models[0].AddTexture(concrete_roughness_map, 3);
-    m_textured_models[0].AddTexture(concrete_ao_map,        4);
+    m_textured_models[0].AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[0].AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[0].AddTexture(concrete_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[0].AddTexture(concrete_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[0].AddTexture(concrete_ao_map,        RGL::Material::TextureType::AO);
 
-    m_textured_models[1].AddTexture(concrete_albedo_map,    0);
-    m_textured_models[1].AddTexture(concrete_normal_map,    1);
-    m_textured_models[1].AddTexture(concrete_metallic_map,  2);
-    m_textured_models[1].AddTexture(concrete_roughness_map, 3);
-    m_textured_models[1].AddTexture(concrete_ao_map,        4);
+    m_textured_models[1].AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[1].AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[1].AddTexture(concrete_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[1].AddTexture(concrete_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[1].AddTexture(concrete_ao_map,        RGL::Material::TextureType::AO);
 
-    m_textured_models[2].AddTexture(plastic_albedo_map,    0);
-    m_textured_models[2].AddTexture(plastic_normal_map,    1);
-    m_textured_models[2].AddTexture(plastic_metallic_map,  2);
-    m_textured_models[2].AddTexture(plastic_roughness_map, 3);
-    m_textured_models[2].AddTexture(plastic_ao_map,        4);
+    m_textured_models[2].AddTexture(plastic_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[2].AddTexture(plastic_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[2].AddTexture(plastic_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[2].AddTexture(plastic_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[2].AddTexture(plastic_ao_map,        RGL::Material::TextureType::AO);
     
-    m_textured_models[3].AddTexture(gold_albedo_map,    0);
-    m_textured_models[3].AddTexture(gold_normal_map,    1);
-    m_textured_models[3].AddTexture(gold_metallic_map,  2);
-    m_textured_models[3].AddTexture(gold_roughness_map, 3);
-    m_textured_models[3].AddTexture(gold_ao_map,        4);
+    m_textured_models[3].AddTexture(gold_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[3].AddTexture(gold_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[3].AddTexture(gold_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[3].AddTexture(gold_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[3].AddTexture(gold_ao_map,        RGL::Material::TextureType::AO);
 
-    m_textured_models[4].AddTexture(granite_albedo_map,    0);
-    m_textured_models[4].AddTexture(granite_normal_map,    1);
-    m_textured_models[4].AddTexture(granite_metallic_map,  2);
-    m_textured_models[4].AddTexture(granite_roughness_map, 3);
-    m_textured_models[4].AddTexture(granite_ao_map,        4);
+    m_textured_models[4].AddTexture(granite_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[4].AddTexture(granite_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[4].AddTexture(granite_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[4].AddTexture(granite_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[4].AddTexture(granite_ao_map,        RGL::Material::TextureType::AO);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -553,13 +553,14 @@ void PCSS::RenderTexturedModels()
     m_ambient_light_shader->setUniform("u_has_metallic_map",  true);
     m_ambient_light_shader->setUniform("u_has_roughness_map", true);
     m_ambient_light_shader->setUniform("u_has_ao_map",        true);
+    m_ambient_light_shader->setUniform("u_has_emissive_map",  false);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
     {
@@ -599,11 +600,11 @@ void PCSS::RenderTexturedModels()
     m_directional_light_shader->setUniform("u_light_near",             m_dir_shadow_frustum_planes.x);
     m_directional_light_shader->setUniform("u_light_far",              m_dir_shadow_frustum_planes.y);
 
-    m_shadow_map_pcf_sampler.Bind(9);
+    m_shadow_map_pcf_sampler.Bind(10);
 
-    glBindTextureUnit(8, m_dir_shadow_map);
-    glBindTextureUnit(9, m_dir_shadow_map); 
-    glBindTextureUnit(10, m_random_angles_tex3d_id);
+    glBindTextureUnit(9, m_dir_shadow_map);
+    glBindTextureUnit(10, m_dir_shadow_map); 
+    glBindTextureUnit(11, m_random_angles_tex3d_id);
    
     for (unsigned i = 0; i < std::size(m_textured_models_model_matrices); ++i)
     {

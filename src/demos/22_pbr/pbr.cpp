@@ -138,43 +138,45 @@ void PBR::init_app()
     auto granite_roughness_map = std::make_shared<RGL::Texture2D>(); granite_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_roughness.png"));
     auto granite_ao_map        = std::make_shared<RGL::Texture2D>(); granite_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_ao.png"));
 
-    m_textured_models[0].AddTexture(concrete_albedo_map,    0);
-    m_textured_models[0].AddTexture(concrete_normal_map,    1);
-    m_textured_models[0].AddTexture(concrete_metallic_map,  2);
-    m_textured_models[0].AddTexture(concrete_roughness_map, 3);
-    m_textured_models[0].AddTexture(concrete_ao_map,        4);
+    m_textured_models[0].AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[0].AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[0].AddTexture(concrete_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[0].AddTexture(concrete_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[0].AddTexture(concrete_ao_map,        RGL::Material::TextureType::AO);
 
-    m_textured_models[1].AddTexture(concrete_albedo_map,    0);
-    m_textured_models[1].AddTexture(concrete_normal_map,    1);
-    m_textured_models[1].AddTexture(concrete_metallic_map,  2);
-    m_textured_models[1].AddTexture(concrete_roughness_map, 3);
-    m_textured_models[1].AddTexture(concrete_ao_map,        4);
+    m_textured_models[1].AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[1].AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[1].AddTexture(concrete_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[1].AddTexture(concrete_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[1].AddTexture(concrete_ao_map,        RGL::Material::TextureType::AO);
 
-    m_textured_models[2].AddTexture(plastic_albedo_map,    0);
-    m_textured_models[2].AddTexture(plastic_normal_map,    1);
-    m_textured_models[2].AddTexture(plastic_metallic_map,  2);
-    m_textured_models[2].AddTexture(plastic_roughness_map, 3);
-    m_textured_models[2].AddTexture(plastic_ao_map,        4);
+    m_textured_models[2].AddTexture(plastic_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[2].AddTexture(plastic_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[2].AddTexture(plastic_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[2].AddTexture(plastic_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[2].AddTexture(plastic_ao_map,        RGL::Material::TextureType::AO);
     
-    m_textured_models[3].AddTexture(gold_albedo_map,    0);
-    m_textured_models[3].AddTexture(gold_normal_map,    1);
-    m_textured_models[3].AddTexture(gold_metallic_map,  2);
-    m_textured_models[3].AddTexture(gold_roughness_map, 3);
-    m_textured_models[3].AddTexture(gold_ao_map,        4);
+    m_textured_models[3].AddTexture(gold_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[3].AddTexture(gold_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[3].AddTexture(gold_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[3].AddTexture(gold_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[3].AddTexture(gold_ao_map,        RGL::Material::TextureType::AO);
 
-    m_textured_models[4].AddTexture(granite_albedo_map,    0);
-    m_textured_models[4].AddTexture(granite_normal_map,    1);
-    m_textured_models[4].AddTexture(granite_metallic_map,  2);
-    m_textured_models[4].AddTexture(granite_roughness_map, 3);
-    m_textured_models[4].AddTexture(granite_ao_map,        4);
+    m_textured_models[4].AddTexture(granite_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_textured_models[4].AddTexture(granite_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_textured_models[4].AddTexture(granite_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_textured_models[4].AddTexture(granite_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_textured_models[4].AddTexture(granite_ao_map,        RGL::Material::TextureType::AO);
 
+    auto cerberus_albedo_map    = std::make_shared<RGL::Texture2D>(); cerberus_albedo_map   ->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_A.tga"));
     auto cerberus_normal_map    = std::make_shared<RGL::Texture2D>(); cerberus_normal_map   ->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_N.tga"));
     auto cerberus_metallic_map  = std::make_shared<RGL::Texture2D>(); cerberus_metallic_map ->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_M.tga"));
     auto cerberus_roughness_map = std::make_shared<RGL::Texture2D>(); cerberus_roughness_map->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_R.tga"));
 
-    m_cerberus_model.AddTexture(cerberus_normal_map,    1);
-    m_cerberus_model.AddTexture(cerberus_metallic_map,  2);
-    m_cerberus_model.AddTexture(cerberus_roughness_map, 3);
+    m_cerberus_model.AddTexture(cerberus_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_cerberus_model.AddTexture(cerberus_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_cerberus_model.AddTexture(cerberus_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_cerberus_model.AddTexture(cerberus_roughness_map, RGL::Material::TextureType::ROUGHNESS);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -476,13 +478,14 @@ void PBR::RenderSpheres()
     m_ambient_light_shader->setUniform("u_has_metallic_map",  false);
     m_ambient_light_shader->setUniform("u_has_roughness_map", false);
     m_ambient_light_shader->setUniform("u_has_ao_map",        false);
+    m_ambient_light_shader->setUniform("u_has_emissive_map",  false);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     for (unsigned row = 0; row < 7; ++row)
     {
@@ -618,13 +621,14 @@ void PBR::RenderTexturedModels()
     m_ambient_light_shader->setUniform("u_has_metallic_map",  true);
     m_ambient_light_shader->setUniform("u_has_roughness_map", true);
     m_ambient_light_shader->setUniform("u_has_ao_map",        true);
+    m_ambient_light_shader->setUniform("u_has_emissive_map",  false);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     for (uint32_t i = 0; i < std::size(m_textured_models_model_matrices); ++i)
     {
@@ -732,13 +736,14 @@ void PBR::RenderCerberusPistol()
     m_ambient_light_shader->setUniform("u_has_metallic_map",  true);
     m_ambient_light_shader->setUniform("u_has_roughness_map", true);
     m_ambient_light_shader->setUniform("u_has_ao_map",        false);
+    m_ambient_light_shader->setUniform("u_has_emissive_map",  false);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     m_ambient_light_shader->setUniform("u_model",         m_cerberus_model_matrix);
     m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_cerberus_model_matrix))));

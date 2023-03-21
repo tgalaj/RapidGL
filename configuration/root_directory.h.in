@@ -1,1 +1,2 @@
-static const char * rapidgl_root = "${CMAKE_SOURCE_DIR}/resources";
+#pragma once
+#define RAPIDGL_ROOT "${CMAKE_SOURCE_DIR}/resources"

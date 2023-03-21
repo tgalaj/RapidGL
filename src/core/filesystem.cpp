@@ -23,11 +23,9 @@ namespace RGL
         fs::create_directories(directory_name);
     }
 
-    const std::string& FileSystem::getRoot()
+    const std::string FileSystem::getRoot()
     {
-        static std::string root = (rapidgl_root != nullptr ? rapidgl_root : "");
-
-        return root;
+        return std::string(RAPIDGL_ROOT);
     }
 
     std::string FileSystem::getPathRelativeRoot(const std::string& path)

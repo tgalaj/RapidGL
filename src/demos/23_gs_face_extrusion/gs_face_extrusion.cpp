@@ -353,7 +353,6 @@ void GSFaceExtrusion::render()
     /* Put render specific code here. Don't update variables here! */
     m_tmo_ps->bindFilterFBO();
 
-    //glEnable(GL_CULL_FACE);
     m_ambient_light_shader->bind();
     m_ambient_light_shader->setUniform("u_cam_pos", m_camera->position());
 
@@ -362,6 +361,7 @@ void GSFaceExtrusion::render()
     m_ambient_light_shader->setUniform("u_has_metallic_map",  false);
     m_ambient_light_shader->setUniform("u_has_roughness_map", false);
     m_ambient_light_shader->setUniform("u_has_ao_map",        false);
+    m_ambient_light_shader->setUniform("u_has_emissive_map",  false);
 
     m_ambient_light_shader->setUniform("u_albedo",    m_albedo);
     m_ambient_light_shader->setUniform("u_roughness", m_roughness);
@@ -374,9 +374,9 @@ void GSFaceExtrusion::render()
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     m_ambient_light_shader->setUniform("u_model",           m_static_model_transform);
     m_ambient_light_shader->setUniform("u_normal_matrix",   glm::mat3(glm::transpose(glm::inverse(m_static_model_transform))));

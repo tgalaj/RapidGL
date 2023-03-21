@@ -9,8 +9,8 @@
 MeshSkinning::MeshSkinning()
     : m_skinning_method        (SkinningMethod::LBS),
       m_current_animation_index(0),
-      m_animation_speed        (40.0f),
-      m_gamma                  (0.4f)
+      m_animation_speed        (1.0f),
+      m_gamma                  (0.2f)
 {
 }
 

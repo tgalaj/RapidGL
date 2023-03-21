@@ -188,11 +188,8 @@ namespace RGL
             m_uniforms_locations[uniform_name] = uniform_location;
             return true;
         }
-        else
-        {
-            fprintf(stderr, "Error! Can't find uniform %s\n", uniform_name.c_str());
-            return false;
-        }
+
+        return false;
     }
 
     void Shader::setUniform(const std::string & uniformName, float value)

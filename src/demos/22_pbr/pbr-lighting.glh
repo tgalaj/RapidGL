@@ -7,21 +7,23 @@ layout (location = 0) in vec2 in_texcoord;
 layout (location = 1) in vec3 in_world_pos;
 layout (location = 2) in vec3 in_normal;
 
-layout (binding = 5) uniform samplerCube u_irradiance_map;
-layout (binding = 6) uniform samplerCube u_prefiltered_map;
-layout (binding = 7) uniform sampler2D   u_brdf_lut;
-
 layout(binding = 0) uniform sampler2D u_albedo_map;
 layout(binding = 1) uniform sampler2D u_normal_map;
 layout(binding = 2) uniform sampler2D u_metallic_map;
 layout(binding = 3) uniform sampler2D u_roughness_map;
 layout(binding = 4) uniform sampler2D u_ao_map;
+layout(binding = 5) uniform sampler2D u_emissive_map;
+
+layout (binding = 6) uniform samplerCube u_irradiance_map;
+layout (binding = 7) uniform samplerCube u_prefiltered_map;
+layout (binding = 8) uniform sampler2D   u_brdf_lut;
 
 uniform bool u_has_albedo_map;
 uniform bool u_has_normal_map;
 uniform bool u_has_metallic_map;
 uniform bool u_has_roughness_map;
 uniform bool u_has_ao_map;
+uniform bool u_has_emissive_map;
 
 uniform vec3  u_cam_pos;
 
@@ -29,7 +31,7 @@ uniform vec3  u_albedo;
 uniform float u_metallic;
 uniform float u_roughness;
 uniform float u_ao;
-uniform vec3 u_emission = vec3(0.0);
+uniform vec3  u_emission;
 
 struct BaseLight
 {
@@ -123,11 +125,17 @@ float geometrySmith(vec3 n, vec3 wo, vec3 wi, float roughness)
 
 vec3 indirectLightingDiffuse(vec3 normal, vec3 world_pos)
 {
-    vec3  albedo    = u_has_albedo_map    ? texture(u_albedo_map, in_texcoord).rgb  : u_albedo;
-    float metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).r  : u_metallic;
-    float roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).r : u_roughness;
-    float ao        = u_has_ao_map        ? texture(u_ao_map, in_texcoord).r        : u_ao;
-          normal    = u_has_normal_map    ? getNormalFromMap()                      : normal;
+	vec4 albedo_opacity = texture(u_albedo_map, in_texcoord);
+
+	if (albedo_opacity.a < 0.5)
+	    discard;
+
+    vec3  albedo    = u_has_albedo_map    ? albedo_opacity.rgb                       : u_albedo;
+    float metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).b   : u_metallic;
+    float roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).g  : u_roughness;
+    float ao        = u_has_ao_map        ? texture(u_ao_map, in_texcoord).r         : u_ao;
+          normal    = u_has_normal_map    ? getNormalFromMap()                       : normal;
+	vec3 emission   = u_has_emissive_map  ? texture(u_emissive_map, in_texcoord).rgb : u_emission;
 
     vec3 wo = normalize(u_cam_pos - world_pos);
     vec3 r  = reflect(-wo, normal);
@@ -151,15 +159,15 @@ vec3 indirectLightingDiffuse(vec3 normal, vec3 world_pos)
     vec3 specular           =  prefiletered_color * (F * brdf.x + brdf.y);
 
     // total indirect lighting
-    return (kd * diffuse + specular) * ao + u_emission;
+    return (kd * diffuse + specular) * ao + emission;
 }
 
 vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
 {
-    vec3  albedo    = u_has_albedo_map    ? texture(u_albedo_map, in_texcoord).rgb  : u_albedo;
-    float metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).r  : u_metallic;
-    float roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).r : u_roughness;
-          normal    = u_has_normal_map    ? getNormalFromMap()                      : normal;
+    vec3  albedo    = u_has_albedo_map    ? texture(u_albedo_map, in_texcoord).rgb   : u_albedo;
+    float metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).b   : u_metallic;
+    float roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).g  : u_roughness;
+          normal    = u_has_normal_map    ? getNormalFromMap()                       : normal;
 
     vec3 wo          = normalize(u_cam_pos - world_pos);
     vec3 wi          = normalize(direction);

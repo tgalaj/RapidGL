@@ -6,9 +6,9 @@ layout (location = 4) in vec4 in_pos_light_view_space;
 
 uniform DirectionalLight u_directional_light;
 
-layout (binding = 8)  uniform sampler2D       s_shadow_map;
-layout (binding = 9)  uniform sampler2DShadow s_shadow_map_pcf;
-layout (binding = 10) uniform sampler3D       s_random_angles;
+layout (binding = 9)   uniform sampler2D       s_shadow_map;
+layout (binding = 10)  uniform sampler2DShadow s_shadow_map_pcf;
+layout (binding = 11)  uniform sampler3D       s_random_angles;
 
 uniform vec3 u_offset_tex_size;
 uniform float u_radius;

@@ -204,9 +204,9 @@ void EnvironmentMapping::update(double delta_time)
 
     for (int i = 3; i < m_objects_model_matrices.size(); ++i)
     {
-        auto translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f));
+        auto translate     = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f));
         auto inv_translate = glm::inverse(translate);
-        auto transform = translate * glm::rotate(glm::mat4(1.0f), rotation_angle * m_random_spheres_rotation_speeds[i - 3], glm::vec3(0.0, 1.0, 0.0)) * inv_translate;
+        auto transform     = translate * glm::rotate(glm::mat4(1.0f), rotation_angle * m_random_spheres_rotation_speeds[i - 3], glm::vec3(0.0, 1.0, 0.0)) * inv_translate;
 
         m_objects_model_matrices[i] = transform * glm::translate(glm::mat4(1.0f), m_spheres_positions[i - 3]);
     }

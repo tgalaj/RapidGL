@@ -274,7 +274,7 @@ namespace RGL
         }
     }
 
-    bool AnimatedModel::Load(const std::filesystem::path& filepath, bool srgb_textures)
+    bool AnimatedModel::Load(const std::filesystem::path& filepath)
     {
         /* Release the previously loaded mesh if it was loaded. */
         if(m_vao_name)
@@ -301,7 +301,7 @@ namespace RGL
         m_global_inverse_transform = glm::inverse(m_global_inverse_transform);
         m_animations_count         = m_assimp_scene->mNumAnimations;
 
-        return ParseScene(m_assimp_scene, filepath, srgb_textures);
+        return ParseScene(m_assimp_scene, filepath);
     }
 
     std::vector<std::string> AnimatedModel::GetAnimationsNames() const
@@ -317,10 +317,15 @@ namespace RGL
         return animations_names;
     }
 
-    bool AnimatedModel::ParseScene(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures)
+    bool AnimatedModel::ParseScene(const aiScene* scene, const std::filesystem::path& filepath)
     {
         m_mesh_parts.resize(scene->mNumMeshes);
-        m_textures.resize(scene->mNumMaterials);
+        m_materials.resize(scene->mNumMaterials);
+
+        for (uint32_t i = 0; i < m_materials.size(); ++i)
+        {
+            m_materials[i] = std::make_shared<Material>();
+        }
 
         VertexData vertex_data;
         std::vector<VertexBoneData> bones_data;
@@ -364,7 +369,7 @@ namespace RGL
         m_unit_scale = 1.0f / glm::compMax(max - min);
 
         /* Load materials. */
-        if (!LoadMaterials(scene, filepath, srgb_textures))
+        if (!LoadMaterials(scene, filepath))
         {
             fprintf(stderr, "Assimp error while loading mesh %s\n Error: Could not load the materials.\n", filepath.generic_string());
             return false;

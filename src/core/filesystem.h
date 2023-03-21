@@ -15,7 +15,7 @@ namespace RGL
         static void createDirectory(const std::string& directory_name);
 
     private:
-        static const std::string& getRoot();
+        static const std::string getRoot();
         static std::string getPathRelativeRoot(const std::string& path);
     };
 }

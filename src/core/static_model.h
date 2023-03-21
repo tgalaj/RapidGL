@@ -11,7 +11,8 @@
 #include <assimp/scene.h>
 
 #include "mesh_part.h"
-#include "texture.h"
+#include "material.h"
+#include "shader.h"
 
 namespace RGL
 {
@@ -49,7 +50,7 @@ namespace RGL
 
         StaticModel(StaticModel&& other) noexcept
             : m_mesh_parts(std::move(other.m_mesh_parts)),
-              m_textures  (std::move(other.m_textures)),
+              m_materials  (std::move(other.m_materials)),
               m_unit_scale(other.m_unit_scale),
               m_vao_name  (other.m_vao_name),
               m_vbo_name  (other.m_vbo_name),
@@ -70,7 +71,7 @@ namespace RGL
                 Release();
 
                 std::swap(m_mesh_parts, other.m_mesh_parts);
-                std::swap(m_textures,   other.m_textures);
+                std::swap(m_materials,  other.m_materials);
                 std::swap(m_unit_scale, other.m_unit_scale);
                 std::swap(m_vao_name,   other.m_vao_name);
                 std::swap(m_vbo_name,   other.m_vbo_name);
@@ -82,13 +83,14 @@ namespace RGL
         }
 
         virtual void AddAttributeBuffer(GLuint attrib_index, GLuint binding_index, GLint format_size, GLenum data_type, GLuint buffer_id, GLsizei stride, GLuint divisor = 0);
-        virtual void AddTexture(const std::shared_ptr<Texture2D> & texture, uint32_t bindingindex = 0, uint32_t mesh_id = 0);
+        virtual void AddTexture(const std::shared_ptr<Texture2D> & texture, Material::TextureType texture_type = Material::TextureType::ALBEDO, uint32_t mesh_id = 0);
         
         virtual void SetDrawMode(DrawMode mode) { m_draw_mode = mode; }
         virtual float GetUnitScaleFactor() const { return m_unit_scale; }
 
-        virtual bool Load(const std::filesystem::path& filepath, bool srgb_textures = true);
+        virtual bool Load(const std::filesystem::path& filepath);
         virtual void Render(uint32_t num_instances = 0);
+        virtual void Render(std::shared_ptr<Shader> & shader, uint32_t num_instances = 0);
 
         /* Primitives */
         virtual void GenCone       (float    height      = 3.0f, float radius         = 1.5f, uint32_t slices = 10, uint32_t stacks = 10);
@@ -111,9 +113,10 @@ namespace RGL
         static inline glm::mat4 mat4_cast(const aiMatrix4x4& m)  { return glm::transpose(glm::make_mat4(&m.a1)); }
         static inline glm::mat4 mat4_cast(const aiMatrix3x3& m)  { return glm::transpose(glm::make_mat3(&m.a1)); }
 
-        virtual bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures);
+        virtual bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath);
         virtual void LoadMeshPart(const aiMesh* mesh, VertexData& vertex_data);
-        virtual bool LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures);
+        virtual bool LoadMaterials(const aiScene* scene, const std::filesystem::path& filepath);
+        virtual bool LoadMaterialTextures(const aiScene* scene, const aiMaterial* material, uint32_t material_index, aiTextureType type, Material::TextureType texture_type, const std::string& directory) const;
         virtual void CreateBuffers(VertexData& vertex_data);
 
         virtual void CalcTangentSpace(VertexData& vertex_data);
@@ -135,13 +138,11 @@ namespace RGL
             m_draw_mode = DrawMode::TRIANGLES;
 
             m_mesh_parts.clear();
-            m_textures.clear();
+            m_materials.clear();
         }
 
-        using TexturesContainer = std::vector<std::pair<std::shared_ptr<Texture2D>, uint32_t>>;
-
         std::vector<MeshPart> m_mesh_parts;
-        std::vector<TexturesContainer> m_textures;
+        std::vector<std::shared_ptr<Material>> m_materials;
 
         float    m_unit_scale;
         GLuint   m_vao_name;

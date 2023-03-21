@@ -1,6 +1,3 @@
-#include <iostream>
-#include <memory>
-
 #include "template_project.h"
 
 using namespace RGL;

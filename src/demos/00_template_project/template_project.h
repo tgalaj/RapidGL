@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+
 #include "core_app.h"
 
 /** ## Documentation - Creating new project with template_project

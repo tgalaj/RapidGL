@@ -27,7 +27,7 @@ namespace RGL
         /* Used for Dual Quaternion Blend Skinning */
         void BoneTransform(float dt, std::vector<glm::mat2x4>& transforms);
 
-        bool Load(const std::filesystem::path& filepath, bool srgb_textures = true) override;
+        bool Load(const std::filesystem::path& filepath) override;
 
         std::vector<std::string> GetAnimationsNames() const;
         uint32_t                 GetAnimationsCount() const { return m_animations_count; }
@@ -117,7 +117,7 @@ namespace RGL
         virtual void ReadNodeHierarchy(float animation_time, const aiNode* node, const glm::mat4& parent_transform);
 
         virtual void LoadBones(uint32_t mesh_index, const aiMesh* mesh, std::vector<VertexBoneData>& bones);
-        virtual bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath, bool srgb_textures) override;
+        virtual bool ParseScene(const aiScene* scene, const std::filesystem::path& filepath) override;
 
         virtual void LoadMeshPart(uint32_t mesh_index, const aiMesh* mesh, VertexData& vertex_data, std::vector<VertexBoneData>& bones_data);
         virtual void CreateBuffers(VertexData& vertex_data, std::vector<VertexBoneData>& bones_data);

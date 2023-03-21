@@ -95,8 +95,9 @@ private:
     float m_grass_slope_threshold;
     float m_slope_rock_threshold;
 
-    std::vector<std::string> m_terrain_textures_filenames;
-    std::vector<std::string> m_terrain_heightmaps_filenames;
+    std::vector<std::string>                     m_terrain_textures_filenames;
+    std::vector<std::string>                     m_terrain_heightmaps_filenames;
+    std::vector<std::shared_ptr<RGL::Texture2D>> m_terrain_textures;
 
     std::shared_ptr<RGL::Shader> m_terrain_ambient_light_shader;
     std::shared_ptr<RGL::Shader> m_terrain_directional_light_shader;

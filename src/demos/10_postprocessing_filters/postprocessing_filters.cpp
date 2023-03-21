@@ -150,7 +150,6 @@ void PostprocessingFilters::render()
     /* First, render the ambient color only for the opaque objects. */
     for (unsigned i = 0; i < m_objects.size(); ++i)
     {
-        //m_ambient_light_shader->setUniform("model", m_objects_model_matrices[i]);
         m_ambient_light_shader->setUniform("mvp", view_projection * m_objects_model_matrices[i]);
 
         m_objects[i]->Render();

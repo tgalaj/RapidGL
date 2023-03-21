@@ -109,17 +109,17 @@ void CascadedPCSS::init_app()
     auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_roughness.png"));
     auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_ao.png"));
 
-    m_plane_model.AddTexture(concrete_albedo_map,    0);
-    m_plane_model.AddTexture(concrete_normal_map,    1);
-    m_plane_model.AddTexture(concrete_metallic_map,  2);
-    m_plane_model.AddTexture(concrete_roughness_map, 3);
-    m_plane_model.AddTexture(concrete_ao_map,        4);
+    m_plane_model.AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    m_plane_model.AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
+    m_plane_model.AddTexture(concrete_metallic_map,  RGL::Material::TextureType::METALLIC);
+    m_plane_model.AddTexture(concrete_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    m_plane_model.AddTexture(concrete_ao_map,        RGL::Material::TextureType::AO);
 
     auto hk_albedo_map = std::make_shared<RGL::Texture2D>(); hk_albedo_map->Load(RGL::FileSystem::getPath("models/hk/albedo.png"), true);
     auto hk_normal_map = std::make_shared<RGL::Texture2D>(); hk_normal_map->Load(RGL::FileSystem::getPath("models/hk/normal.png"));
 
-    m_hk_model.AddTexture(hk_albedo_map, 0);
-    m_hk_model.AddTexture(hk_normal_map, 1);
+    m_hk_model.AddTexture(hk_albedo_map, RGL::Material::TextureType::ALBEDO);
+    m_hk_model.AddTexture(hk_normal_map, RGL::Material::TextureType::NORMAL);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -673,13 +673,14 @@ void CascadedPCSS::RenderTexturedModels()
     m_ambient_light_shader->setUniform("u_has_metallic_map",  true);
     m_ambient_light_shader->setUniform("u_has_roughness_map", true);
     m_ambient_light_shader->setUniform("u_has_ao_map",        true);
+    m_ambient_light_shader->setUniform("u_has_emissive_map",  false);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     for (uint32_t i = 0; i < m_models_with_model_matrices.size(); ++i)
     {
@@ -727,11 +728,11 @@ void CascadedPCSS::RenderTexturedModels()
     m_directional_light_shader->setUniform("u_show_cascades",          m_show_cascades);
     m_directional_light_shader->setUniform("u_hard_shadows",           m_hard_shadows);
 
-    glBindTextureUnit(8, m_dir_shadow_maps);
     glBindTextureUnit(9, m_dir_shadow_maps);
-    m_shadow_map_pcf_sampler.Bind(9); // Bind PCF shadow sampler
+    glBindTextureUnit(10, m_dir_shadow_maps);
+    m_shadow_map_pcf_sampler.Bind(10); // Bind PCF shadow sampler
 
-    glBindTextureUnit(10, m_random_angles_tex3d_id);
+    glBindTextureUnit(11, m_random_angles_tex3d_id);
 
     for (uint32_t i = 0; i < m_models_with_model_matrices.size(); ++i)
     {

@@ -1,7 +1,7 @@
 #include "template_project.h"
 #include "filesystem.h"
-#include "input.h"
 #include "gui/gui.h"
+#include "input.h"
 
 TemplateProject::TemplateProject()
 {

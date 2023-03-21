@@ -108,7 +108,6 @@ void Terrain::init_app()
     m_terrain_textures_filenames   = { "grass_green_d.jpg", "ground_mud2_d.jpg", "grass_flowers.png", "path.png", "blendmap.png", "mntn_white_d.jpg", "grass_rocky_d.jpg" };
     m_terrain_heightmaps_filenames = { "heightmap.png",  "heightmap1.png", "heightmap2.png", "heightmap3.png", "heightmap_test.png"};
 
-    uint32_t bindingindex = 0;
     for (auto& tf : m_terrain_textures_filenames)
     {
         std::string path = RGL::FileSystem::getPath("textures/" + tf);
@@ -119,7 +118,7 @@ void Terrain::init_app()
         texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
         texture->SetAnisotropy(16.0);
 
-        m_terrain_model->AddTexture(texture, bindingindex++);
+        m_terrain_textures.push_back(texture);
     }
 
     /* Create the shaders... */
@@ -339,6 +338,11 @@ void Terrain::render_terrain(const glm::mat4& view_projection)
     auto terrain_normal_matrix = glm::transpose(glm::inverse(glm::mat3(m_terrain_model_matrix)));
     auto mvp                   = view_projection * m_terrain_model_matrix;
 
+    for (uint32_t i = 0; i < m_terrain_textures.size(); ++i)
+    {
+        m_terrain_textures[i]->Bind(i);
+    }
+
     /* Render directional light(s) */
     m_terrain_directional_light_shader->bind();
 
@@ -499,7 +503,8 @@ void Terrain::render_gui()
                         m_terrain_position     = glm::vec3(m_terrain_size / 2.0, 0.0, m_terrain_size / 2.0);
                         m_terrain_model_matrix = glm::translate(glm::mat4(1.0), m_terrain_position);
 
-                        uint32_t bindingindex = 0;
+                        m_terrain_textures.clear();
+
                         for (auto& tf : m_terrain_textures_filenames)
                         {
                             std::string path = RGL::FileSystem::getPath("textures/" + tf);
@@ -510,7 +515,7 @@ void Terrain::render_gui()
                             texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
                             texture->SetAnisotropy(16.0);
 
-                            m_terrain_model->AddTexture(texture, bindingindex++);
+                            m_terrain_textures.push_back(texture);
 
                             /* Update other models' matrices */
                             m_objects_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.3));                            //teapot

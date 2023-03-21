@@ -81,7 +81,7 @@ namespace RGL
     {
         int width, height, channels_in_file;
         unsigned char* data = stbi_load_from_memory(memory_data, data_size, &width, &height, &channels_in_file, desired_number_of_channels);
-
+        
         if (data)
         {
             image_data.width    = width;

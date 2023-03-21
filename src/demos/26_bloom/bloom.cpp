@@ -98,9 +98,9 @@ void Bloom::init_app()
     box_model->GenCube(1.0f);
 
     auto crate_model_scale = glm::scale(glm::mat4(1.0f), glm::vec3(crate_model->GetUnitScaleFactor()));
-    auto crate_scale_factor = 2.0f*crate_model->GetUnitScaleFactor();
+    auto crate_scale_factor = 2.0f * crate_model->GetUnitScaleFactor();
 
-    /* Create world transform for the plane. */
+    /* Create world transform for  the plane. */
     m_static_objects.reserve(15); // Reserving enough space, to keep track of the Static Objects' references
 
     glm::mat4 world_trans = glm::mat4(1.0f);
@@ -156,7 +156,7 @@ void Bloom::init_app()
     }
 
     /* Add textures to the objects. */
-    auto old_crate_albedo_map    = std::make_shared<RGL::Texture2D>(); old_crate_albedo_map   ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Diff.png"));
+    auto old_crate_albedo_map    = std::make_shared<RGL::Texture2D>(); old_crate_albedo_map   ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Diff.png"), true);
     auto old_crate_normal_map    = std::make_shared<RGL::Texture2D>(); old_crate_normal_map   ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_NORMAL.png"));
     auto old_crate_metallic_map  = std::make_shared<RGL::Texture2D>(); old_crate_metallic_map ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Texture_METAL.png"));
     auto old_crate_roughness_map = std::make_shared<RGL::Texture2D>(); old_crate_roughness_map->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Texture_ROUGH.png"));
@@ -176,15 +176,15 @@ void Bloom::init_app()
     wooden_floor_roughness_map->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT); wooden_floor_roughness_map->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
     wooden_floor_ao_map       ->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT); wooden_floor_ao_map       ->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
 
-    crate_model->AddTexture(old_crate_albedo_map,    0);
-    crate_model->AddTexture(old_crate_normal_map,    1);
-    crate_model->AddTexture(old_crate_metallic_map,  2);
-    crate_model->AddTexture(old_crate_roughness_map, 3);
+    crate_model->AddTexture(old_crate_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    crate_model->AddTexture(old_crate_normal_map,    RGL::Material::TextureType::NORMAL);
+    crate_model->AddTexture(old_crate_metallic_map,  RGL::Material::TextureType::METALLIC);
+    crate_model->AddTexture(old_crate_roughness_map, RGL::Material::TextureType::ROUGHNESS);
 
-    plane_model->AddTexture(wooden_floor_albedo_map,    0);
-    plane_model->AddTexture(wooden_floor_normal_map,    1);
-    plane_model->AddTexture(wooden_floor_roughness_map, 3);
-    plane_model->AddTexture(wooden_floor_ao_map,        4);
+    plane_model->AddTexture(wooden_floor_albedo_map,    RGL::Material::TextureType::ALBEDO);
+    plane_model->AddTexture(wooden_floor_normal_map,    RGL::Material::TextureType::NORMAL);
+    plane_model->AddTexture(wooden_floor_roughness_map, RGL::Material::TextureType::ROUGHNESS);
+    plane_model->AddTexture(wooden_floor_ao_map,        RGL::Material::TextureType::AO);
 
     /* Create shader. */
     std::string dir = "../src/demos/22_pbr/";
@@ -487,9 +487,9 @@ void Bloom::RenderScene()
     m_ambient_light_shader->setUniform("u_cam_pos", m_camera->position());
 
     /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(5);
-    m_prefiltered_env_map_rt->bindTexture(6);
-    m_brdf_lut_rt->bindTexture(7);
+    m_irradiance_cubemap_rt->bindTexture(6);
+    m_prefiltered_env_map_rt->bindTexture(7);
+    m_brdf_lut_rt->bindTexture(8);
 
     for (uint32_t i = 0; i < m_static_objects.size(); ++i)
     {
