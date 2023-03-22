@@ -79,6 +79,13 @@ namespace RGL
         }
         #endif
 
+        const GLubyte* vendor_name    = glGetString(GL_VENDOR);
+        const GLubyte* renderer_name  = glGetString(GL_RENDERER);
+        const GLubyte* driver_version = glGetString(GL_VERSION);
+        const GLubyte* glsl_version   = glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+        printf("%s %s\nDriver: %s\nGLSL Version: %s\n\n", vendor_name, renderer_name, driver_version, glsl_version);
+
         /* Set the viewport */
         glViewport(0, 0, width, height);
         setViewportMatrix(width, height);
