@@ -358,6 +358,13 @@ private:
     std::shared_ptr<RGL::Shader> m_spot_light_shader;
     std::shared_ptr<RGL::Shader> m_directional_light_shader;
 
+    /* Clustered shading variables. */
+    glm::uvec3 m_grid_size = { 16, 9, 24 };
+    float m_slice_scale;
+    float m_slice_bias;
+
+    bool m_debug_slices = false;
+
     /* Bloom members */
     std::shared_ptr<RGL::Shader> m_downscale_shader;
     std::shared_ptr<RGL::Shader> m_upscale_shader;

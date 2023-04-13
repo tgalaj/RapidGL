@@ -8,7 +8,7 @@ using namespace RGL;
 int main()
 {
     std::shared_ptr<CoreApp> app = std::make_shared<ClusteredShading>();
-    app->init(WINDOW_WIDTH, WINDOW_HEIGHT, "Clustered Shading Demo" /*title*/, 60.0 /*framerate*/);
+    app->init(1920, 1080, "Clustered Shading Demo" /*title*/, 6000.0 /*framerate*/);
     app->start();
 
     return 0;

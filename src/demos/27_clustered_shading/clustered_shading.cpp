@@ -91,11 +91,18 @@ void ClusteredShading::init_app()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<Camera>(60.0, Window::getAspectRatio(), 0.01, 100.0);
+    m_camera = std::make_shared<Camera>(60.0, Window::getAspectRatio(), 1.0, 300.0);
     m_camera->setPosition(-8.32222, 1.9269, -0.768721);
-    //m_camera->setPosition(0, 1, 0);
     m_camera->setOrientation(glm::quat(0.634325, 0.0407623, 0.772209, 0.0543523));
    
+    /* Init clustered shading variables. */
+    float z_near       = m_camera->NearPlane();
+    float z_far        = m_camera->FarPlane();
+    float far_near_log = std::log2f(z_far / z_near);
+    
+    m_slice_scale = (float)m_grid_size.z / far_near_log;
+    m_slice_bias  = -((float)m_grid_size.z * std::log2f(z_near) / far_near_log);
+
     /* Randomly initialize lights */
     GeneratePointLights();
 
@@ -108,13 +115,14 @@ void ClusteredShading::init_app()
     m_sponza_static_object = StaticObject(sponza_model, world_trans);
 
     /* Create shader. */
-    std::string dir = "../src/demos/22_pbr/";
+    std::string dir = "../src/demos/27_clustered_shading/";
     m_ambient_light_shader = std::make_shared<Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
 
     m_point_light_shader = std::make_shared<Shader>(dir + "pbr-lighting.vert", dir + "pbr-point.frag");
     m_point_light_shader->link();
 
+    dir = "../src/demos/22_pbr/";
     m_equirectangular_to_cubemap_shader = std::make_shared<Shader>(dir + "cubemap.vert", dir + "equirectangular_to_cubemap.frag");
     m_equirectangular_to_cubemap_shader->link();
 
@@ -470,6 +478,12 @@ void ClusteredShading::RenderScene()
     //m_ambient_light_shader->setUniform("u_ao",        m_static_objects[i].m_material->GetFloat  ("u_ao"));
     //m_ambient_light_shader->setUniform("u_emission",  m_static_objects[i].m_material->GetVector3("u_emission"));
 
+    m_ambient_light_shader->setUniform("u_z_near",       m_camera->NearPlane());
+    m_ambient_light_shader->setUniform("u_z_far",        m_camera->FarPlane());
+    m_ambient_light_shader->setUniform("u_slice_scale",  m_slice_scale);
+    m_ambient_light_shader->setUniform("u_slice_bias",   m_slice_bias);
+    m_ambient_light_shader->setUniform("u_debug_slices", m_debug_slices);
+
     m_ambient_light_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
     m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
     m_ambient_light_shader->setUniform("u_mvp",           view_projection * m_sponza_static_object.m_transform);
@@ -631,6 +645,7 @@ void ClusteredShading::render_gui()
         {
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
 
+            ImGui::Checkbox   ("Show Debug Z Tiles",                         &m_debug_slices);
             ImGui::Checkbox   ("Animate Lights",                             &m_animate_lights);
             ImGui::SliderFloat("Animation Speed",                            &m_animation_speed, 0.0f, 2.0f, "%.2f");
             ImGui::InputScalar("Point Lights Count",      ImGuiDataType_U32, &m_point_lights_count);
