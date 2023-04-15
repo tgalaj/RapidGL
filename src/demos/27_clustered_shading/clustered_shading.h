@@ -359,6 +359,16 @@ private:
     std::shared_ptr<RGL::Shader> m_directional_light_shader;
 
     /* Clustered shading variables. */
+    struct ClusterAABB
+    {
+        glm::vec4 min_point;
+        glm::vec4 max_point;
+    };
+
+    std::shared_ptr<RGL::Shader> m_generate_clusters_shader;
+
+    GLuint m_clusters_ssbo_id;
+
     glm::uvec3 m_grid_size = { 16, 9, 24 };
     float m_slice_scale;
     float m_slice_bias;

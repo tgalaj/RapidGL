@@ -78,6 +78,8 @@ ClusteredShading::~ClusteredShading()
         glDeleteBuffers(1, &m_skybox_vbo);
         m_skybox_vbo = 0;
     }
+
+    glDeleteBuffers(1, &m_clusters_ssbo_id);
 }
 
 void ClusteredShading::init_app()
@@ -114,8 +116,18 @@ void ClusteredShading::init_app()
     world_trans = glm::scale(world_trans, glm::vec3(sponza_model->GetUnitScaleFactor() * 30.0f));
     m_sponza_static_object = StaticObject(sponza_model, world_trans);
 
+    /* Prepare SSBOs */
+    uint32_t clusters_count = m_grid_size.x * m_grid_size.y * m_grid_size.z;
+
+    glCreateBuffers(1, &m_clusters_ssbo_id);
+    glNamedBufferData(m_clusters_ssbo_id, sizeof(ClusterAABB) * clusters_count, nullptr, GL_STATIC_READ);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_clusters_ssbo_id);
+
     /* Create shader. */
     std::string dir = "../src/demos/27_clustered_shading/";
+    m_generate_clusters_shader = std::make_shared<Shader>(dir + "generate_clusters.comp");
+    m_generate_clusters_shader->link();
+
     m_ambient_light_shader = std::make_shared<Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -171,6 +183,20 @@ void ClusteredShading::init_app()
 
     PrecomputeIndirectLight(FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
     PrecomputeBRDF(m_brdf_lut_rt);
+
+    /* Generate clusters' AABBs */
+    glm::vec2 cluster_size    = glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight()) / glm::vec2(m_grid_size);
+    glm::vec2 view_pixel_size = 1.0f / glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight());
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_clusters_ssbo_id);
+    m_generate_clusters_shader->bind();
+    m_generate_clusters_shader->setUniform("zNear",             m_camera->NearPlane());
+    m_generate_clusters_shader->setUniform("zFar",              m_camera->FarPlane());
+    m_generate_clusters_shader->setUniform("clusterSize",       cluster_size);
+    m_generate_clusters_shader->setUniform("viewPxSize",        view_pixel_size);
+    m_generate_clusters_shader->setUniform("inverseProjection", glm::inverse(m_camera->m_projection));
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void ClusteredShading::input()
