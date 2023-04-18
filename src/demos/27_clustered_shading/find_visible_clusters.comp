@@ -1,0 +1,47 @@
+#version 460 core
+
+// ssbo
+layout(std430, binding = 0) buffer clustersFlagsSSBO
+{
+	bool clustersFlags[];
+};
+
+layout(r32f, binding = 0) readonly uniform image2D depthBuffer;
+
+// uniforms
+uniform float zNear;
+uniform float zFar;
+uniform float sliceScale;
+uniform float sliceBias;
+uniform uvec2 tileSizeInPx;   // How many pixels a rectangular cluster takes in x and y
+uniform vec3  clusterGridDim; // The fixed number of clusters in x y and z axes
+
+/* Function prototypes */
+uint computeClusterIndex1D(vec3 pixelCoord);
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+void main()
+{
+	uvec2 pixelID = gl_GlobalInvocationID.xy;
+	float viewZ   = imageLoad(depthBuffer, ivec2(pixelID)).r; // read the lienar depth value
+
+	uint clusterIndex1D  = computeClusterIndex1D(vec3(pixelID, viewZ));
+	clustersFlags[clusterIndex1D] = true;
+}
+
+float linearDepth(float depth)
+{
+	float ndc         = depth * 2.0 - 1.0;
+	float linearDepth = 2.0 * zNear * zFar / (zFar + zNear - ndc * (zFar - zNear));
+	
+	return linearDepth;
+}
+
+uint computeClusterIndex1D(vec3 pixelCoord)
+{
+	uint  clusterZVal     = uint(max(log2(linearDepth(pixelCoord.z)) * sliceScale + sliceBias, 0.0));
+	uvec3 clustrerIndex3D = uvec3(pixelCoord.xy / tileSizeInPx, clusterZVal);
+	uint  clusterIndex1D  = uint(dot(clustrerIndex3D, uvec3(1, clusterGridDim.x, clusterGridDim.x * clusterGridDim.y)));
+
+	return clusterIndex1D;
+}
