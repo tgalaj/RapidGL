@@ -338,7 +338,8 @@ private:
     void PrecomputeBRDF             (const std::shared_ptr<Texture2DRenderTarget>& rt);
     void GenSkyboxGeometry();
 
-    void RenderScene();
+    void RenderDepthPass();
+    void RenderLighting();
 
     std::shared_ptr<RGL::Camera> m_camera;
 
@@ -365,8 +366,11 @@ private:
         glm::vec4 max_point;
     };
 
+    std::shared_ptr<RGL::Shader> m_depth_prepass_shader;
     std::shared_ptr<RGL::Shader> m_generate_clusters_shader;
 
+    GLuint m_depth_tex2D_id;
+    GLuint m_depth_pass_fbo_id;
     GLuint m_clusters_ssbo_id;
 
     glm::uvec3 m_grid_size = { 16, 9, 24 };

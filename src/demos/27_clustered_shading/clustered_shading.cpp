@@ -80,6 +80,8 @@ ClusteredShading::~ClusteredShading()
     }
 
     glDeleteBuffers(1, &m_clusters_ssbo_id);
+    glDeleteTextures(1, &m_depth_tex2D_id);
+    glDeleteFramebuffers(1, &m_depth_pass_fbo_id);
 }
 
 void ClusteredShading::init_app()
@@ -87,7 +89,7 @@ void ClusteredShading::init_app()
     /* Initialize all the variables, buffers, etc. here. */
     glClearColor(0.05, 0.05, 0.05, 1.0);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_LESS);
 
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -123,10 +125,28 @@ void ClusteredShading::init_app()
     glNamedBufferData(m_clusters_ssbo_id, sizeof(ClusterAABB) * clusters_count, nullptr, GL_STATIC_READ);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_clusters_ssbo_id);
 
+    /* Create depth pre-pass texture and FBO */
+    glCreateTextures(GL_TEXTURE_2D, 1, &m_depth_tex2D_id);
+    glTextureStorage2D(m_depth_tex2D_id, 1, GL_DEPTH_COMPONENT32F, RGL::Window::getWidth(), RGL::Window::getHeight());
+
+    glTextureParameteri(m_depth_tex2D_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(m_depth_tex2D_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(m_depth_tex2D_id, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE);
+    glTextureParameteri(m_depth_tex2D_id, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE);
+
+    glCreateFramebuffers(1, &m_depth_pass_fbo_id);
+    glNamedFramebufferTexture(m_depth_pass_fbo_id, GL_DEPTH_ATTACHMENT, m_depth_tex2D_id, 0);
+
+    GLenum draw_buffers[] = { GL_NONE };
+    glNamedFramebufferDrawBuffers(m_depth_pass_fbo_id, 1, draw_buffers);
+
     /* Create shader. */
     std::string dir = "../src/demos/27_clustered_shading/";
     m_generate_clusters_shader = std::make_shared<Shader>(dir + "generate_clusters.comp");
     m_generate_clusters_shader->link();
+
+    m_depth_prepass_shader = std::make_shared<Shader>(dir + "depth_pass.vert", dir + "depth_pass.frag");
+    m_depth_prepass_shader->link();
 
     m_ambient_light_shader = std::make_shared<Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
@@ -479,92 +499,112 @@ void ClusteredShading::GenSkyboxGeometry()
     glVertexArrayVertexBuffer(m_skybox_vao, 0 /*bindingindex*/, m_skybox_vbo, 0 /*offset*/, sizeof(glm::vec3) /*stride*/);
 }
 
-void ClusteredShading::RenderScene()
+void ClusteredShading::RenderDepthPass()
 {
-    auto view_projection = m_camera->m_projection * m_camera->m_view;
+    glBindFramebuffer(GL_FRAMEBUFFER, m_depth_pass_fbo_id);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
-    m_ambient_light_shader->bind();
-    m_ambient_light_shader->setUniform("u_cam_pos", m_camera->position());
+    glDepthMask(1);
+    glColorMask(0, 0, 0, 0);
+    glDepthFunc(GL_LESS);
+    
+    m_depth_prepass_shader->bind();
+    m_depth_prepass_shader->setUniform("mvp", m_camera->m_projection * m_camera->m_view * m_sponza_static_object.m_transform);
+    m_sponza_static_object.m_model->Render();
+}
 
-    /* First, render the ambient color only for the opaque objects. */
-    m_irradiance_cubemap_rt->bindTexture(6);
-    m_prefiltered_env_map_rt->bindTexture(7);
-    m_brdf_lut_rt->bindTexture(8);
-
-    glBindTextures(0, 5, nullptr);
-    //m_ambient_light_shader->setUniform("u_has_albedo_map",    m_static_objects[i].m_material->GetBool("u_has_albedo_map"));
-    //m_ambient_light_shader->setUniform("u_has_normal_map",    m_static_objects[i].m_material->GetBool("u_has_normal_map"));
-    //m_ambient_light_shader->setUniform("u_has_metallic_map",  m_static_objects[i].m_material->GetBool("u_has_metallic_map"));
-    //m_ambient_light_shader->setUniform("u_has_roughness_map", m_static_objects[i].m_material->GetBool("u_has_roughness_map"));
-    //m_ambient_light_shader->setUniform("u_has_ao_map",        m_static_objects[i].m_material->GetBool("u_has_ao_map"));
-    //
-    //m_ambient_light_shader->setUniform("u_albedo",    m_static_objects[i].m_material->GetVector3("u_albedo"));
-    //m_ambient_light_shader->setUniform("u_metallic",  m_static_objects[i].m_material->GetFloat  ("u_metallic"));
-    //m_ambient_light_shader->setUniform("u_roughness", m_static_objects[i].m_material->GetFloat  ("u_roughness"));
-    //m_ambient_light_shader->setUniform("u_ao",        m_static_objects[i].m_material->GetFloat  ("u_ao"));
-    //m_ambient_light_shader->setUniform("u_emission",  m_static_objects[i].m_material->GetVector3("u_emission"));
-
-    m_ambient_light_shader->setUniform("u_z_near",       m_camera->NearPlane());
-    m_ambient_light_shader->setUniform("u_z_far",        m_camera->FarPlane());
-    m_ambient_light_shader->setUniform("u_slice_scale",  m_slice_scale);
-    m_ambient_light_shader->setUniform("u_slice_bias",   m_slice_bias);
-    m_ambient_light_shader->setUniform("u_debug_slices", m_debug_slices);
-
-    m_ambient_light_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
-    m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
-    m_ambient_light_shader->setUniform("u_mvp",           view_projection * m_sponza_static_object.m_transform);
-
-    m_sponza_static_object.m_model->Render(m_ambient_light_shader);
-
-    /*
-     * Disable writing to the depth buffer and additively
-     * shade only those pixels, that were shaded in the ambient step.
-     */
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    glDepthMask(GL_FALSE);
+void ClusteredShading::RenderLighting()
+{
+    glDepthMask(0);
+    glColorMask(1, 1, 1, 1);
     glDepthFunc(GL_EQUAL);
 
-    /* Render point lights */
-    m_point_light_shader->bind();
-    m_point_light_shader->setUniform("u_cam_pos", m_camera->position());
+    // TODO: clustered shading
+    
+    //auto view_projection = m_camera->m_projection * m_camera->m_view;
 
-    for (uint8_t p = 0; p < m_point_lights.size(); ++p)
-    {
-        m_point_light_shader->setUniform("u_point_light.base.color",     m_point_lights[p].color);
-        m_point_light_shader->setUniform("u_point_light.base.intensity", m_point_lights[p].intensity);
-        m_point_light_shader->setUniform("u_point_light.position",       m_point_lights[p].position);
-        m_point_light_shader->setUniform("u_point_light.radius",         m_point_lights[p].radius);
+    //m_ambient_light_shader->bind();
+    //m_ambient_light_shader->setUniform("u_cam_pos", m_camera->position());
 
-        glBindTextures(0, 5, nullptr);
-        //m_point_light_shader->setUniform("u_has_albedo_map",    m_static_objects[i].m_material->GetBool("u_has_albedo_map"));
-        //m_point_light_shader->setUniform("u_has_normal_map",    m_static_objects[i].m_material->GetBool("u_has_normal_map"));
-        //m_point_light_shader->setUniform("u_has_metallic_map",  m_static_objects[i].m_material->GetBool("u_has_metallic_map"));
-        //m_point_light_shader->setUniform("u_has_roughness_map", m_static_objects[i].m_material->GetBool("u_has_roughness_map"));
-        //
-        //m_point_light_shader->setUniform("u_albedo",    m_static_objects[i].m_material->GetVector3("u_albedo"));
-        //m_point_light_shader->setUniform("u_metallic",  m_static_objects[i].m_material->GetFloat  ("u_metallic"));
-        //m_point_light_shader->setUniform("u_roughness", m_static_objects[i].m_material->GetFloat  ("u_roughness"));
+    ///* First, render the ambient color only for the opaque objects. */
+    //m_irradiance_cubemap_rt->bindTexture(6);
+    //m_prefiltered_env_map_rt->bindTexture(7);
+    //m_brdf_lut_rt->bindTexture(8);
 
-        m_point_light_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
-        m_point_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
-        m_point_light_shader->setUniform("u_mvp",           view_projection * m_sponza_static_object.m_transform);
+    //glBindTextures(0, 5, nullptr);
+    ////m_ambient_light_shader->setUniform("u_has_albedo_map",    m_static_objects[i].m_material->GetBool("u_has_albedo_map"));
+    ////m_ambient_light_shader->setUniform("u_has_normal_map",    m_static_objects[i].m_material->GetBool("u_has_normal_map"));
+    ////m_ambient_light_shader->setUniform("u_has_metallic_map",  m_static_objects[i].m_material->GetBool("u_has_metallic_map"));
+    ////m_ambient_light_shader->setUniform("u_has_roughness_map", m_static_objects[i].m_material->GetBool("u_has_roughness_map"));
+    ////m_ambient_light_shader->setUniform("u_has_ao_map",        m_static_objects[i].m_material->GetBool("u_has_ao_map"));
+    ////
+    ////m_ambient_light_shader->setUniform("u_albedo",    m_static_objects[i].m_material->GetVector3("u_albedo"));
+    ////m_ambient_light_shader->setUniform("u_metallic",  m_static_objects[i].m_material->GetFloat  ("u_metallic"));
+    ////m_ambient_light_shader->setUniform("u_roughness", m_static_objects[i].m_material->GetFloat  ("u_roughness"));
+    ////m_ambient_light_shader->setUniform("u_ao",        m_static_objects[i].m_material->GetFloat  ("u_ao"));
+    ////m_ambient_light_shader->setUniform("u_emission",  m_static_objects[i].m_material->GetVector3("u_emission"));
 
-        m_sponza_static_object.m_model->Render(m_point_light_shader);
-    }
+    //m_ambient_light_shader->setUniform("u_z_near",       m_camera->NearPlane());
+    //m_ambient_light_shader->setUniform("u_z_far",        m_camera->FarPlane());
+    //m_ambient_light_shader->setUniform("u_slice_scale",  m_slice_scale);
+    //m_ambient_light_shader->setUniform("u_slice_bias",   m_slice_bias);
+    //m_ambient_light_shader->setUniform("u_debug_slices", m_debug_slices);
+
+    //m_ambient_light_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
+    //m_ambient_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
+    //m_ambient_light_shader->setUniform("u_mvp",           view_projection * m_sponza_static_object.m_transform);
+
+    //m_sponza_static_object.m_model->Render(m_ambient_light_shader);
+
+    ///*
+    // * Disable writing to the depth buffer and additively
+    // * shade only those pixels, that were shaded in the ambient step.
+    // */
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_ONE, GL_ONE);
+    //glDepthMask(GL_FALSE);
+    //glDepthFunc(GL_EQUAL);
+
+    ///* Render point lights */
+    //m_point_light_shader->bind();
+    //m_point_light_shader->setUniform("u_cam_pos", m_camera->position());
+
+    //for (uint8_t p = 0; p < m_point_lights.size(); ++p)
+    //{
+    //    m_point_light_shader->setUniform("u_point_light.base.color",     m_point_lights[p].color);
+    //    m_point_light_shader->setUniform("u_point_light.base.intensity", m_point_lights[p].intensity);
+    //    m_point_light_shader->setUniform("u_point_light.position",       m_point_lights[p].position);
+    //    m_point_light_shader->setUniform("u_point_light.radius",         m_point_lights[p].radius);
+
+    //    glBindTextures(0, 5, nullptr);
+    //    //m_point_light_shader->setUniform("u_has_albedo_map",    m_static_objects[i].m_material->GetBool("u_has_albedo_map"));
+    //    //m_point_light_shader->setUniform("u_has_normal_map",    m_static_objects[i].m_material->GetBool("u_has_normal_map"));
+    //    //m_point_light_shader->setUniform("u_has_metallic_map",  m_static_objects[i].m_material->GetBool("u_has_metallic_map"));
+    //    //m_point_light_shader->setUniform("u_has_roughness_map", m_static_objects[i].m_material->GetBool("u_has_roughness_map"));
+    //    //
+    //    //m_point_light_shader->setUniform("u_albedo",    m_static_objects[i].m_material->GetVector3("u_albedo"));
+    //    //m_point_light_shader->setUniform("u_metallic",  m_static_objects[i].m_material->GetFloat  ("u_metallic"));
+    //    //m_point_light_shader->setUniform("u_roughness", m_static_objects[i].m_material->GetFloat  ("u_roughness"));
+
+    //    m_point_light_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
+    //    m_point_light_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
+    //    m_point_light_shader->setUniform("u_mvp",           view_projection * m_sponza_static_object.m_transform);
+
+    //    m_sponza_static_object.m_model->Render(m_point_light_shader);
+    //}
 
     /* Enable writing to the depth buffer. */
-    glDepthMask(GL_TRUE);
+    glDepthMask(1);
     glDepthFunc(GL_LEQUAL);
-    glDisable(GL_BLEND);
 }
 
 void ClusteredShading::render()
 {
     /* Put render specific code here. Don't update variables here! */
-    m_tmo_ps->bindFilterFBO();
+    RenderDepthPass();
 
-    RenderScene();
+    m_tmo_ps->bindFilterFBO();
+    RenderLighting();
 
     m_background_shader->bind();
     m_background_shader->setUniform("u_projection", m_camera->m_projection);
@@ -576,7 +616,7 @@ void ClusteredShading::render()
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
     /* Bloom: downscale */
-    if(m_bloom_enabled)
+    if (m_bloom_enabled)
     {
         m_downscale_shader->bind();
         m_downscale_shader->setUniform("u_threshold", glm::vec4(m_threshold, m_threshold - m_knee, 2.0f * m_knee, 0.25f * m_knee));
