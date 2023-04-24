@@ -3,7 +3,7 @@
 
 #include <glad/glad.h>
 #include <string_view>
-#include <filesystem>>
+#include <filesystem>
 
 namespace RGL
 {
