@@ -37,6 +37,7 @@ target_link_libraries(${CORE_LIB_NAME} glfw)
 target_link_libraries(${CORE_LIB_NAME} imgui)
 target_link_libraries(${CORE_LIB_NAME} spdlog)
 target_link_libraries(${CORE_LIB_NAME} glm::glm)
+target_link_libraries(${CORE_LIB_NAME} bz2)
 
 if(MSVC)
     target_compile_definitions(${CORE_LIB_NAME} PUBLIC NOMINMAX)
