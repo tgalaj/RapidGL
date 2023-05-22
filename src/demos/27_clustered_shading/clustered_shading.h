@@ -10,13 +10,13 @@
 
 struct BaseLight
 {
-    glm::vec3 color;
+    alignas(16) glm::vec3 color;
     float intensity;
 };
 
 struct DirectionalLight : BaseLight
 {
-    glm::vec3 direction;
+    alignas(16) glm::vec3 direction;
 
     void setDirection(float azimuth, float elevation)
     {
@@ -33,13 +33,13 @@ struct DirectionalLight : BaseLight
 
 struct PointLight : BaseLight
 {
-    glm::vec3 position;
+    alignas(16) glm::vec3 position;
     float radius;
 };
 
 struct SpotLight : PointLight
 {
-    glm::vec3 direction;
+    alignas(16) glm::vec3 direction;
     float inner_angle;
     float outer_angle;
 
@@ -100,11 +100,11 @@ private:
             glBindTextureUnit(unit, m_texture_id);
         }
 
-        void bindRenderTarget()
+        void bindRenderTarget(GLbitfield clear_mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         {
             glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
             glViewport(0, 0, m_width, m_height);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(clear_mask);
         }
 
         void bindImageForRead(GLuint image_unit, GLuint mip_level)
@@ -199,7 +199,7 @@ private:
 
         PostprocessFilter(uint32_t width, uint32_t height)
         {
-            m_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", "../src/demos/27_clustered_shading/tmo.frag");
+            m_shader = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", "src/demos/27_clustered_shading/tmo.frag");
             m_shader->link();
 
             rt = std::make_shared<Texture2DRenderTarget>();
@@ -224,9 +224,9 @@ private:
             rt->bindTexture(unit);
         }
 
-        void bindFilterFBO()
+        void bindFilterFBO(GLbitfield clear_mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         {
-            rt->bindRenderTarget();
+            rt->bindRenderTarget(clear_mask);
         }
 
         void render(float exposure, float gamma)
@@ -331,6 +331,8 @@ private:
     }; 
 
     void GeneratePointLights();
+    void UpdateLightsSSBOs();
+
     void HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt, const std::shared_ptr<RGL::Texture2D> & m_equirectangular_map);
     void IrradianceConvolution      (const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt);
     void PrefilterCubemap           (const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt);
@@ -338,8 +340,8 @@ private:
     void PrecomputeBRDF             (const std::shared_ptr<Texture2DRenderTarget>& rt);
     void GenSkyboxGeometry();
 
-    void RenderDepthPass();
-    void RenderLighting();
+    void renderDepthPass();
+    void renderLighting();
 
     std::shared_ptr<RGL::Camera> m_camera;
 
@@ -354,11 +356,6 @@ private:
     std::shared_ptr<RGL::Shader> m_precompute_brdf;
     std::shared_ptr<RGL::Shader> m_background_shader;
 
-    std::shared_ptr<RGL::Shader> m_ambient_light_shader;
-    std::shared_ptr<RGL::Shader> m_point_light_shader;
-    std::shared_ptr<RGL::Shader> m_spot_light_shader;
-    std::shared_ptr<RGL::Shader> m_directional_light_shader;
-
     /* Clustered shading variables. */
     struct ClusterAABB
     {
@@ -368,6 +365,8 @@ private:
 
     std::shared_ptr<RGL::Shader> m_depth_prepass_shader;
     std::shared_ptr<RGL::Shader> m_generate_clusters_shader;
+    std::shared_ptr<RGL::Shader> m_clustered_pbr_shader;
+    std::shared_ptr<RGL::Shader> m_update_lights_shader;
 
     GLuint m_depth_tex2D_id;
     GLuint m_depth_pass_fbo_id;
@@ -379,18 +378,6 @@ private:
 
     bool m_debug_slices = false;
 
-    /* Bloom members */
-    std::shared_ptr<RGL::Shader> m_downscale_shader;
-    std::shared_ptr<RGL::Shader> m_upscale_shader;
-    std::shared_ptr<RGL::Texture2D> m_bloom_dirt_texture;
-
-    float m_threshold;
-    float m_knee;
-    float m_bloom_intensity;
-    float m_bloom_dirt_intensity;
-    bool  m_bloom_enabled;
-    /* End bloom members */
-
     /* Lights */
     uint32_t m_point_lights_count       = 50;
     uint32_t m_spot_lights_count        = 0;
@@ -399,9 +386,14 @@ private:
     std::vector<PointLight>       m_point_lights;
     std::vector<SpotLight>        m_spot_lights;
     std::vector<DirectionalLight> m_directional_lights;
-    std::vector<glm::vec3>        m_point_lights_ellipses_radii; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+    std::vector<glm::vec4>        m_ellipses_radii; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
     StaticObject m_sponza_static_object;
+
+    GLuint m_directional_lights_ssbo;
+    GLuint m_point_lights_ssbo;
+    GLuint m_spot_lights_ssbo;
+    GLuint m_ellipses_radii_ssbo;
 
     /* Tonemapping variables */
     std::shared_ptr<PostprocessFilter> m_tmo_ps;
@@ -418,4 +410,16 @@ private:
     float     m_animation_speed          = 1.0f;
     float     m_point_lights_intensity   = 1.0f;
     glm::vec2 min_max_point_light_radius = glm::vec2(10.0f, 300.0f);
+
+    /* Bloom members */
+    std::shared_ptr<RGL::Shader> m_downscale_shader;
+    std::shared_ptr<RGL::Shader> m_upscale_shader;
+    std::shared_ptr<RGL::Texture2D> m_bloom_dirt_texture;
+
+    float m_threshold;
+    float m_knee;
+    float m_bloom_intensity;
+    float m_bloom_dirt_intensity;
+    bool  m_bloom_enabled;
+    /* End bloom members */
 };

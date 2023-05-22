@@ -121,13 +121,13 @@ namespace RGL
 
     // --------------------- Texture2D -------------------------
 
-    bool Texture2D::Load(std::string_view filepath, bool is_srgb, uint32_t num_mipmaps)
+    bool Texture2D::Load(const std::filesystem::path& filepath, bool is_srgb, uint32_t num_mipmaps)
     {
         auto data = Util::LoadTextureData(filepath, m_metadata);
 
         if (!data)
         {
-            fprintf(stderr, "Texture failed to load at path: %s\n", std::string(filepath).c_str());
+            fprintf(stderr, "Texture failed to load at path: %s\n", filepath.string().c_str());
             return false;
         }
 
@@ -255,7 +255,7 @@ namespace RGL
 
     // --------------------- Texture CubeMap -------------------------
 
-    bool TextureCubeMap::Load(std::string* filepaths, bool is_srgb, uint32_t num_mipmaps)
+    bool TextureCubeMap::Load(const std::filesystem::path* filepaths, bool is_srgb, uint32_t num_mipmaps)
     {
         constexpr int NUM_FACES = 6;
 
@@ -267,7 +267,7 @@ namespace RGL
 
             if (!images_data[i])
             {
-                fprintf(stderr, "Texture failed to load at path: %s\n", std::string(filepaths[i]).c_str());
+                fprintf(stderr, "Texture failed to load at path: %s\n", filepaths[i].string().c_str());
                 return false;
             }
         }

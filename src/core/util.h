@@ -4,9 +4,9 @@
 #include <glad/glad.h>
 #include <glm/vec3.hpp>
 
+#include <filesystem>
 #include <random>
 #include <string>
-#include <filesystem>
 
 namespace RGL
 {
@@ -33,9 +33,9 @@ namespace RGL
         *                      needs to be loaded.
         * @returns Full file's source as a std::string.
         */
-        static std::string LoadFile(const std::string & filename);
+        static std::string LoadFile(const std::filesystem::path & filename);
 
-        static std::string LoadShaderIncludes(const std::string & shader_code, const std::string & dir = "shaders/");
+        static std::string LoadShaderIncludes(const std::string & shader_code, const std::filesystem::path& dir = "shaders");
         /**
         * @brief   Loads a file that contains an image data.
         * @param   std::string Relative path, with file name

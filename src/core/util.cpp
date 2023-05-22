@@ -10,7 +10,7 @@
 
 namespace RGL
 {
-    std::string Util::LoadFile(const std::string & filename)
+    std::string Util::LoadFile(const std::filesystem::path & filename)
     {
         if (filename.empty())
         {
@@ -20,19 +20,38 @@ namespace RGL
         std::string filetext;
         std::string line;
 
-        std::ifstream inFile(FileSystem::getPath(filename));
+        std::filesystem::path filepath = FileSystem::getRootPath() / filename;
+        std::ifstream inFile(filepath);
 
         if (!inFile)
         {
-            fprintf(stderr, "Could not open file %s\n", FileSystem::getPath(filename).c_str());
+            fprintf(stderr, "Could not open file %s\n", filepath.string().c_str());
             inFile.close();
 
             return "";
         }
 
+        std::string skip_begin_phrase = "#ifdef __cplusplus";
+        std::string skip_end_phrase   = "#endif";
+
+        bool skip = false;
+
         while (getline(inFile, line))
         {
-            filetext.append(line + "\n");
+            if (line.substr(0, skip_begin_phrase.size()) == skip_begin_phrase)
+            {
+                skip = true;
+            }
+            
+            if (!skip)
+            {
+                filetext.append(line + "\n");
+            }
+
+            if (line.substr(0, skip_end_phrase.size()) == skip_end_phrase)
+            {
+                skip = false;
+            }
         }
 
         inFile.close();
@@ -40,22 +59,32 @@ namespace RGL
         return filetext;
     }
 
-    std::string Util::LoadShaderIncludes(const std::string & shader_code, const std::string& dir)
+    std::string Util::LoadShaderIncludes(const std::string & shader_code, const std::filesystem::path& dir)
     {
         std::istringstream ss(shader_code);
 
         std::string line, new_shader_code = "";
-        std::string include_phrase = "#include";
+        std::string include_phrase        = "#include";
 
-        while(std::getline(ss, line))
+        bool included = false;
+
+        while (std::getline(ss, line))
         {
-            if(line.substr(0, include_phrase.size()) == include_phrase)
+            if (line.substr(0, include_phrase.size()) == include_phrase)
             {
                 std::string include_file_name = line.substr(include_phrase.size() + 2, line.size() - include_phrase .size() - 3);
-                line = LoadFile(dir + include_file_name);
+                
+                line     = LoadFile(dir / include_file_name);
+                included = true;
             }
 
             new_shader_code.append(line + "\n");
+        }
+
+        // Parse #include in the included files
+        if (included)
+        {
+            new_shader_code = LoadShaderIncludes(new_shader_code, dir);
         }
 
         return new_shader_code;

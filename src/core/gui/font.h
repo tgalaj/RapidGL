@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <imgui.h>
+#include <filesystem>
 #include <string>
 
 namespace RGL
@@ -8,7 +9,7 @@ namespace RGL
     {
     public:
         Font();
-        Font(const std::string & filepathname, unsigned size_pixels);
+        Font(const std::filesystem::path & filepath, unsigned size_pixels);
         ~Font() = default;
 
     private:

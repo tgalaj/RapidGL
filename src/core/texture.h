@@ -3,7 +3,7 @@
 
 #include <glad/glad.h>
 #include <string_view>
-#include <filesystem>>
+#include <filesystem>
 
 namespace RGL
 {
@@ -147,7 +147,7 @@ namespace RGL
     {
     public:
         Texture2D() = default;
-        bool Load(std::string_view filepath, bool is_srgb = false, uint32_t num_mipmaps = 0);
+        bool Load(const std::filesystem::path & filepath, bool is_srgb = false, uint32_t num_mipmaps = 0);
         bool Load(unsigned char* memory_data, uint32_t data_size, bool is_srgb = false, uint32_t num_mipmaps = 0);
         bool LoadHdr(const std::filesystem::path& filepath, uint32_t num_mipmaps = 0);
     };
@@ -156,6 +156,6 @@ namespace RGL
     {
     public:
         TextureCubeMap() = default;
-        bool Load(std::string* filepaths, bool is_srgb = false, uint32_t num_mipmaps = 0);
+        bool Load(const std::filesystem::path * filepaths, bool is_srgb = false, uint32_t num_mipmaps = 0);
     };
 }

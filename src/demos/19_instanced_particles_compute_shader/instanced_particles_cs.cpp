@@ -183,7 +183,7 @@ void InstancedParticlesCS::render()
     m_particles_compute_shader->setUniform("u_cone_angle",                        glm::radians(m_cone_angle));
     m_particles_compute_shader->setUniform("u_random",                            RGL::Util::RandomVec3(0, 1));
 
-    glDispatchCompute(m_total_particles / 1000, 1, 1);
+    glDispatchCompute(std::ceilf((float)m_total_particles / 1024.0f), 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     /* Draw the scene */

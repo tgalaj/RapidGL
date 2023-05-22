@@ -8,8 +8,9 @@ namespace RGL
         m_font = ImGui::GetIO().Fonts->AddFontDefault();
     }
 
-    Font::Font(const std::string& filepathname, unsigned size_pixels)
+    Font::Font(const std::filesystem::path& filepath, unsigned size_pixels)
     {
-        m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(FileSystem::getPath(filepathname).c_str(), size_pixels);
+        auto path = FileSystem::getRootPath() / filepath;
+        m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(path.string().c_str(), size_pixels);
     }
 }

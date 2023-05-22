@@ -1,7 +1,7 @@
 #version 460 core
 const float PI = 3.14159265359;
 
-layout (local_size_x = 1000) in;
+layout (local_size_x = 1024) in;
 
 uniform float u_delta_t;
 uniform vec3  u_acceleration; // gravity

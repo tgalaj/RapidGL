@@ -10,12 +10,9 @@ namespace RGL
     class FileSystem
     {
     public:
-        static std::string getPath(const std::string& path);
-        static bool directoryExists(const fs::path& path, fs::file_status status = fs::file_status{});
-        static void createDirectory(const std::string& directory_name);
-
-    private:
-        static const std::string getRoot();
-        static std::string getPathRelativeRoot(const std::string& path);
+        static fs::path getRootPath();
+        static fs::path getResourcesPath();
+        static bool directoryExists(const fs::path & path, fs::file_status status = fs::file_status{});
+        static void createDirectory(const fs::path & directory_name);
     };
 }

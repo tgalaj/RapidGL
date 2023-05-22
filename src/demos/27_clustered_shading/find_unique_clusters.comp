@@ -1,32 +1,32 @@
 #version 460 core
 
 // ssbo
-layout(std430, binding = 0) buffer clustersFlagsSSBO
+layout(std430, binding = 0) buffer ClustersFlagsSSBO
 {
-	bool clustersFlags[];
+	bool clusters_flags[];
 };
 
-layout(std430, binding = 1) buffer uniqueActiveClustersSSBO
+layout(std430, binding = 1) buffer UniqueActiveClustersSSBO
 {
-	uint uniqueClustersCount;
-	uint uniqueClusters[];
+	uint unique_clusters_count;
+	uint unique_clusters[];
 };
 
-layout(r32f, binding = 0) readonly uniform image2D depthBuffer;
+layout(r32f, binding = 0) readonly uniform image2D u_depth_buffer;
 
 // uniforms
-uniform float sliceScale;
-uniform float sliceBias;
-uniform uvec2 tileSizeInPx;   // How many pixels a rectangular cluster takes in x and y
-uniform vec3  clusterGridDim; // The fixed number of clusters in x y and z axes
+uniform float u_slice_scale;
+uniform float u_slice_bias;
+uniform uvec2 u_tile_size_in_px;   // How many pixels a rectangular cluster takes in x and y
+uniform vec3  u_cluster_grid_dim; // The fixed number of clusters in x y and z axes
 
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
-	uint clusterID = gl_GlobalInvocationID.x;
-	if (clustersFlags[clusterID])
+	uint cluster_id = gl_GlobalInvocationID.x;
+	if (clusters_flags[cluster_id])
 	{
-		uint i = atomicAdd(uniqueClustersCount, 1);
-		uniqueClusters[i] = clusterID;
+		uint i = atomicAdd(unique_clusters_count, 1);
+		unique_clusters[i] = cluster_id;
 	}
 }

@@ -110,16 +110,17 @@ namespace RGL
             image  = resized_image;
         }
 
-        auto screenshots_dir = FileSystem::getPath("../screenshots");
+        auto screenshots_dir = FileSystem::getRootPath() / "screenshots";
         if (!FileSystem::directoryExists(screenshots_dir))
         {
             FileSystem::createDirectory(screenshots_dir);
         }
 
-        auto filepath = screenshots_dir + "/" + filename + ".png";
+        auto filepath = screenshots_dir / filename;
+        filepath += ".png";
 
         stbi_flip_vertically_on_write(true);
-        auto ret = stbi_write_png(filepath.c_str(), width, height, 3, image.data(), 0);
+        auto ret = stbi_write_png(filepath.string().c_str(), width, height, 3, image.data(), 0);
 
         return ret;
     }

@@ -1,47 +1,47 @@
 #version 460 core
 
 // ssbo
-layout(std430, binding = 0) buffer clustersFlagsSSBO
+layout(std430, binding = 0) buffer ClustersFlagsSSBO
 {
-	bool clustersFlags[];
+	bool clusters_flags[];
 };
 
-layout(r32f, binding = 0) readonly uniform image2D depthBuffer;
+layout(r32f, binding = 0) readonly uniform image2D u_depth_buffer;
 
 // uniforms
-uniform float zNear;
-uniform float zFar;
-uniform float sliceScale;
-uniform float sliceBias;
-uniform uvec2 tileSizeInPx;   // How many pixels a rectangular cluster takes in x and y
-uniform vec3  clusterGridDim; // The fixed number of clusters in x y and z axes
+uniform float u_near_z;
+uniform float u_far_z;
+uniform float u_slice_scale;
+uniform float u_slice_bias;
+uniform uvec2 u_tile_size_in_px;   // How many pixels a rectangular cluster takes in x and y
+uniform vec3  u_cluster_grid_dim; // The fixed number of clusters in x y and z axes
 
 /* Function prototypes */
-uint computeClusterIndex1D(vec3 pixelCoord);
+uint computeClusterIndex1D(vec3 pixel_coord);
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 void main()
 {
-	uvec2 pixelID = gl_GlobalInvocationID.xy;
-	float viewZ   = imageLoad(depthBuffer, ivec2(pixelID)).r; // read the lienar depth value
+	uvec2 pixel_id = gl_GlobalInvocationID.xy;
+	float view_z   = imageLoad(u_depth_buffer, ivec2(pixel_id)).r; // read the lienar depth value
 
-	uint clusterIndex1D  = computeClusterIndex1D(vec3(pixelID, viewZ));
-	clustersFlags[clusterIndex1D] = true;
+	uint cluster_index1D  = computeClusterIndex1D(vec3(pixel_id, view_z));
+	clusters_flags[cluster_index1D] = true;
 }
 
 float linearDepth(float depth)
 {
-	float ndc         = depth * 2.0 - 1.0;
-	float linearDepth = 2.0 * zNear * zFar / (zFar + zNear - ndc * (zFar - zNear));
+	float ndc          = depth * 2.0 - 1.0;
+	float linear_depth = 2.0 * u_near_z * u_far_z / (u_far_z + u_near_z - ndc * (u_far_z - u_near_z));
 	
-	return linearDepth;
+	return linear_depth;
 }
 
-uint computeClusterIndex1D(vec3 pixelCoord)
+uint computeClusterIndex1D(vec3 pixel_coord)
 {
-	uint  clusterZVal     = uint(max(log2(linearDepth(pixelCoord.z)) * sliceScale + sliceBias, 0.0));
-	uvec3 clustrerIndex3D = uvec3(pixelCoord.xy / tileSizeInPx, clusterZVal);
-	uint  clusterIndex1D  = uint(dot(clustrerIndex3D, uvec3(1, clusterGridDim.x, clusterGridDim.x * clusterGridDim.y)));
+	uint  cluster_z_val    = uint(max(log2(linearDepth(pixel_coord.z)) * u_slice_scale + u_slice_bias, 0.0));
+	uvec3 clustrer_index3D = uvec3(pixel_coord.xy / u_tile_size_in_px, cluster_z_val);
+	uint  cluster_index1D  = uint(dot(clustrer_index3D, uvec3(1, u_cluster_grid_dim.x, u_cluster_grid_dim.x * u_cluster_grid_dim.y)));
 
-	return clusterIndex1D;
+	return cluster_index1D;
 }

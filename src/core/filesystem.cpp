@@ -3,9 +3,14 @@
 
 namespace RGL
 {
-    std::string FileSystem::getPath(const std::string& path)
+    fs::path FileSystem::getRootPath()
     {
-        return getPathRelativeRoot(path);
+        return fs::path(RAPIDGL_ROOT);
+    }
+
+    fs::path FileSystem::getResourcesPath()
+    {
+        return fs::path(RAPIDGL_RESOURCES);
     }
 
     bool FileSystem::directoryExists(const fs::path& path, fs::file_status status)
@@ -18,18 +23,8 @@ namespace RGL
         return false;
     }
 
-    void FileSystem::createDirectory(const std::string& directory_name)
+    void FileSystem::createDirectory(const fs::path& directory_name)
     {
         fs::create_directories(directory_name);
-    }
-
-    const std::string FileSystem::getRoot()
-    {
-        return std::string(RAPIDGL_ROOT);
-    }
-
-    std::string FileSystem::getPathRelativeRoot(const std::string& path)
-    {
-        return getRoot() + "/" + path;
     }
 }

@@ -1,6 +1,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <memory>
 
+#include "filesystem.h"
 #include "shader.h"
 #include "util.h"
 
@@ -18,49 +19,49 @@ namespace RGL
         }
     }
 
-    Shader::Shader(const std::string & compute_shader_filename)
+    Shader::Shader(const std::filesystem::path& compute_shader_filepath)
         : Shader()
     {
-        addShader(compute_shader_filename, GL_COMPUTE_SHADER);
+        addShader(compute_shader_filepath, GL_COMPUTE_SHADER);
     }
 
-    Shader::Shader(const std::string & vertex_shader_filename,
-                   const std::string & fragment_shader_filename)
+    Shader::Shader(const std::filesystem::path & vertex_shader_filepath,
+                   const std::filesystem::path & fragment_shader_filepath)
         : Shader()
     {
-        addShader(vertex_shader_filename, GL_VERTEX_SHADER);
-        addShader(fragment_shader_filename, GL_FRAGMENT_SHADER);
+        addShader(vertex_shader_filepath, GL_VERTEX_SHADER);
+        addShader(fragment_shader_filepath, GL_FRAGMENT_SHADER);
     }
 
-    Shader::Shader(const std::string & vertex_shader_filename,
-                   const std::string & fragment_shader_filename,
-                   const std::string & geometry_shader_filename)
-        : Shader(vertex_shader_filename, fragment_shader_filename)
+    Shader::Shader(const std::filesystem::path & vertex_shader_filepath,
+                   const std::filesystem::path & fragment_shader_filepath,
+                   const std::filesystem::path & geometry_shader_filepath)
+        : Shader(vertex_shader_filepath, fragment_shader_filepath)
     {
-        addShader(geometry_shader_filename, GL_GEOMETRY_SHADER);
+        addShader(geometry_shader_filepath, GL_GEOMETRY_SHADER);
     }
 
-    Shader::Shader(const std::string & vertex_shader_filename,
-                   const std::string & fragment_shader_filename,
-                   const std::string & tessellation_control_shader_filename,
-                   const std::string & tessellation_evaluation_shader_filename)
-        : Shader(vertex_shader_filename, fragment_shader_filename)
+    Shader::Shader(const std::filesystem::path & vertex_shader_filepath,
+                   const std::filesystem::path & fragment_shader_filepath,
+                   const std::filesystem::path & tessellation_control_shader_filepath,
+                   const std::filesystem::path & tessellation_evaluation_shader_filepath)
+        : Shader(vertex_shader_filepath, fragment_shader_filepath)
     {
-        addShader(tessellation_control_shader_filename, GL_TESS_CONTROL_SHADER);
-        addShader(tessellation_evaluation_shader_filename, GL_TESS_EVALUATION_SHADER);
+        addShader(tessellation_control_shader_filepath, GL_TESS_CONTROL_SHADER);
+        addShader(tessellation_evaluation_shader_filepath, GL_TESS_EVALUATION_SHADER);
     }
 
-    Shader::Shader(const std::string & vertex_shader_filename,
-                   const std::string & fragment_shader_filename,
-                   const std::string & geometry_shader_filename,
-                   const std::string & tessellation_control_shader_filename,
-                   const std::string & tessellation_evaluation_shader_filename)
-        : Shader(vertex_shader_filename,
-                 fragment_shader_filename,
-                 tessellation_control_shader_filename,
-                 tessellation_evaluation_shader_filename)
+    Shader::Shader(const std::filesystem::path & vertex_shader_filepath,
+                   const std::filesystem::path & fragment_shader_filepath,
+                   const std::filesystem::path & geometry_shader_filepath,
+                   const std::filesystem::path & tessellation_control_shader_filepath,
+                   const std::filesystem::path & tessellation_evaluation_shader_filepath)
+        : Shader(vertex_shader_filepath,
+                 fragment_shader_filepath,
+                 tessellation_control_shader_filepath,
+                 tessellation_evaluation_shader_filepath)
     {
-        addShader(geometry_shader_filename, GL_GEOMETRY_SHADER);
+        addShader(geometry_shader_filepath, GL_GEOMETRY_SHADER);
     }
 
     Shader::~Shader()
@@ -72,14 +73,14 @@ namespace RGL
         }
     }
 
-    void Shader::addShader(std::string const & file_name, GLuint type) const
+    void Shader::addShader(const std::filesystem::path & filepath, GLuint type) const
     {
         if (m_program_id == 0)
         {
             return;
         }
 
-        if (file_name.empty())
+        if (filepath.empty())
         {
             fprintf(stderr, "Error: Shader's file name can't be empty.\n");
 
@@ -90,14 +91,16 @@ namespace RGL
 
         if (shaderObject == 0)
         {
-            fprintf(stderr, "Error while creating %s.\n", file_name.c_str());
+            fprintf(stderr, "Error while creating %s.\n", filepath.c_str());
 
             return;
         }
 
 
-        std::string code = Util::LoadFile(file_name);
-        code = Util::LoadShaderIncludes(code);
+        std::string           code = Util::LoadFile(filepath);
+        std::filesystem::path dir  = FileSystem::getRootPath() / filepath.parent_path();
+
+        code = Util::LoadShaderIncludes(code, dir);
 
         const char * shader_code = code.c_str();
 
@@ -109,7 +112,7 @@ namespace RGL
 
         if (result == GL_FALSE)
         {
-            fprintf(stderr, "%s compilation failed!\n", file_name.c_str());
+            fprintf(stderr, "%s compilation failed!\n", filepath.c_str());
 
             GLint logLen;
             glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &logLen);
