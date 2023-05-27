@@ -1,12 +1,13 @@
 #version 460 core
+#include "shared.h"
 
 // ssbo
-layout(std430, binding = 0) buffer ClustersFlagsSSBO
+layout(std430, binding = CLUSTERS_FLAGS_SSBO_BINDING_INDEX) buffer ClustersFlagsSSBO
 {
 	bool clusters_flags[];
 };
 
-layout(std430, binding = 1) buffer UniqueActiveClustersSSBO
+layout(std430, binding = UNIQUE_ACTIVE_CLUSTERS_SSBO_BINDING_INDEX) buffer UniqueActiveClustersSSBO
 {
 	uint unique_clusters_count;
 	uint unique_clusters[];

@@ -1,7 +1,8 @@
 #version 460 core
+#include "shared.h"
 
 // ssbo
-layout(std430, binding = 0) buffer ClustersFlagsSSBO
+layout(std430, binding = CLUSTERS_FLAGS_SSBO_BINDING_INDEX) buffer ClustersFlagsSSBO
 {
 	bool clusters_flags[];
 };
@@ -23,7 +24,7 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 void main()
 {
 	uvec2 pixel_id = gl_GlobalInvocationID.xy;
-	float view_z   = imageLoad(u_depth_buffer, ivec2(pixel_id)).r; // read the lienar depth value
+	float view_z   = imageLoad(u_depth_buffer, ivec2(pixel_id)).r; // read the depth value
 
 	uint cluster_index1D  = computeClusterIndex1D(vec3(pixel_id, view_z));
 	clusters_flags[cluster_index1D] = true;

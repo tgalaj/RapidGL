@@ -62,6 +62,7 @@ namespace RGL
         void setUniform(const std::string & uniform_name, const glm::vec2 & vector);
         void setUniform(const std::string & uniform_name, const glm::vec3 & vector);
         void setUniform(const std::string & uniform_name, const glm::vec4 & vector);
+        void setUniform(const std::string & uniform_name, const glm::uvec3 & vector);
         void setUniform(const std::string & uniform_name, const glm::mat3 & matrix);
         void setUniform(const std::string & uniform_name, const glm::mat4 & matrix);
         void setUniform(const std::string & uniform_name, float* values, unsigned count);

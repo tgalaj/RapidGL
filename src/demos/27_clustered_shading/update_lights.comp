@@ -1,17 +1,17 @@
 #version 460 core
 #include "shared.h"
 
-layout(std430, binding = 10) buffer PointLightSSBO
+layout(std430, binding = POINT_LIGHTS_SSBO_BINDING_INDEX) buffer PointLightSSBO
 {
 	PointLight point_lights[];
 };
 
-layout(std430, binding = 11) buffer SpotLightsSSBO
+layout(std430, binding = SPOT_LIGHTS_SSBO_BINDING_INDEX) buffer SpotLightsSSBO
 {
 	SpotLight spot_lights[];
 };
 
-layout(std430, binding = 12) buffer EllipsesRadii
+layout(std430, binding = LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX) buffer EllipsesRadii
 {
 	vec4 ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 };
@@ -24,14 +24,8 @@ void main()
 	uint idx = gl_GlobalInvocationID.x;
 
 	// Update the point lights
-	//for (uint i = 0; i < point_lights.length(); ++i)
-	{
-		point_lights[idx].position.x = ellipses_radii[idx].x * cos(u_time * ellipses_radii[idx].z);
-        point_lights[idx].position.z = ellipses_radii[idx].y * sin(u_time * ellipses_radii[idx].z);
-	}
+	point_lights[idx].position.x = ellipses_radii[idx].x * cos(u_time * ellipses_radii[idx].z);
+    point_lights[idx].position.z = ellipses_radii[idx].y * sin(u_time * ellipses_radii[idx].z);
 
-	// Update the spot lights
-	// for (uint i = 0; i < spot_lights.length(); ++i)
-	// {
-	// }
+	// TODO: Update the spot lights
 }

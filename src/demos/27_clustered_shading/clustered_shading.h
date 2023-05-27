@@ -4,46 +4,14 @@
 #include "camera.h"
 #include "static_model.h"
 #include "shader.h"
+#include "shared.h"
 
 #include <memory>
 #include <vector>
 
-struct BaseLight
+namespace
 {
-    alignas(16) glm::vec3 color;
-    float intensity;
-};
-
-struct DirectionalLight : BaseLight
-{
-    alignas(16) glm::vec3 direction;
-
-    void setDirection(float azimuth, float elevation)
-    {
-        float az = glm::radians(azimuth);
-        float el = glm::radians(elevation);
-
-        direction.x = glm::sin(el) * glm::cos(az);
-        direction.y = glm::cos(el);
-        direction.z = glm::sin(el) * glm::sin(az);
-
-        direction = glm::normalize(-direction);
-    }
-};
-
-struct PointLight : BaseLight
-{
-    alignas(16) glm::vec3 position;
-    float radius;
-};
-
-struct SpotLight : PointLight
-{
-    alignas(16) glm::vec3 direction;
-    float inner_angle;
-    float outer_angle;
-
-    void setDirection(float azimuth, float elevation)
+    void setDirSpotLightDirection(glm::vec3& direction, float azimuth, float elevation)
     {
         float az = glm::radians(azimuth);
         float el = glm::radians(elevation);
@@ -345,9 +313,9 @@ private:
 
     std::shared_ptr<RGL::Camera> m_camera;
 
-    std::shared_ptr<CubeMapRenderTarget> m_env_cubemap_rt;
-    std::shared_ptr<CubeMapRenderTarget> m_irradiance_cubemap_rt;
-    std::shared_ptr<CubeMapRenderTarget> m_prefiltered_env_map_rt;
+    std::shared_ptr<CubeMapRenderTarget>   m_env_cubemap_rt;
+    std::shared_ptr<CubeMapRenderTarget>   m_irradiance_cubemap_rt;
+    std::shared_ptr<CubeMapRenderTarget>   m_prefiltered_env_map_rt;
     std::shared_ptr<Texture2DRenderTarget> m_brdf_lut_rt;
 
     std::shared_ptr<RGL::Shader> m_equirectangular_to_cubemap_shader;
@@ -357,14 +325,11 @@ private:
     std::shared_ptr<RGL::Shader> m_background_shader;
 
     /* Clustered shading variables. */
-    struct ClusterAABB
-    {
-        glm::vec4 min_point;
-        glm::vec4 max_point;
-    };
-
     std::shared_ptr<RGL::Shader> m_depth_prepass_shader;
     std::shared_ptr<RGL::Shader> m_generate_clusters_shader;
+    std::shared_ptr<RGL::Shader> m_find_visible_clusters_shader;
+    std::shared_ptr<RGL::Shader> m_find_unique_clusters_shader;
+    std::shared_ptr<RGL::Shader> m_cull_lights_shader;
     std::shared_ptr<RGL::Shader> m_clustered_pbr_shader;
     std::shared_ptr<RGL::Shader> m_update_lights_shader;
 
@@ -373,6 +338,9 @@ private:
     GLuint m_clusters_ssbo_id;
 
     glm::uvec3 m_grid_size = { 16, 9, 24 };
+    uint32_t m_max_lights_per_cluster = 500;
+    glm::vec2 m_tile_size_in_px;
+    glm::uvec3 m_tile_size;
     float m_slice_scale;
     float m_slice_bias;
 
@@ -394,6 +362,10 @@ private:
     GLuint m_point_lights_ssbo;
     GLuint m_spot_lights_ssbo;
     GLuint m_ellipses_radii_ssbo;
+    GLuint m_clusters_flags_ssbo;
+    GLuint m_light_index_list_ssbo;
+    GLuint m_light_grid_ssbo;
+    GLuint m_unique_active_clusters_ssbo;
 
     /* Tonemapping variables */
     std::shared_ptr<PostprocessFilter> m_tmo_ps;

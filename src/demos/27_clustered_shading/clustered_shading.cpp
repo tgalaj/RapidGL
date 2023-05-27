@@ -84,6 +84,10 @@ ClusteredShading::~ClusteredShading()
     glDeleteBuffers(1, &m_point_lights_ssbo);
     glDeleteBuffers(1, &m_spot_lights_ssbo);
     glDeleteBuffers(1, &m_ellipses_radii_ssbo);
+    glDeleteBuffers(1, &m_clusters_flags_ssbo);
+    glDeleteBuffers(1, &m_light_index_list_ssbo);
+    glDeleteBuffers(1, &m_light_grid_ssbo);
+    glDeleteBuffers(1, &m_unique_active_clusters_ssbo);
 
     glDeleteTextures(1, &m_depth_tex2D_id);
     glDeleteFramebuffers(1, &m_depth_pass_fbo_id);
@@ -112,6 +116,11 @@ void ClusteredShading::init_app()
     m_slice_scale = (float)m_grid_size.z / far_near_log;
     m_slice_bias  = -((float)m_grid_size.z * std::log2f(z_near) / far_near_log);
 
+    glm::vec2 cluster_size    = glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight()) / glm::vec2(m_grid_size);
+    glm::vec2 view_pixel_size = 1.0f / glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight());
+    
+    m_tile_size_in_px = 1.0f / cluster_size;
+
     /* Randomly initialize lights */
     GeneratePointLights();
 
@@ -128,23 +137,41 @@ void ClusteredShading::init_app()
 
     glCreateBuffers(1, &m_clusters_ssbo_id);
     glNamedBufferData(m_clusters_ssbo_id, sizeof(ClusterAABB) * clusters_count, nullptr, GL_STATIC_READ);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_clusters_ssbo_id);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, CLUSTERS_SSBO_BINDING_INDEX, m_clusters_ssbo_id);
 
     glCreateBuffers(1, &m_directional_lights_ssbo);
     glNamedBufferData(m_directional_lights_ssbo, sizeof(DirectionalLight) * m_directional_lights.size(), m_directional_lights.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_directional_lights_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, DIRECTIONAL_LIGHTS_SSBO_BINDING_INDEX, m_directional_lights_ssbo);
 
     glCreateBuffers(1, &m_point_lights_ssbo);
     glNamedBufferData(m_point_lights_ssbo, sizeof(PointLight) * m_point_lights.size(), m_point_lights.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_point_lights_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, POINT_LIGHTS_SSBO_BINDING_INDEX, m_point_lights_ssbo);
 
     glCreateBuffers(1, &m_spot_lights_ssbo);
     glNamedBufferData(m_spot_lights_ssbo, sizeof(SpotLight) * m_spot_lights.size(), m_spot_lights.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_spot_lights_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SPOT_LIGHTS_SSBO_BINDING_INDEX, m_spot_lights_ssbo);
     
     glCreateBuffers(1, &m_ellipses_radii_ssbo);
     glNamedBufferData(m_ellipses_radii_ssbo, sizeof(m_ellipses_radii[0]) * m_ellipses_radii.size(), m_ellipses_radii.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, m_ellipses_radii_ssbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX, m_ellipses_radii_ssbo);
+
+    // TODO: m_clusters_flags_ssbo
+
+    // A list of indices to the lights that are active and intersect with a cluster
+    uint32_t total_lights_count_per_cluster = clusters_count * m_max_lights_per_cluster;
+    glCreateBuffers(1, &m_light_index_list_ssbo);
+    glNamedBufferData(m_light_index_list_ssbo, sizeof(uint32_t) * total_lights_count_per_cluster, nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHT_INDEX_LIST_SSBO_BINDING_INDEX, m_light_index_list_ssbo);
+
+    // Every tile takes LightGrid struct that has two unsigned ints one to represent the number of lights in that grid
+    // Another to represent the offset to the light index list from where to begin reading light indexes from
+    // In this SSBO, atomic counter is also being stored (uint global_index_count)
+    // This implementation is straight up from Olsson paper
+    glCreateBuffers(1, &m_light_grid_ssbo);
+    glNamedBufferData(m_light_grid_ssbo, sizeof(uint32_t) + sizeof(LightGrid) * clusters_count, nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHT_GRID_SSBO_BINDING_INDEX, m_light_grid_ssbo);
+
+    // TODO: m_unique_active_clusters_ssbo
 
     /* Create depth pre-pass texture and FBO */
     glCreateTextures(GL_TEXTURE_2D, 1, &m_depth_tex2D_id);
@@ -161,13 +188,22 @@ void ClusteredShading::init_app()
     GLenum draw_buffers[] = { GL_NONE };
     glNamedFramebufferDrawBuffers(m_depth_pass_fbo_id, 1, draw_buffers);
 
-    /* Create shader. */
+    /* Create shaders. */
     std::string dir = "src/demos/27_clustered_shading/";
+    m_depth_prepass_shader = std::make_shared<Shader>(dir + "depth_pass.vert", dir + "depth_pass.frag");
+    m_depth_prepass_shader->link();
+
     m_generate_clusters_shader = std::make_shared<Shader>(dir + "generate_clusters.comp");
     m_generate_clusters_shader->link();
 
-    m_depth_prepass_shader = std::make_shared<Shader>(dir + "depth_pass.vert", dir + "depth_pass.frag");
-    m_depth_prepass_shader->link();
+    m_find_visible_clusters_shader = std::make_shared<Shader>(dir + "find_visible_clusters.comp");
+    m_find_visible_clusters_shader->link();
+
+    m_find_unique_clusters_shader = std::make_shared<Shader>(dir + "find_unique_clusters.comp");
+    m_find_unique_clusters_shader->link();
+
+    m_cull_lights_shader = std::make_shared<Shader>(dir + "cull_lights.comp");
+    m_cull_lights_shader->link();
 
     m_clustered_pbr_shader = std::make_shared<Shader>(dir + "pbr_lighting.vert", dir + "pbr_clustered.frag");
     m_clustered_pbr_shader->link();
@@ -226,18 +262,15 @@ void ClusteredShading::init_app()
     PrecomputeBRDF(m_brdf_lut_rt);
 
     /* Generate clusters' AABBs */
-    glm::vec2 cluster_size    = glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight()) / glm::vec2(m_grid_size);
-    glm::vec2 view_pixel_size = 1.0f / glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight());
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_clusters_ssbo_id);
     m_generate_clusters_shader->bind();
-    m_generate_clusters_shader->setUniform("zNear",             m_camera->NearPlane());
-    m_generate_clusters_shader->setUniform("zFar",              m_camera->FarPlane());
-    m_generate_clusters_shader->setUniform("clusterSize",       cluster_size);
-    m_generate_clusters_shader->setUniform("viewPxSize",        view_pixel_size);
-    m_generate_clusters_shader->setUniform("inverseProjection", glm::inverse(m_camera->m_projection));
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    m_generate_clusters_shader->setUniform("u_near_z",             m_camera->NearPlane());
+    m_generate_clusters_shader->setUniform("u_far_z",              m_camera->FarPlane());
+    m_generate_clusters_shader->setUniform("u_cluster_size",       cluster_size);
+    m_generate_clusters_shader->setUniform("u_view_px_size",       view_pixel_size);
+    m_generate_clusters_shader->setUniform("u_grid_dim",           m_grid_size);
+    m_generate_clusters_shader->setUniform("u_inverse_projection", glm::inverse(m_camera->m_projection));
+    uint32_t gc = std::ceilf(float(clusters_count) / 1024.0f);
+    glDispatchCompute(gc, 1, 1);
 }
 
 void ClusteredShading::input()
@@ -288,6 +321,11 @@ void ClusteredShading::input()
                   << " Orientation: [" << m_camera->orientation().w << ", "  << m_camera->orientation().x << ", " << m_camera->orientation().y << ", " << m_camera->orientation().z << "]\n"
                   << "*************************************n\n";
     }
+
+    if (Input::getKeyUp(KeyCode::Space))
+    {
+        m_animate_lights = !m_animate_lights;
+    }
 }
 
 void ClusteredShading::update(double delta_time)
@@ -303,10 +341,6 @@ void ClusteredShading::update(double delta_time)
         time_accum += delta_time * m_animation_speed;
 
         m_update_lights_shader->bind();
-
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_point_lights_ssbo);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ellipses_radii_ssbo);
-
         m_update_lights_shader->setUniform("u_time", time_accum);
 
         glDispatchCompute(std::ceilf(float(m_point_lights_count) / 1024.0f), 1, 1);
@@ -333,11 +367,11 @@ void ClusteredShading::GeneratePointLights()
         float rand_x = glm::linearRand(-range_x, range_x);
         float rand_z = glm::linearRand(-range_z, range_z);
 
-        p.color      = hsv2rgb(glm::linearRand(1.0f, 360.0f), glm::linearRand(0.1f, 1.0f), glm::linearRand(0.1f, 1.0f));
-        p.intensity  = m_point_lights_intensity;
-        p.position.y = glm::linearRand(0.5f, 12.0f);
-        p.radius     = glm::linearRand(min_max_point_light_radius.x, min_max_point_light_radius.y);
-        e            = glm::vec4(rand_x, rand_z, glm::linearRand(0.5f, 2.0f), 0.0f); // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+        p.base.color     = hsv2rgb(glm::linearRand(1.0f, 360.0f), glm::linearRand(0.1f, 1.0f), glm::linearRand(0.1f, 1.0f));
+        p.base.intensity = m_point_lights_intensity;
+        p.position.y     = glm::linearRand(0.5f, 12.0f);
+        p.radius         = glm::linearRand(min_max_point_light_radius.x, min_max_point_light_radius.y);
+        e                = glm::vec4(rand_x, rand_z, glm::linearRand(0.5f, 2.0f), 0.0f); // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
         p.position.x = e.x * glm::cos(0.01f * e.z);
         p.position.z = e.y * glm::sin(0.01f * e.z);
@@ -532,18 +566,25 @@ void ClusteredShading::GenSkyboxGeometry()
 
 void ClusteredShading::render()
 {
-    /* Depth(Z) pre pass */
+    // 1. Depth(Z) pre-pass
     renderDepthPass();
 
-    /* Render lighting */
+    // 2. Blit depth info to tmo_ps framebuffer
     glBlitNamedFramebuffer(m_depth_pass_fbo_id, m_tmo_ps->rt->m_fbo_id, 
                            0, 0, Window::getWidth(), Window::getHeight(),
                            0, 0, Window::getWidth(), Window::getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
+    // 3. Assign lights to clusters
+    m_cull_lights_shader->bind();
+    m_cull_lights_shader->setUniform("u_view_matrix", m_camera->m_view);
+    glDispatchCompute(1, 1, 6);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    // Render lighting
     m_tmo_ps->bindFilterFBO(GL_COLOR_BUFFER_BIT);
     renderLighting();
 
-     /* Render skybox */
+    // Render skybox
     m_background_shader->bind();
     m_background_shader->setUniform("u_projection", m_camera->m_projection);
     m_background_shader->setUniform("u_view",       glm::mat4(glm::mat3(m_camera->m_view)));
@@ -553,7 +594,7 @@ void ClusteredShading::render()
     glBindVertexArray(m_skybox_vao);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-    /* Bloom: downscale */
+    // Bloom: downscale
     if (m_bloom_enabled)
     {
         m_downscale_shader->bind();
@@ -600,7 +641,7 @@ void ClusteredShading::render()
         }
     }
 
-    /* Apply tone mapping */
+    // Apply tone mapping
     m_tmo_ps->render(m_exposure, m_gamma);
 }
 
@@ -627,17 +668,15 @@ void ClusteredShading::renderLighting()
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     // TODO: clustered shading
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_directional_lights_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_point_lights_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_spot_lights_ssbo);
-
     m_clustered_pbr_shader->bind();
-    m_clustered_pbr_shader->setUniform("u_cam_pos",      m_camera->position());
-    m_clustered_pbr_shader->setUniform("u_near_z",       m_camera->NearPlane());
-    m_clustered_pbr_shader->setUniform("u_far_z",        m_camera->FarPlane());
-    m_clustered_pbr_shader->setUniform("u_slice_scale",  m_slice_scale);
-    m_clustered_pbr_shader->setUniform("u_slice_bias",   m_slice_bias);
-    m_clustered_pbr_shader->setUniform("u_debug_slices", m_debug_slices);
+    m_clustered_pbr_shader->setUniform("u_cam_pos",         m_camera->position());
+    m_clustered_pbr_shader->setUniform("u_near_z",          m_camera->NearPlane());
+    m_clustered_pbr_shader->setUniform("u_far_z",           m_camera->FarPlane());
+    m_clustered_pbr_shader->setUniform("u_slice_scale",     m_slice_scale);
+    m_clustered_pbr_shader->setUniform("u_slice_bias",      m_slice_bias);
+    m_clustered_pbr_shader->setUniform("u_debug_slices",    m_debug_slices);
+    m_clustered_pbr_shader->setUniform("u_tile_size_in_px", m_tile_size_in_px);
+    m_clustered_pbr_shader->setUniform("u_grid_size",       m_grid_size);
 
     m_clustered_pbr_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
     m_clustered_pbr_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
@@ -646,6 +685,7 @@ void ClusteredShading::renderLighting()
     m_irradiance_cubemap_rt->bindTexture(6);
     m_prefiltered_env_map_rt->bindTexture(7);
     m_brdf_lut_rt->bindTexture(8);
+    glBindTextureUnit(9, m_depth_tex2D_id);
 
     m_sponza_static_object.m_model->Render(m_clustered_pbr_shader);
 
@@ -706,7 +746,7 @@ void ClusteredShading::render_gui()
             ImGui::SliderFloat("Animation Speed",                            &m_animation_speed, 0.0f, 15.0f, "%.1f");
             ImGui::InputScalar("Point Lights Count",      ImGuiDataType_U32, &m_point_lights_count);
 
-            if (ImGui::InputFloat("Min Point Lights Radius", &min_max_point_light_radius.x, 0.0f, 0.0f, "%.0f"))
+            if (ImGui::InputFloat("Min Point Lights Radius", &min_max_point_light_radius.x, 0.0f, 0.0f, "%.2f"))
             {
                 if (min_max_point_light_radius.x < 0.0)
                 {
@@ -714,7 +754,7 @@ void ClusteredShading::render_gui()
                 }
             }
 
-            if (ImGui::InputFloat ("Max Point Lights Radius", &min_max_point_light_radius.y, 0.0f, 0.0f, "%.0f"))
+            if (ImGui::InputFloat ("Max Point Lights Radius", &min_max_point_light_radius.y, 0.0f, 0.0f, "%.2f"))
             {
                 if (min_max_point_light_radius.y < 0.0)
                 {

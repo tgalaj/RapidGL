@@ -1,13 +1,7 @@
 #version 460 core
+#include "shared.h"
 
-struct ClusterAABB
-{
-	vec4 min_point;
-	vec4 max_point;
-};
-
-// ssbo
-layout(std430, binding = 0) buffer ClustersSSBO
+layout(std430, binding = CLUSTERS_SSBO_BINDING_INDEX) buffer ClustersSSBO
 {
 	ClusterAABB clusters[];
 };
@@ -20,7 +14,7 @@ uniform vec2  u_view_px_size;
 uniform uvec3 u_grid_dim;
 uniform mat4  u_inverse_projection;
 
-/* Function prototypes */
+/* Functions' prototypes */
 uvec3 computeClusterIndex3D(uint cluster_index1D);
 vec4 clipToView(vec4 clip);
 vec4 screenToView(vec4 screen);
@@ -39,8 +33,8 @@ void main()
 	vec3 max_point_vs = screenToView(max_point_ss).xyz; // Bottom right in screen space
 
 	// Near and far values of the cluster in view space
-	float cluster_near_z = u_near_z * pow(u_far_z / u_near_z, float(cluster_index3D.z)     / float(u_grid_dim.z));
-	float cluster_far_z  = u_near_z * pow(u_far_z / u_near_z, float(cluster_index3D.z + 1) / float(u_grid_dim.z));
+	float cluster_near_z = -u_near_z * pow(u_far_z / u_near_z, float(cluster_index3D.z)     / float(u_grid_dim.z));
+	float cluster_far_z  = -u_near_z * pow(u_far_z / u_near_z, float(cluster_index3D.z + 1) / float(u_grid_dim.z));
 
 	// Eye pos in view space is at the origin
 	vec3 eye_pos = vec3(0.0);
@@ -53,8 +47,8 @@ void main()
 	vec3 min_point_AABB = min(min(min_point_near, min_point_far), min(max_point_near, max_point_far));
 	vec3 max_point_AABB = max(max(min_point_near, min_point_far), max(max_point_near, max_point_far));
 
-	clusters[cluster_index1D].min_point = vec4(min_point_AABB, 1.0);
-	clusters[cluster_index1D].max_point = vec4(max_point_AABB, 1.0);
+	clusters[cluster_index1D].min_point = vec4(min_point_AABB, 0.0);
+	clusters[cluster_index1D].max_point = vec4(max_point_AABB, 0.0);
 }
 
 uvec3 computeClusterIndex3D(uint cluster_index1D)
@@ -71,22 +65,34 @@ uvec3 computeClusterIndex3D(uint cluster_index1D)
 vec3 lineIntersectionToZPlane(vec3 A, vec3 B, float zDistance)
 {
     //Because this is a Z based normal this is fixed
+//    vec3 normal = vec3(0.0, 0.0, 1.0);
+//
+//    vec3 ab = B - A;
+//
+//    //Computing the intersection length for the line and the plane
+//    float t = (zDistance - dot(normal, A)) / dot(normal, ab);
+//
+//	bool intersect = (t >= 0.0 && t <= 1.0);
+//
+//    //Computing the actual xyz position of the point along the line
+//	vec3 result = vec3(0, 0, 1);
+//    if (intersect)
+//	{
+//		result = A + t * ab;
+//	}
+//	
+//    return result;
+    //Because this is a Z based normal this is fixed
     vec3 normal = vec3(0.0, 0.0, 1.0);
 
-    vec3 ab = B - A;
+    vec3 ab =  B - A;
 
     //Computing the intersection length for the line and the plane
-    float t = (zDistance - dot(normal, A)) / dot(normal, ab);
-
-	bool intersect = (t >= 0.0 && t <= 1.0);
+    float t = (zDistance - dot(normal, A)) / (dot(normal, ab));
 
     //Computing the actual xyz position of the point along the line
-	vec3 result = vec3(0);
-    if (intersect)
-	{
-		result = A + t * ab;
-	}
-	
+    vec3 result = A + t * ab;
+
     return result;
 }
 
@@ -107,8 +113,7 @@ vec4 screenToView(vec4 screen)
     vec2 texcoord = screen.xy * u_view_px_size.xy;
 
     //Convert to clipSpace
-    vec4 clip = vec4(vec2(texcoord.x, 1.0 - texcoord.y) * 2.0 - 1.0, screen.z, screen.w);
-    // vec4 clip = vec4(vec2(texcoord.x, texcoord.y) * 2.0 - 1.0, screen.z, screen.w);
+    vec4 clip = vec4(vec2(texcoord.x, texcoord.y) * 2.0 - 1.0, screen.z, screen.w);
 
     return clipToView(clip);
 }

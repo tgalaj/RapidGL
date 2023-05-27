@@ -1,45 +1,24 @@
 #version 460 core
+#include "shared.h"
 
 // TODO: search only in the active clusters
 
-struct PointLight
-{
-    vec4  position;
-    vec4  color;
-    float intensity;
-    float range;
-	uint  pad0;
-	uint  pad1;
-};
-
-struct LightGrid
-{
-    uint offset;
-    uint count;
-};
-
-struct ClusterAABB
-{
-	vec4 min_point;
-	vec4 max_point;
-};
-
-layout(std430, binding = 0) buffer ClustersSSBO
+layout(std430, binding = CLUSTERS_SSBO_BINDING_INDEX) buffer ClustersSSBO
 {
 	ClusterAABB clusters[];
 };
 
-layout (std430, binding = 1) buffer LightSSBO
+layout (std430, binding = POINT_LIGHTS_SSBO_BINDING_INDEX) buffer PointLightsSSBO
 {
     PointLight point_lights[];
 };
 
-layout (std430, binding = 2) buffer LightIndexSSBO
+layout (std430, binding = LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer LightIndexListSSBO
 {
     uint global_light_index_list[];
 };
 
-layout (std430, binding = 3) buffer LightGridSSBO
+layout (std430, binding = LIGHT_GRID_SSBO_BINDING_INDEX) buffer LightGridSSBO
 {
 	uint global_index_count;
     LightGrid light_grid[];
@@ -48,9 +27,6 @@ layout (std430, binding = 3) buffer LightGridSSBO
 shared PointLight shared_point_lights[16*9*4];
 
 uniform mat4  u_view_matrix;
-uniform mat4  u_inverse_projection;
-uniform uvec4 u_tile_sizes;
-uniform uvec2 u_screen_dimensions;
 
 bool  testSphereAABB (uint light, uint tile);
 float sqDistPointAABB(vec3 point, uint tile);
@@ -106,11 +82,11 @@ void main()
 
 bool testSphereAABB(uint light, uint tile)
 {
-    float radius           = shared_point_lights[light].range;
-    vec3  center           = vec3(u_view_matrix * shared_point_lights[light].position);
+    float radius           = shared_point_lights[light].radius;
+    vec3  center           = vec3(u_view_matrix * vec4(shared_point_lights[light].position, 1.0));
     float squared_distance = sqDistPointAABB(center, tile);
 
-    return squared_distance <= (radius * radius);
+    return squared_distance < (radius * radius);
 }
 
 float sqDistPointAABB(vec3 point, uint tile)
@@ -122,10 +98,12 @@ float sqDistPointAABB(vec3 point, uint tile)
 	for (int i = 0; i < 3; ++i)
 	{
         float v = point[i];
-        if (v < current_cell.min_point[i])
+        
+		if (v < current_cell.min_point[i])
 		{
             sq_dist += (current_cell.min_point[i] - v) * (current_cell.min_point[i] - v);
         }
+
         if(v > current_cell.max_point[i])
 		{
             sq_dist += (v - current_cell.max_point[i]) * (v - current_cell.max_point[i]);

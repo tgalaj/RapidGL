@@ -31,27 +31,9 @@ namespace RGL
             return "";
         }
 
-        std::string skip_begin_phrase = "#ifdef __cplusplus";
-        std::string skip_end_phrase   = "#endif";
-
-        bool skip = false;
-
         while (getline(inFile, line))
         {
-            if (line.substr(0, skip_begin_phrase.size()) == skip_begin_phrase)
-            {
-                skip = true;
-            }
-            
-            if (!skip)
-            {
-                filetext.append(line + "\n");
-            }
-
-            if (line.substr(0, skip_end_phrase.size()) == skip_end_phrase)
-            {
-                skip = false;
-            }
+            filetext.append(line + "\n");
         }
 
         inFile.close();
