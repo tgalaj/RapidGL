@@ -337,12 +337,14 @@ private:
     GLuint m_depth_pass_fbo_id;
     GLuint m_clusters_ssbo_id;
 
-    glm::uvec3 m_grid_size = { 16, 9, 24 };
-    uint32_t m_max_lights_per_cluster = 500;
-    glm::vec2 m_tile_size_in_px;
-    glm::uvec3 m_tile_size;
-    float m_slice_scale;
-    float m_slice_bias;
+    // Average number of overlapping lights per cluster AABB.
+    const uint32_t AVERAGE_OVERLAPPING_LIGHTS_PER_CLUSTER = 50u;
+
+    uint32_t   m_cluster_grid_block_size = 64; // The size of a cluster in the screen space.
+    glm::uvec3 m_cluster_grid_dim;             // 3D dimensions of the cluster grid.
+    float      m_near_k;                       // ( 1 + ( 2 * tan( fov * 0.5 ) / ClusterGridDim.y ) ) // Used to compute the near plane for clusters at depth k.    
+    float      m_log_grid_dim_y;               // 1.0f / log( NearK )  // Used to compute the k index of the cluster from the view depth of a pixel sample.
+    uint64_t   m_clusters_count;
 
     bool m_debug_slices = false;
 

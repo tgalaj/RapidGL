@@ -104,22 +104,29 @@ void ClusteredShading::init_app()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     /* Create virtual camera. */
-    m_camera = std::make_shared<Camera>(60.0, Window::getAspectRatio(), 0.01, 300.0);
+    m_camera = std::make_shared<Camera>(45.0, Window::getAspectRatio(), 0.01, 300.0);
     m_camera->setPosition(-8.32222, 1.9269, -0.768721);
     m_camera->setOrientation(glm::quat(0.634325, 0.0407623, 0.772209, 0.0543523));
    
     /* Init clustered shading variables. */
     float z_near       = m_camera->NearPlane();
     float z_far        = m_camera->FarPlane();
-    float far_near_log = std::log2f(z_far / z_near);
-    
-    m_slice_scale = (float)m_grid_size.z / far_near_log;
-    m_slice_bias  = -((float)m_grid_size.z * std::log2f(z_near) / far_near_log);
+    float half_fov     = glm::radians(m_camera->FOV() * 0.5f);
 
-    glm::vec2 cluster_size    = glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight()) / glm::vec2(m_grid_size);
-    glm::vec2 view_pixel_size = 1.0f / glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight());
-    
-    m_tile_size_in_px = 1.0f / cluster_size;
+    m_cluster_grid_dim.x = uint32_t(glm::ceil(RGL::Window::getWidth()  / float(m_cluster_grid_block_size)));
+    m_cluster_grid_dim.y = uint32_t(glm::ceil(RGL::Window::getHeight() / float(m_cluster_grid_block_size)));
+
+    // The depth of the cluster grid during clustered rendering is dependent on the 
+    // number of clusters subdivisions in the screen Y direction.
+    // Source: Clustered Deferred and Forward Shading (2012) (Ola Olsson, Markus Billeter, Ulf Assarsson).
+    float sD         = 2.0f * glm::tan(half_fov) / float(m_cluster_grid_dim.y);
+          m_near_k   = 1.0f + sD;
+    m_log_grid_dim_y = 1.0f / glm::log(m_near_k);
+
+    float log_depth      = glm::log(z_far / z_near);
+    m_cluster_grid_dim.z = uint32_t(glm::floor(log_depth * m_log_grid_dim_y));
+
+    m_clusters_count = m_cluster_grid_dim.x * m_cluster_grid_dim.y * m_cluster_grid_dim.z;
 
     /* Randomly initialize lights */
     GeneratePointLights();
@@ -132,11 +139,14 @@ void ClusteredShading::init_app()
     world_trans = glm::scale(world_trans, glm::vec3(sponza_model->GetUnitScaleFactor() * 30.0f));
     m_sponza_static_object = StaticObject(sponza_model, world_trans);
 
+    /// TODO:
+    /// [] prepare SSBOs like in Oosten's demo
+    /// [] Update the shaders as are in Oosten's demo
+    /// [] Update grid sectioning formula in the shaders
+    
     /* Prepare SSBOs */
-    uint32_t clusters_count = m_grid_size.x * m_grid_size.y * m_grid_size.z;
-
     glCreateBuffers(1, &m_clusters_ssbo_id);
-    glNamedBufferData(m_clusters_ssbo_id, sizeof(ClusterAABB) * clusters_count, nullptr, GL_STATIC_READ);
+    glNamedBufferData(m_clusters_ssbo_id, sizeof(ClusterAABB) * m_clusters_count, nullptr, GL_STATIC_READ);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, CLUSTERS_SSBO_BINDING_INDEX, m_clusters_ssbo_id);
 
     glCreateBuffers(1, &m_directional_lights_ssbo);
@@ -158,9 +168,8 @@ void ClusteredShading::init_app()
     // TODO: m_clusters_flags_ssbo
 
     // A list of indices to the lights that are active and intersect with a cluster
-    uint32_t total_lights_count_per_cluster = clusters_count * m_max_lights_per_cluster;
     glCreateBuffers(1, &m_light_index_list_ssbo);
-    glNamedBufferData(m_light_index_list_ssbo, sizeof(uint32_t) * total_lights_count_per_cluster, nullptr, GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_light_index_list_ssbo, sizeof(uint32_t) * m_clusters_count * AVERAGE_OVERLAPPING_LIGHTS_PER_CLUSTER, nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHT_INDEX_LIST_SSBO_BINDING_INDEX, m_light_index_list_ssbo);
 
     // Every tile takes LightGrid struct that has two unsigned ints one to represent the number of lights in that grid
@@ -168,7 +177,7 @@ void ClusteredShading::init_app()
     // In this SSBO, atomic counter is also being stored (uint global_index_count)
     // This implementation is straight up from Olsson paper
     glCreateBuffers(1, &m_light_grid_ssbo);
-    glNamedBufferData(m_light_grid_ssbo, sizeof(uint32_t) + sizeof(LightGrid) * clusters_count, nullptr, GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_light_grid_ssbo, sizeof(uint32_t) + sizeof(LightGrid) * m_clusters_count, nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, LIGHT_GRID_SSBO_BINDING_INDEX, m_light_grid_ssbo);
 
     // TODO: m_unique_active_clusters_ssbo
@@ -261,16 +270,19 @@ void ClusteredShading::init_app()
     PrecomputeIndirectLight(FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
     PrecomputeBRDF(m_brdf_lut_rt);
 
+    auto proj = m_camera->m_projection;
+    auto inv_proj = glm::inverse(proj);
+
     /* Generate clusters' AABBs */
     m_generate_clusters_shader->bind();
+    m_generate_clusters_shader->setUniform("u_grid_dim",           m_cluster_grid_dim);
+    m_generate_clusters_shader->setUniform("u_cluster_size_ss",    glm::uvec2(m_cluster_grid_block_size));
+    m_generate_clusters_shader->setUniform("u_near_k",             m_near_k);
     m_generate_clusters_shader->setUniform("u_near_z",             m_camera->NearPlane());
-    m_generate_clusters_shader->setUniform("u_far_z",              m_camera->FarPlane());
-    m_generate_clusters_shader->setUniform("u_cluster_size",       cluster_size);
-    m_generate_clusters_shader->setUniform("u_view_px_size",       view_pixel_size);
-    m_generate_clusters_shader->setUniform("u_grid_dim",           m_grid_size);
     m_generate_clusters_shader->setUniform("u_inverse_projection", glm::inverse(m_camera->m_projection));
-    uint32_t gc = std::ceilf(float(clusters_count) / 1024.0f);
-    glDispatchCompute(gc, 1, 1);
+    m_generate_clusters_shader->setUniform("u_pixel_size",         1.0f / glm::vec2(RGL::Window::getWidth(), RGL::Window::getHeight()));
+    glDispatchCompute(glm::ceil(float(m_clusters_count) / 1024.0f), 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
 void ClusteredShading::input()
@@ -575,9 +587,13 @@ void ClusteredShading::render()
                            0, 0, Window::getWidth(), Window::getHeight(), GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
     // 3. Assign lights to clusters
+    static const uint32_t clear_val = 0;
+    glClearNamedBufferData(m_light_grid_ssbo, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
+    glClearNamedBufferData(m_light_index_list_ssbo, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
+
     m_cull_lights_shader->bind();
     m_cull_lights_shader->setUniform("u_view_matrix", m_camera->m_view);
-    glDispatchCompute(1, 1, 6);
+    glDispatchCompute(m_clusters_count, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render lighting
@@ -671,14 +687,13 @@ void ClusteredShading::renderLighting()
     m_clustered_pbr_shader->bind();
     m_clustered_pbr_shader->setUniform("u_cam_pos",         m_camera->position());
     m_clustered_pbr_shader->setUniform("u_near_z",          m_camera->NearPlane());
-    m_clustered_pbr_shader->setUniform("u_far_z",           m_camera->FarPlane());
-    m_clustered_pbr_shader->setUniform("u_slice_scale",     m_slice_scale);
-    m_clustered_pbr_shader->setUniform("u_slice_bias",      m_slice_bias);
+    m_clustered_pbr_shader->setUniform("u_grid_dim",        m_cluster_grid_dim);
+    m_clustered_pbr_shader->setUniform("u_cluster_size_ss", glm::uvec2(m_cluster_grid_block_size));
+    m_clustered_pbr_shader->setUniform("u_log_grid_dim_y",  m_log_grid_dim_y);
     m_clustered_pbr_shader->setUniform("u_debug_slices",    m_debug_slices);
-    m_clustered_pbr_shader->setUniform("u_tile_size_in_px", m_tile_size_in_px);
-    m_clustered_pbr_shader->setUniform("u_grid_size",       m_grid_size);
 
     m_clustered_pbr_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
+    m_clustered_pbr_shader->setUniform("u_view",          m_camera->m_view);
     m_clustered_pbr_shader->setUniform("u_normal_matrix", glm::mat3(glm::transpose(glm::inverse(m_sponza_static_object.m_transform))));
     m_clustered_pbr_shader->setUniform("u_mvp",           view_projection * m_sponza_static_object.m_transform);
 

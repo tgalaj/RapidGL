@@ -330,6 +330,21 @@ namespace RGL
         }
     }
 
+    void Shader::setUniform(const std::string& uniformName, const glm::uvec2& vector)
+    {
+        if (m_uniforms_locations.count(uniformName))
+        {
+            glProgramUniform2uiv(m_program_id, m_uniforms_locations[uniformName], 1, glm::value_ptr(vector));
+        }
+        else
+        {
+            if (getUniformLocation(uniformName))
+            {
+                glProgramUniform2uiv(m_program_id, m_uniforms_locations[uniformName], 1, glm::value_ptr(vector));
+            }
+        }
+    }
+
     void Shader::setUniform(const std::string& uniformName, const glm::uvec3& vector)
     {
         if (m_uniforms_locations.count(uniformName))

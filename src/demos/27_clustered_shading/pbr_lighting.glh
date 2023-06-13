@@ -5,7 +5,9 @@ const float MAX_REFLECTION_LOD = 4.0; // mips in range [0, 4]
 
 layout (location = 0) in vec2 in_texcoord;
 layout (location = 1) in vec3 in_world_pos;
-layout (location = 2) in vec3 in_normal;
+layout (location = 2) in vec3 in_view_pos;
+layout (location = 3) in vec4 in_clip_pos;
+layout (location = 4) in vec3 in_normal;
 
 layout(binding = 0) uniform sampler2D u_albedo_map;
 layout(binding = 1) uniform sampler2D u_normal_map;

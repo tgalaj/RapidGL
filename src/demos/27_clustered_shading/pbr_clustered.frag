@@ -4,14 +4,11 @@
 out vec4 frag_color;
 
 uniform float u_near_z;
-uniform float u_far_z;
-uniform float u_slice_scale;
-uniform float u_slice_bias;
-uniform bool  u_debug_slices;
-uniform vec2  u_tile_size_in_px;
-uniform uvec3 u_grid_size;
+uniform uvec3 u_grid_dim;
+uniform uvec2 u_cluster_size_ss;
+uniform float u_log_grid_dim_y;
 
-layout (binding = 9) uniform sampler2D u_depth_buffer;
+uniform bool u_debug_slices;
 
 const vec3 debug_colors[8] = vec3[]
 (
@@ -45,6 +42,11 @@ layout (std430, binding = LIGHT_GRID_SSBO_BINDING_INDEX) buffer LightGridSSBO
     LightGrid light_grid[];
 };
 
+layout(origin_upper_left) in vec4 gl_FragCoord;
+
+uint  computeClusterIndex1D(uvec3 cluster_index3D);
+uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z);
+
 void main()
 {
 	vec3 radiance = vec3(0.0);
@@ -52,23 +54,19 @@ void main()
 
 	MaterialProperties material = getMaterialProperties(normal);
 
-	// Locating the cluster we are in
-	// TODO: load depth from depth buffer instead of gl_fragcoord.z
-	float frag_depth = texture(u_depth_buffer, gl_FragCoord.xy / vec2(1920, 1080)).r;
-	//float frag_depth = gl_FragCoord.z;
-	uint  tile_z     = uint(max(log2(linearDepth(frag_depth, u_near_z, u_far_z)) * u_slice_scale + u_slice_bias, 0.0));
-	uvec3 tiles      = uvec3(uvec2(gl_FragCoord.xy * u_tile_size_in_px), tile_z);
-	uint  tile_index = tiles.x + u_grid_size.x * tiles.y + (u_grid_size.x * u_grid_size.y) * tiles.z;
-
 	// Calculate the directional lights
 	for (uint i = 0; i < dir_lights.length(); ++i)
 	{
 		radiance += calcDirectionalLight(dir_lights[i], in_world_pos, material);
 	}
 
+	// Locating the cluster we are in
+	uvec3 cluster_index3D = computeClusterIndex3D(gl_FragCoord.xy, in_view_pos.z);
+	uint  cluster_index1D = computeClusterIndex1D(cluster_index3D);
+
 	// Calculate the point lights
-	uint point_light_count		  = light_grid[tile_index].count;
-	uint point_light_index_offset = light_grid[tile_index].offset;
+	uint point_light_index_offset = light_grid[cluster_index1D].offset;
+	uint point_light_count		  = light_grid[cluster_index1D].count;
 
 	#if 1
 	for (uint i = 0; i < point_light_count; ++i)
@@ -93,11 +91,28 @@ void main()
 
 	if (u_debug_slices)
 	{
-		frag_color = vec4(debug_colors[tile_z % 8], 1.0);
+		frag_color = vec4(debug_colors[cluster_index3D.z % 8], 1.0);
 	}
 	else
 	{
 		// total lighting
 		frag_color = vec4(radiance, 1.0);
 	}
+}
+
+uint computeClusterIndex1D(uvec3 cluster_index3D)
+{
+	return cluster_index3D.x + (u_grid_dim.x * (cluster_index3D.y + u_grid_dim.y * cluster_index3D.z));
+}
+
+uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z)
+{
+	uint x = uint(screen_pos.x / u_cluster_size_ss.x);
+	uint y = uint(screen_pos.y / u_cluster_size_ss.y);
+
+	// It is assumed that view space z is negative (right-handed coordinate system)
+    // so the view-space z coordinate needs to be negated to make it positive.
+    uint z = uint(log( -view_z / u_near_z ) * u_log_grid_dim_y);
+
+	return uvec3(x, y, z);
 }

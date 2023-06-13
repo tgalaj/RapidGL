@@ -44,8 +44,8 @@ struct SpotLight
 
 struct ClusterAABB
 {
-    vec4 min_point;
-    vec4 max_point;
+    vec4 min;
+    vec4 max;
 };
 
 struct LightGrid
