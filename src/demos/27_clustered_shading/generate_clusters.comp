@@ -113,7 +113,7 @@ vec4 screenToView(vec4 screen)
     vec2 texcoord = screen.xy * u_pixel_size;
 
     //Convert to clipSpace
-    vec4 clip = vec4(vec2(texcoord.x, 1.0 - texcoord.y) * 2.0 - 1.0, screen.z, screen.w);
+    vec4 clip = vec4(vec2(texcoord.x, texcoord.y) * 2.0 - 1.0, screen.z, screen.w);
 
     return clipToView(clip);
 }

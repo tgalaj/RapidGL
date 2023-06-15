@@ -13,14 +13,6 @@ layout(std430, binding = UNIQUE_ACTIVE_CLUSTERS_SSBO_BINDING_INDEX) buffer Uniqu
 	uint unique_clusters[];
 };
 
-layout(r32f, binding = 0) readonly uniform image2D u_depth_buffer;
-
-// uniforms
-uniform float u_slice_scale;
-uniform float u_slice_bias;
-uniform uvec2 u_tile_size_in_px;   // How many pixels a rectangular cluster takes in x and y
-uniform vec3  u_cluster_grid_dim; // The fixed number of clusters in x y and z axes
-
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 void main()
 {

@@ -1,8 +1,6 @@
 #version 460 core
 #include "shared.h"
 
-// TODO: search only in the active clusters
-
 layout(std430, binding = CLUSTERS_SSBO_BINDING_INDEX) buffer ClustersSSBO
 {
 	ClusterAABB clusters[];
@@ -13,15 +11,21 @@ layout (std430, binding = POINT_LIGHTS_SSBO_BINDING_INDEX) buffer PointLightsSSB
     PointLight point_lights[];
 };
 
-layout (std430, binding = LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer LightIndexListSSBO
+layout (std430, binding = POINT_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer PointLightIndexListSSBO
 {
-    uint global_light_index_list[];
+    uint point_light_index_list[];
 };
 
-layout (std430, binding = LIGHT_GRID_SSBO_BINDING_INDEX) buffer LightGridSSBO
+layout (std430, binding = POINT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer PointLightGridSSBO
 {
-	uint global_index_count;
-    LightGrid light_grid[];
+	uint point_light_index_counter;
+    LightGrid point_light_grid[];
+};
+
+layout(std430, binding = UNIQUE_ACTIVE_CLUSTERS_SSBO_BINDING_INDEX) buffer UniqueActiveClustersSSBO
+{
+	uint unique_clusters_count;
+	uint unique_clusters[];
 };
 
 uniform mat4 u_view_matrix;
@@ -45,7 +49,7 @@ void main()
 	{
 		s_point_lights_count = 0;
 
-		s_cluster_index_1D = gl_WorkGroupID.x;//unique_clusters[gl_WorkGroupID.x]; // TODO: must have!!
+		s_cluster_index_1D = unique_clusters[gl_WorkGroupID.x];
 		s_cluster_aabb     = clusters[s_cluster_index_1D];
 	}
 	barrier();
@@ -67,7 +71,6 @@ void main()
 			}
 		}
     }
-
 	// TODO: Intersect spot lights against AABBs
 
     // We want all thread groups to have completed the light tests before continuing.
@@ -77,16 +80,16 @@ void main()
 	if (gl_LocalInvocationIndex == 0)
 	{
 		// Update light grid for point lights.
-		s_point_lights_start_offset = atomicAdd(global_index_count, s_point_lights_count);
-		light_grid[s_cluster_index_1D].offset = s_point_lights_start_offset;
-		light_grid[s_cluster_index_1D].count  = s_point_lights_count;
+		s_point_lights_start_offset = atomicAdd(point_light_index_counter, s_point_lights_count);
+		point_light_grid[s_cluster_index_1D].offset = s_point_lights_start_offset;
+		point_light_grid[s_cluster_index_1D].count  = s_point_lights_count;
 	}
 	barrier();
 
 	// Update the global light index lists with the shared light lists.
 	for (uint i = gl_LocalInvocationIndex; i < s_point_lights_count; i += THREADS_COUNT)
 	{
-		global_light_index_list[s_point_lights_start_offset + i] = s_point_lights_list[i];
+		point_light_index_list[s_point_lights_start_offset + i] = s_point_lights_list[i];
 	}
 }
 

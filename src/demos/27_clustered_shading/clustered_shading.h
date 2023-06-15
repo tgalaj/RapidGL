@@ -11,7 +11,7 @@
 
 namespace
 {
-    void setDirSpotLightDirection(glm::vec3& direction, float azimuth, float elevation)
+    void setLightDirection(glm::vec3& direction, float azimuth, float elevation)
     {
         float az = glm::radians(azimuth);
         float el = glm::radians(elevation);
@@ -21,6 +21,46 @@ namespace
         direction.z = glm::sin(el) * glm::sin(az);
 
         direction = glm::normalize(-direction);
+    }
+
+    // Convert HSV to RGB:
+    // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
+    // Retrieved: 28/04/2016
+    // @param H Hue in the range [0, 360)
+    // @param S Saturation in the range [0, 1]
+    // @param V Value in the range [0, 1]
+    glm::vec3 hsv2rgb(float H, float S, float V)
+    {
+        float C = V * S;
+        float m = V - C;
+        float H2 = H / 60.0f;
+        float X = C * (1.0f - fabsf(fmodf(H2, 2.0f) - 1.0f));
+
+        glm::vec3 RGB;
+
+        switch (static_cast<int>(H2))
+        {
+        case 0:
+            RGB = { C, X, 0 };
+            break;
+        case 1:
+            RGB = { X, C, 0 };
+            break;
+        case 2:
+            RGB = { 0, C, X };
+            break;
+        case 3:
+            RGB = { 0, X, C };
+            break;
+        case 4:
+            RGB = { X, 0, C };
+            break;
+        case 5:
+            RGB = { C, 0, X };
+            break;
+        }
+
+        return RGB + m;
     }
 };
 
@@ -127,10 +167,10 @@ private:
             glTextureParameteri(m_texture_id, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE);
 
             glCreateRenderbuffers(1, &m_rbo_id);
-            glNamedRenderbufferStorage(m_rbo_id, GL_DEPTH24_STENCIL8, width, height);
+            glNamedRenderbufferStorage(m_rbo_id, GL_DEPTH_COMPONENT32F, width, height);
 
             glNamedFramebufferTexture(m_fbo_id, GL_COLOR_ATTACHMENT0, m_texture_id, 0);
-            glNamedFramebufferRenderbuffer(m_fbo_id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rbo_id);
+            glNamedFramebufferRenderbuffer(m_fbo_id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rbo_id);
         }
 
         uint8_t calculateMipmapLevels()
@@ -299,6 +339,7 @@ private:
     }; 
 
     void GeneratePointLights();
+    void GenerateSpotLights();
     void UpdateLightsSSBOs();
 
     void HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget> & cubemap_rt, const std::shared_ptr<RGL::Texture2D> & m_equirectangular_map);
@@ -324,20 +365,30 @@ private:
     std::shared_ptr<RGL::Shader> m_precompute_brdf;
     std::shared_ptr<RGL::Shader> m_background_shader;
 
-    /* Clustered shading variables. */
+    /// Clustered shading variables.
     std::shared_ptr<RGL::Shader> m_depth_prepass_shader;
     std::shared_ptr<RGL::Shader> m_generate_clusters_shader;
     std::shared_ptr<RGL::Shader> m_find_visible_clusters_shader;
     std::shared_ptr<RGL::Shader> m_find_unique_clusters_shader;
+    std::shared_ptr<RGL::Shader> m_update_cull_lights_indirect_args_shader;
     std::shared_ptr<RGL::Shader> m_cull_lights_shader;
     std::shared_ptr<RGL::Shader> m_clustered_pbr_shader;
     std::shared_ptr<RGL::Shader> m_update_lights_shader;
 
     GLuint m_depth_tex2D_id;
     GLuint m_depth_pass_fbo_id;
-    GLuint m_clusters_ssbo_id;
+
+    GLuint m_clusters_ssbo;
+    GLuint m_cull_lights_dispatch_args_ssbo;
+    GLuint m_clusters_flags_ssbo;
+    GLuint m_point_light_index_list_ssbo;
+    GLuint m_spot_light_index_list_ssbo;
+    GLuint m_point_light_grid_ssbo;
+    GLuint m_spot_light_grid_ssbo;
+    GLuint m_unique_active_clusters_ssbo;
 
     // Average number of overlapping lights per cluster AABB.
+    // This variable matters when the lights are big and cover more than one cluster.
     const uint32_t AVERAGE_OVERLAPPING_LIGHTS_PER_CLUSTER = 50u;
 
     uint32_t   m_cluster_grid_block_size = 64; // The size of a cluster in the screen space.
@@ -348,26 +399,27 @@ private:
 
     bool m_debug_slices = false;
 
-    /* Lights */
-    uint32_t m_point_lights_count       = 50;
-    uint32_t m_spot_lights_count        = 0;
-    uint32_t m_directional_lights_count = 0;
+    /// Lights
+    uint32_t  m_point_lights_count       = 500;
+    uint32_t  m_spot_lights_count        = 0;
+    uint32_t  m_directional_lights_count = 0;
+
+    glm::vec2 min_max_light_radius       = glm::vec2(1.0f, 3.0f);
+    float     m_lights_intensity         = 1.0f;
+    float     m_animation_speed          = 0.618f;
+    bool      m_animate_lights           = false;
 
     std::vector<PointLight>       m_point_lights;
     std::vector<SpotLight>        m_spot_lights;
     std::vector<DirectionalLight> m_directional_lights;
-    std::vector<glm::vec4>        m_ellipses_radii; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+    std::vector<glm::vec4>        m_lights_ellipses_radii; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
     StaticObject m_sponza_static_object;
 
     GLuint m_directional_lights_ssbo;
     GLuint m_point_lights_ssbo;
     GLuint m_spot_lights_ssbo;
-    GLuint m_ellipses_radii_ssbo;
-    GLuint m_clusters_flags_ssbo;
-    GLuint m_light_index_list_ssbo;
-    GLuint m_light_grid_ssbo;
-    GLuint m_unique_active_clusters_ssbo;
+    GLuint m_lights_ellipses_radii_ssbo;
 
     /* Tonemapping variables */
     std::shared_ptr<PostprocessFilter> m_tmo_ps;
@@ -380,14 +432,9 @@ private:
 
     GLuint m_skybox_vao, m_skybox_vbo;
 
-    bool      m_animate_lights           = false;
-    float     m_animation_speed          = 1.0f;
-    float     m_point_lights_intensity   = 1.0f;
-    glm::vec2 min_max_point_light_radius = glm::vec2(10.0f, 300.0f);
-
     /* Bloom members */
-    std::shared_ptr<RGL::Shader> m_downscale_shader;
-    std::shared_ptr<RGL::Shader> m_upscale_shader;
+    std::shared_ptr<RGL::Shader>    m_downscale_shader;
+    std::shared_ptr<RGL::Shader>    m_upscale_shader;
     std::shared_ptr<RGL::Texture2D> m_bloom_dirt_texture;
 
     float m_threshold;
@@ -395,5 +442,4 @@ private:
     float m_bloom_intensity;
     float m_bloom_dirt_intensity;
     bool  m_bloom_enabled;
-    /* End bloom members */
 };

@@ -1,32 +1,37 @@
 #version 460 core
 #include "shared.h"
 
-// ssbo
 layout(std430, binding = CLUSTERS_FLAGS_SSBO_BINDING_INDEX) buffer ClustersFlagsSSBO
 {
 	bool clusters_flags[];
 };
 
-layout(r32f, binding = 0) readonly uniform image2D u_depth_buffer;
+layout (binding = 0) uniform sampler2D u_depth_buffer;
 
-// uniforms
+// Uniforms
 uniform float u_near_z;
 uniform float u_far_z;
-uniform float u_slice_scale;
-uniform float u_slice_bias;
-uniform uvec2 u_tile_size_in_px;   // How many pixels a rectangular cluster takes in x and y
-uniform vec3  u_cluster_grid_dim; // The fixed number of clusters in x y and z axes
+uniform float u_log_grid_dim_y;
+uniform uvec2 u_cluster_size_ss;
+uniform uvec3 u_grid_dim;
 
-/* Function prototypes */
-uint computeClusterIndex1D(vec3 pixel_coord);
+// Function's prototypes
+float linearDepth(float depth);
+uint  computeClusterIndex1D(uvec3 cluster_index3D);
+uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z);
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 void main()
 {
-	uvec2 pixel_id = gl_GlobalInvocationID.xy;
-	float view_z   = imageLoad(u_depth_buffer, ivec2(pixel_id)).r; // read the depth value
+	uvec2 pixel_id   = gl_GlobalInvocationID.xy;
 
-	uint cluster_index1D  = computeClusterIndex1D(vec3(pixel_id, view_z));
+	vec2  uv         = vec2(pixel_id + vec2(0.5)) / vec2(textureSize(u_depth_buffer, 0).xy);
+	float view_z     = texture(u_depth_buffer, uv).r;
+	vec2  screen_pos = vec2(pixel_id) + vec2(0.5);
+
+	uvec3 cluster_index3D = computeClusterIndex3D(screen_pos, linearDepth(view_z));
+	uint  cluster_index1D = computeClusterIndex1D(cluster_index3D);
+
 	clusters_flags[cluster_index1D] = true;
 }
 
@@ -38,11 +43,16 @@ float linearDepth(float depth)
 	return linear_depth;
 }
 
-uint computeClusterIndex1D(vec3 pixel_coord)
+uint computeClusterIndex1D(uvec3 cluster_index3D)
 {
-	uint  cluster_z_val    = uint(max(log2(linearDepth(pixel_coord.z)) * u_slice_scale + u_slice_bias, 0.0));
-	uvec3 clustrer_index3D = uvec3(pixel_coord.xy / u_tile_size_in_px, cluster_z_val);
-	uint  cluster_index1D  = uint(dot(clustrer_index3D, uvec3(1, u_cluster_grid_dim.x, u_cluster_grid_dim.x * u_cluster_grid_dim.y)));
+	return cluster_index3D.x + (u_grid_dim.x * (cluster_index3D.y + u_grid_dim.y * cluster_index3D.z));
+}
 
-	return cluster_index1D;
+uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z)
+{
+	uint x = uint(screen_pos.x / u_cluster_size_ss.x);
+	uint y = uint(screen_pos.y / u_cluster_size_ss.y);
+    uint z = uint(log(view_z / u_near_z) * u_log_grid_dim_y);
+
+	return uvec3(x, y, z);
 }

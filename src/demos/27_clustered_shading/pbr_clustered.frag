@@ -31,18 +31,16 @@ layout(std430, binding = SPOT_LIGHTS_SSBO_BINDING_INDEX) buffer SpotLightsSSBO
 	SpotLight spot_lights[];
 };
 
-layout (std430, binding = LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer LightIndexListSSBO
+layout (std430, binding = POINT_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer PointLightIndexListSSBO
 {
-    uint global_light_index_list[];
+    uint point_light_index_list[];
 };
 
-layout (std430, binding = LIGHT_GRID_SSBO_BINDING_INDEX) buffer LightGridSSBO
+layout (std430, binding = POINT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer PointLightGridSSBO
 {
-	uint global_index_count;
-    LightGrid light_grid[];
+	uint point_light_index_counter;
+    LightGrid point_light_grid[];
 };
-
-layout(origin_upper_left) in vec4 gl_FragCoord;
 
 uint  computeClusterIndex1D(uvec3 cluster_index3D);
 uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z);
@@ -65,21 +63,15 @@ void main()
 	uint  cluster_index1D = computeClusterIndex1D(cluster_index3D);
 
 	// Calculate the point lights
-	uint point_light_index_offset = light_grid[cluster_index1D].offset;
-	uint point_light_count		  = light_grid[cluster_index1D].count;
+	uint point_light_index_offset = point_light_grid[cluster_index1D].offset;
+	uint point_light_count		  = point_light_grid[cluster_index1D].count;
 
-	#if 1
 	for (uint i = 0; i < point_light_count; ++i)
 	{
-		uint light_index = global_light_index_list[point_light_index_offset + i];
+		uint light_index = point_light_index_list[point_light_index_offset + i];
 		radiance += calcPointLight(point_lights[light_index], in_world_pos, material);
 	}
-	#else
-	for (uint i = 0; i < point_lights.length(); ++i)
-	{
-		radiance += calcPointLight(point_lights[i], in_world_pos, material);
-	}
-	#endif
+
 	// Calculate the spot lights
 	for (uint i = 0; i < spot_lights.length(); ++i)
 	{
@@ -110,7 +102,7 @@ uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z)
 	uint x = uint(screen_pos.x / u_cluster_size_ss.x);
 	uint y = uint(screen_pos.y / u_cluster_size_ss.y);
 
-	// It is assumed that view space z is negative (right-handed coordinate system)
+	// View space z is negative (right-handed coordinate system)
     // so the view-space z coordinate needs to be negated to make it positive.
     uint z = uint(log( -view_z / u_near_z ) * u_log_grid_dim_y);
 

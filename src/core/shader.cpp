@@ -112,7 +112,7 @@ namespace RGL
 
         if (result == GL_FALSE)
         {
-            fprintf(stderr, "%s compilation failed!\n", filepath.c_str());
+            fprintf(stderr, "\n%s compilation failed!\n", filepath.string().c_str());
 
             GLint logLen;
             glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &logLen);
