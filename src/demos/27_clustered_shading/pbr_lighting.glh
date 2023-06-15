@@ -233,8 +233,11 @@ vec3 calcPointLight(PointLight light, vec3 world_pos, MaterialProperties materia
 vec3 calcSpotLight(SpotLight light, vec3 world_pos, MaterialProperties material)
 {
     vec3  L               = normalize(world_pos - light.point.position);
-    float attenuation     = getSpotAngleAttenuation(L, -light.direction, light.inner_angle, light.outer_angle);
-	vec3  light_direction = light.point.position - world_pos;
+	vec3  posToLight      = light.point.position - world_pos;
+
+    float attenuation     = getSquareFalloffAttenuation(posToLight, 1.0 / light.point.radius);
+	      attenuation    *= getSpotAngleAttenuation(L, -light.direction, light.inner_angle, light.outer_angle);
+	vec3  light_direction = posToLight;
 
 	return pbr(light.point.base, light_direction, world_pos, attenuation, material);
 }

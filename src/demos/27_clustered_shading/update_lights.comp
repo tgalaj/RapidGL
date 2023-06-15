@@ -11,9 +11,14 @@ layout(std430, binding = SPOT_LIGHTS_SSBO_BINDING_INDEX) buffer SpotLightsSSBO
 	SpotLight spot_lights[];
 };
 
-layout(std430, binding = LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX) buffer EllipsesRadii
+layout(std430, binding = POINT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX) buffer PointEllipsesRadii
 {
-	vec4 ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+	vec4 point_ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+};
+
+layout(std430, binding = SPOT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX) buffer SpotEllipsesRadii
+{
+	vec4 spot_ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 };
 
 uniform float u_time;
@@ -21,11 +26,19 @@ uniform float u_time;
 layout(local_size_x = 1024) in;
 void main()
 {
-	uint idx = gl_GlobalInvocationID.x;
+	uint thread_ID = gl_GlobalInvocationID.x;
 
-	// Update the point lights
-	point_lights[idx].position.x = ellipses_radii[idx].x * cos(u_time * ellipses_radii[idx].z);
-    point_lights[idx].position.z = ellipses_radii[idx].y * sin(u_time * ellipses_radii[idx].z);
+	// Update point lights
+	if (thread_ID < point_lights.length())
+	{
+	    point_lights[thread_ID].position.x = point_ellipses_radii[thread_ID].x * cos(u_time * point_ellipses_radii[thread_ID].z);
+        point_lights[thread_ID].position.z = point_ellipses_radii[thread_ID].y * sin(u_time * point_ellipses_radii[thread_ID].z);
+	}
 
-	// TODO: Update the spot lights
+	// Update spot lights
+	if (thread_ID < spot_lights.length())
+	{
+	    spot_lights[thread_ID].point.position.x = spot_ellipses_radii[thread_ID].x * cos(u_time * spot_ellipses_radii[thread_ID].z);
+        spot_lights[thread_ID].point.position.z = spot_ellipses_radii[thread_ID].y * sin(u_time * spot_ellipses_radii[thread_ID].z);
+	}
 }

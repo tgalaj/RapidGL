@@ -22,6 +22,22 @@ layout (std430, binding = POINT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer PointLight
     LightGrid point_light_grid[];
 };
 
+layout (std430, binding = SPOT_LIGHTS_SSBO_BINDING_INDEX) buffer SpotLightsSSBO
+{
+    SpotLight spot_lights[];
+};
+
+layout (std430, binding = SPOT_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer SpotLightIndexListSSBO
+{
+    uint spot_light_index_list[];
+};
+
+layout (std430, binding = SPOT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer SpotLightGridSSBO
+{
+	uint spot_light_index_counter;
+    LightGrid spot_light_grid[];
+};
+
 layout(std430, binding = UNIQUE_ACTIVE_CLUSTERS_SSBO_BINDING_INDEX) buffer UniqueActiveClustersSSBO
 {
 	uint unique_clusters_count;
@@ -37,6 +53,10 @@ shared uint s_point_lights_count;
 shared uint s_point_lights_start_offset;
 shared uint s_point_lights_list[1024];
 
+shared uint s_spot_lights_count;
+shared uint s_spot_lights_start_offset;
+shared uint s_spot_lights_list[1024];
+
 bool sphereInsideAABB(vec3 center, float radius, ClusterAABB aabb);
 float sqDistancePointAABB(vec3 point, ClusterAABB aabb);
 
@@ -48,6 +68,7 @@ void main()
 	if (gl_LocalInvocationIndex == 0)
 	{
 		s_point_lights_count = 0;
+		s_spot_lights_count  = 0;
 
 		s_cluster_index_1D = unique_clusters[gl_WorkGroupID.x];
 		s_cluster_aabb     = clusters[s_cluster_index_1D];
@@ -71,7 +92,37 @@ void main()
 			}
 		}
     }
-	// TODO: Intersect spot lights against AABBs
+
+	// Intersect spot lights against AABBs
+	// Treating spot lights as spheres not cones.
+	// Feel free to make a pull request if you find any good cone-AABB intersection test.
+	for (uint i = gl_LocalInvocationIndex; i < spot_lights.length(); i += THREADS_COUNT)
+	{
+		SpotLight light = spot_lights[i];
+		vec4 bounding_sphere;
+
+		if(light.outer_angle > 3.14f/4.0f)
+		{
+			bounding_sphere.xyz = light.point.position + cos(light.outer_angle) * light.point.radius * light.direction;
+			bounding_sphere.w   = sin(light.outer_angle) * light.point.radius;
+		}
+		else
+		{
+			bounding_sphere.xyz = light.point.position + light.point.radius / (2.0f * cos(light.outer_angle)) * light.direction;
+			bounding_sphere.w   = light.point.radius / (2.0f * cos(light.outer_angle));
+		}
+
+		if (sphereInsideAABB(light.point.position, light.point.radius, s_cluster_aabb))
+		//if (sphereInsideAABB(bounding_sphere.xyz, bounding_sphere.w, s_cluster_aabb))
+		{
+			index = atomicAdd(s_spot_lights_count, 1);
+
+			if (index < 1024)
+			{
+				s_spot_lights_list[index] = i;
+			}
+		}
+    }
 
     // We want all thread groups to have completed the light tests before continuing.
 	barrier();
@@ -83,6 +134,11 @@ void main()
 		s_point_lights_start_offset = atomicAdd(point_light_index_counter, s_point_lights_count);
 		point_light_grid[s_cluster_index_1D].offset = s_point_lights_start_offset;
 		point_light_grid[s_cluster_index_1D].count  = s_point_lights_count;
+
+		// Update light grid for spot lights.
+		s_spot_lights_start_offset = atomicAdd(spot_light_index_counter, s_spot_lights_count);
+		spot_light_grid[s_cluster_index_1D].offset = s_spot_lights_start_offset;
+		spot_light_grid[s_cluster_index_1D].count  = s_spot_lights_count;
 	}
 	barrier();
 
@@ -90,6 +146,11 @@ void main()
 	for (uint i = gl_LocalInvocationIndex; i < s_point_lights_count; i += THREADS_COUNT)
 	{
 		point_light_index_list[s_point_lights_start_offset + i] = s_point_lights_list[i];
+	}
+
+	for (uint i = gl_LocalInvocationIndex; i < s_spot_lights_count; i += THREADS_COUNT)
+	{
+		spot_light_index_list[s_spot_lights_start_offset + i] = s_spot_lights_list[i];
 	}
 }
 

@@ -42,6 +42,17 @@ layout (std430, binding = POINT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer PointLight
     LightGrid point_light_grid[];
 };
 
+layout (std430, binding = SPOT_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX) buffer SpotLightIndexListSSBO
+{
+    uint spot_light_index_list[];
+};
+
+layout (std430, binding = SPOT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer SpotLightGridSSBO
+{
+	uint spot_light_index_counter;
+    LightGrid spot_light_grid[];
+};
+
 uint  computeClusterIndex1D(uvec3 cluster_index3D);
 uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z);
 
@@ -63,19 +74,23 @@ void main()
 	uint  cluster_index1D = computeClusterIndex1D(cluster_index3D);
 
 	// Calculate the point lights
-	uint point_light_index_offset = point_light_grid[cluster_index1D].offset;
-	uint point_light_count		  = point_light_grid[cluster_index1D].count;
+	uint light_index_offset = point_light_grid[cluster_index1D].offset;
+	uint light_count		= point_light_grid[cluster_index1D].count;
 
-	for (uint i = 0; i < point_light_count; ++i)
+	for (uint i = 0; i < light_count; ++i)
 	{
-		uint light_index = point_light_index_list[point_light_index_offset + i];
+		uint light_index = point_light_index_list[light_index_offset + i];
 		radiance += calcPointLight(point_lights[light_index], in_world_pos, material);
 	}
 
 	// Calculate the spot lights
-	for (uint i = 0; i < spot_lights.length(); ++i)
+	light_index_offset = spot_light_grid[cluster_index1D].offset;
+	light_count		   = spot_light_grid[cluster_index1D].count;
+
+	for (uint i = 0; i < light_count; ++i)
 	{
-		radiance += calcSpotLight(spot_lights[i], in_world_pos, material);
+		uint light_index = spot_light_index_list[light_index_offset + i];
+		radiance += calcSpotLight(spot_lights[light_index], in_world_pos, material);
 	}
 
 	radiance += indirectLightingIBL(in_world_pos, material);

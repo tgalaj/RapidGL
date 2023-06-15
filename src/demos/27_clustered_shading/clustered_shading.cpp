@@ -44,7 +44,8 @@ ClusteredShading::~ClusteredShading()
     glDeleteBuffers(1, &m_directional_lights_ssbo);
     glDeleteBuffers(1, &m_point_lights_ssbo);
     glDeleteBuffers(1, &m_spot_lights_ssbo);
-    glDeleteBuffers(1, &m_lights_ellipses_radii_ssbo);
+    glDeleteBuffers(1, &m_point_lights_ellipses_radii_ssbo);
+    glDeleteBuffers(1, &m_spot_lights_ellipses_radii_ssbo);
     glDeleteBuffers(1, &m_clusters_flags_ssbo);
     glDeleteBuffers(1, &m_point_light_index_list_ssbo);
     glDeleteBuffers(1, &m_spot_light_index_list_ssbo);
@@ -94,6 +95,7 @@ void ClusteredShading::init_app()
     /// Randomly initialize lights
     srand(3281991);
     GeneratePointLights();
+    GenerateSpotLights();
 
     /// Create Sponza static object
     auto sponza_model = std::make_shared<StaticModel>();
@@ -116,9 +118,13 @@ void ClusteredShading::init_app()
     glNamedBufferData(m_spot_lights_ssbo, sizeof(SpotLight) * m_spot_lights.size(), m_spot_lights.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase (GL_SHADER_STORAGE_BUFFER, SPOT_LIGHTS_SSBO_BINDING_INDEX, m_spot_lights_ssbo);
 
-    glCreateBuffers  (1, &m_lights_ellipses_radii_ssbo);
-    glNamedBufferData(m_lights_ellipses_radii_ssbo, sizeof(m_lights_ellipses_radii[0]) * m_lights_ellipses_radii.size(), m_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase (GL_SHADER_STORAGE_BUFFER, LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX, m_lights_ellipses_radii_ssbo);
+    glCreateBuffers  (1, &m_point_lights_ellipses_radii_ssbo);
+    glNamedBufferData(m_point_lights_ellipses_radii_ssbo, sizeof(m_point_lights_ellipses_radii[0]) * m_point_lights_ellipses_radii.size(), m_point_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase (GL_SHADER_STORAGE_BUFFER, POINT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX, m_point_lights_ellipses_radii_ssbo);
+
+    glCreateBuffers  (1, &m_spot_lights_ellipses_radii_ssbo);
+    glNamedBufferData(m_spot_lights_ellipses_radii_ssbo, sizeof(m_spot_lights_ellipses_radii[0]) * m_spot_lights_ellipses_radii.size(), m_spot_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase (GL_SHADER_STORAGE_BUFFER, SPOT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX, m_spot_lights_ellipses_radii_ssbo);
 
     /// Prepare SSBOs related to the clustering (light-culling) algorithm.
     // Stores the screen-space clusters 
@@ -339,7 +345,8 @@ void ClusteredShading::update(double delta_time)
         m_update_lights_shader->bind();
         m_update_lights_shader->setUniform("u_time", time_accum);
 
-        glDispatchCompute(std::ceilf(float(m_point_lights_count) / 1024.0f), 1, 1);
+        uint32_t max_lights_count = glm::max(m_point_lights_count, glm::max(m_spot_lights_count, m_directional_lights_count));
+        glDispatchCompute(std::ceilf(max_lights_count / 1024.0f), 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
 }
@@ -349,8 +356,8 @@ void ClusteredShading::GeneratePointLights()
     m_point_lights.clear();
     m_point_lights.resize(m_point_lights_count);
 
-    m_lights_ellipses_radii.clear();
-    m_lights_ellipses_radii.resize(m_point_lights_count);
+    m_point_lights_ellipses_radii.clear();
+    m_point_lights_ellipses_radii.resize(m_point_lights_count);
 
     const float range_x = 11.0f;
     const float range_z = 6.0f;
@@ -358,15 +365,15 @@ void ClusteredShading::GeneratePointLights()
     for(uint32_t i = 0; i < m_point_lights.size(); ++i)
     {
         auto& p = m_point_lights[i];
-        auto& e = m_lights_ellipses_radii[i];
+        auto& e = m_point_lights_ellipses_radii[i];
 
         float rand_x = glm::linearRand(-range_x, range_x);
         float rand_z = glm::linearRand(-range_z, range_z);
 
         p.base.color     = hsv2rgb(glm::linearRand(1.0f, 360.0f), glm::linearRand(0.1f, 1.0f), glm::linearRand(0.1f, 1.0f));
-        p.base.intensity = m_lights_intensity;
+        p.base.intensity = m_point_lights_intensity;
         p.position.y     = glm::linearRand(0.5f, 12.0f);
-        p.radius         = glm::linearRand(min_max_light_radius.x, min_max_light_radius.y);
+        p.radius         = glm::linearRand(min_max_point_light_radius.x, min_max_point_light_radius.y);
         e                = glm::vec4(rand_x, rand_z, glm::linearRand(0.5f, 2.0f), 0.0f); // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
         p.position.x = e.x * glm::cos(1.618f * e.z);
@@ -376,14 +383,44 @@ void ClusteredShading::GeneratePointLights()
 
 void ClusteredShading::GenerateSpotLights()
 {
+    m_spot_lights.clear();
+    m_spot_lights.resize(m_spot_lights_count);
+
+    m_spot_lights_ellipses_radii.clear();
+    m_spot_lights_ellipses_radii.resize(m_spot_lights_count);
+
+    const float range_x = 11.0f;
+    const float range_z = 6.0f;
+    
+    for(uint32_t i = 0; i < m_spot_lights.size(); ++i)
+    {
+        auto& p = m_spot_lights[i];
+        auto& e = m_spot_lights_ellipses_radii[i];
+
+        float rand_x = glm::linearRand(-range_x, range_x);
+        float rand_z = glm::linearRand(-range_z, range_z);
+
+        setLightDirection(p.direction, glm::linearRand(0.0f, 360.0f), glm::linearRand(0.0f, 70.0f));
+        p.outer_angle          = glm::radians(15.0f);
+        p.inner_angle          = glm::radians(10.0f);
+        p.point.base.color     = hsv2rgb(glm::linearRand(1.0f, 360.0f), glm::linearRand(0.1f, 1.0f), glm::linearRand(0.1f, 1.0f));
+        p.point.base.intensity = m_spot_lights_intensity;
+        p.point.position.y     = glm::linearRand(0.5f, 12.0f);
+        p.point.radius         = glm::linearRand(min_max_spot_light_radius.x, min_max_spot_light_radius.y);
+        e                      = glm::vec4(rand_x, rand_z, glm::linearRand(0.5f, 2.0f), 0.0f); // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+
+        p.point.position.x = e.x * glm::cos(1.618f * e.z);
+        p.point.position.z = e.y * glm::sin(1.618f * e.z);
+    }
 }
 
 void ClusteredShading::UpdateLightsSSBOs()
 {
-    glNamedBufferData(m_directional_lights_ssbo,    sizeof(DirectionalLight)           * m_directional_lights.size(),    m_directional_lights.data(),    GL_DYNAMIC_DRAW);
-    glNamedBufferData(m_point_lights_ssbo,          sizeof(PointLight)                 * m_point_lights.size(),          m_point_lights.data(),          GL_DYNAMIC_DRAW);
-    glNamedBufferData(m_spot_lights_ssbo,           sizeof(SpotLight)                  * m_spot_lights.size(),           m_spot_lights.data(),           GL_DYNAMIC_DRAW);
-    glNamedBufferData(m_lights_ellipses_radii_ssbo, sizeof(m_lights_ellipses_radii[0]) * m_lights_ellipses_radii.size(), m_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_directional_lights_ssbo,          sizeof(DirectionalLight)                 * m_directional_lights.size(),          m_directional_lights.data(),          GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_point_lights_ssbo,                sizeof(PointLight)                       * m_point_lights.size(),                m_point_lights.data(),                GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_spot_lights_ssbo,                 sizeof(SpotLight)                        * m_spot_lights.size(),                 m_spot_lights.data(),                 GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_point_lights_ellipses_radii_ssbo, sizeof(m_point_lights_ellipses_radii[0]) * m_point_lights_ellipses_radii.size(), m_point_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_spot_lights_ellipses_radii_ssbo,  sizeof(m_spot_lights_ellipses_radii[0])  * m_spot_lights_ellipses_radii.size(),  m_spot_lights_ellipses_radii.data(),  GL_DYNAMIC_DRAW);
 }
 
 void ClusteredShading::HdrEquirectangularToCubemap(const std::shared_ptr<CubeMapRenderTarget>& cubemap_rt, const std::shared_ptr<Texture2D>& m_equirectangular_map)
@@ -604,6 +641,8 @@ void ClusteredShading::render()
     // 5. Assign lights to clusters (cull lights)
     glClearNamedBufferData(m_point_light_grid_ssbo,       GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
     glClearNamedBufferData(m_point_light_index_list_ssbo, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
+    glClearNamedBufferData(m_spot_light_grid_ssbo,        GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
+    glClearNamedBufferData(m_spot_light_index_list_ssbo,  GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
 
     m_cull_lights_shader->bind();
     m_cull_lights_shader->setUniform("u_view_matrix", m_camera->m_view);
@@ -775,27 +814,48 @@ void ClusteredShading::render_gui()
             ImGui::SliderFloat("Animation Speed",                            &m_animation_speed, 0.0f, 15.0f, "%.1f");
             ImGui::InputScalar("Point Lights Count",      ImGuiDataType_U32, &m_point_lights_count);
 
-            if (ImGui::InputFloat("Min Point Lights Radius", &min_max_light_radius.x, 0.0f, 0.0f, "%.2f"))
+            if (ImGui::InputFloat("Min Point Lights Radius", &min_max_point_light_radius.x, 0.0f, 0.0f, "%.2f"))
             {
-                if (min_max_light_radius.x < 0.0)
+                if (min_max_point_light_radius.x < 0.0)
                 {
-                    min_max_light_radius.x = 0.0f;
+                    min_max_point_light_radius.x = 0.0f;
                 }
             }
 
-            if (ImGui::InputFloat ("Max Point Lights Radius", &min_max_light_radius.y, 0.0f, 0.0f, "%.2f"))
+            if (ImGui::InputFloat ("Max Point Lights Radius", &min_max_point_light_radius.y, 0.0f, 0.0f, "%.2f"))
             {
-                if (min_max_light_radius.y < 0.0)
+                if (min_max_point_light_radius.y < 0.0)
                 {
-                    min_max_light_radius.y = 0.0f;
+                    min_max_point_light_radius.y = 0.0f;
+                }
+            }
+            ImGui::SliderFloat("Point Lights Intensity", &m_point_lights_intensity, 0.0f, 10.0f, "%.2f");
+
+            ImGui::Separator();
+            ImGui::InputScalar("Spot Lights Count", ImGuiDataType_U32, &m_spot_lights_count);
+
+            if (ImGui::InputFloat("Min Spot Lights Radius", &min_max_spot_light_radius.x, 0.0f, 0.0f, "%.2f"))
+            {
+                if (min_max_spot_light_radius.x < 0.0)
+                {
+                    min_max_spot_light_radius.x = 0.0f;
                 }
             }
 
-            ImGui::SliderFloat("Point Lights Intensity", &m_lights_intensity, 0.0f, 10.0f, "%.2f");
+            if (ImGui::InputFloat("Max Spot Lights Radius", &min_max_spot_light_radius.y, 0.0f, 0.0f, "%.2f"))
+            {
+                if (min_max_spot_light_radius.y < 0.0)
+                {
+                    min_max_spot_light_radius.y = 0.0f;
+                }
+            }
+
+            ImGui::SliderFloat("Spot Lights Intensity", &m_spot_lights_intensity, 0.0f, 10.0f, "%.2f");
 
             if (ImGui::Button("Generate Lights"))
             {
                 GeneratePointLights();
+                GenerateSpotLights();
                 UpdateLightsSSBOs();
             }
 

@@ -401,25 +401,30 @@ private:
 
     /// Lights
     uint32_t  m_point_lights_count       = 500;
-    uint32_t  m_spot_lights_count        = 0;
+    uint32_t  m_spot_lights_count        = 500;
     uint32_t  m_directional_lights_count = 0;
 
-    glm::vec2 min_max_light_radius       = glm::vec2(1.0f, 3.0f);
-    float     m_lights_intensity         = 1.0f;
+    glm::vec2 min_max_point_light_radius = glm::vec2(1.0f, 2.0f);
+    glm::vec2 min_max_spot_light_radius  = glm::vec2(1.0f, 4.0f);
+
+    float     m_point_lights_intensity   = 1.0f;
+    float     m_spot_lights_intensity    = 6.0f;
     float     m_animation_speed          = 0.618f;
     bool      m_animate_lights           = false;
 
     std::vector<PointLight>       m_point_lights;
     std::vector<SpotLight>        m_spot_lights;
     std::vector<DirectionalLight> m_directional_lights;
-    std::vector<glm::vec4>        m_lights_ellipses_radii; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+    std::vector<glm::vec4>        m_point_lights_ellipses_radii; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+    std::vector<glm::vec4>        m_spot_lights_ellipses_radii;  // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
     StaticObject m_sponza_static_object;
 
     GLuint m_directional_lights_ssbo;
     GLuint m_point_lights_ssbo;
     GLuint m_spot_lights_ssbo;
-    GLuint m_lights_ellipses_radii_ssbo;
+    GLuint m_point_lights_ellipses_radii_ssbo;
+    GLuint m_spot_lights_ellipses_radii_ssbo;
 
     /* Tonemapping variables */
     std::shared_ptr<PostprocessFilter> m_tmo_ps;
