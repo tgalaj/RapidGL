@@ -406,6 +406,9 @@ private:
 
     glm::vec2 min_max_point_light_radius = glm::vec2(1.0f, 2.0f);
     glm::vec2 min_max_spot_light_radius  = glm::vec2(1.0f, 4.0f);
+    glm::vec2 min_max_spot_angles        = glm::vec2(10.0f, 15.0f);
+    glm::vec3 min_lights_bounds          = glm::vec3(-11.0f,  0.2f, -6.0f);
+    glm::vec3 max_lights_bounds          = glm::vec3( 11.0f, 12.0f,  6.0f);
 
     float     m_point_lights_intensity   = 1.0f;
     float     m_spot_lights_intensity    = 6.0f;

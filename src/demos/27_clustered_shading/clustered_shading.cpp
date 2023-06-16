@@ -358,21 +358,18 @@ void ClusteredShading::GeneratePointLights()
 
     m_point_lights_ellipses_radii.clear();
     m_point_lights_ellipses_radii.resize(m_point_lights_count);
-
-    const float range_x = 11.0f;
-    const float range_z = 6.0f;
     
     for(uint32_t i = 0; i < m_point_lights.size(); ++i)
     {
         auto& p = m_point_lights[i];
         auto& e = m_point_lights_ellipses_radii[i];
 
-        float rand_x = glm::linearRand(-range_x, range_x);
-        float rand_z = glm::linearRand(-range_z, range_z);
+        float rand_x = glm::linearRand(min_lights_bounds.x, max_lights_bounds.x);
+        float rand_z = glm::linearRand(min_lights_bounds.z, max_lights_bounds.z);
 
         p.base.color     = hsv2rgb(glm::linearRand(1.0f, 360.0f), glm::linearRand(0.1f, 1.0f), glm::linearRand(0.1f, 1.0f));
         p.base.intensity = m_point_lights_intensity;
-        p.position.y     = glm::linearRand(0.5f, 12.0f);
+        p.position.y     = glm::linearRand(min_lights_bounds.y, max_lights_bounds.y);
         p.radius         = glm::linearRand(min_max_point_light_radius.x, min_max_point_light_radius.y);
         e                = glm::vec4(rand_x, rand_z, glm::linearRand(0.5f, 2.0f), 0.0f); // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
@@ -389,23 +386,20 @@ void ClusteredShading::GenerateSpotLights()
     m_spot_lights_ellipses_radii.clear();
     m_spot_lights_ellipses_radii.resize(m_spot_lights_count);
 
-    const float range_x = 11.0f;
-    const float range_z = 6.0f;
-    
     for(uint32_t i = 0; i < m_spot_lights.size(); ++i)
     {
         auto& p = m_spot_lights[i];
         auto& e = m_spot_lights_ellipses_radii[i];
 
-        float rand_x = glm::linearRand(-range_x, range_x);
-        float rand_z = glm::linearRand(-range_z, range_z);
+        float rand_x = glm::linearRand(min_lights_bounds.x, max_lights_bounds.x);
+        float rand_z = glm::linearRand(min_lights_bounds.z, max_lights_bounds.z);
 
         setLightDirection(p.direction, glm::linearRand(0.0f, 360.0f), glm::linearRand(0.0f, 70.0f));
-        p.outer_angle          = glm::radians(15.0f);
-        p.inner_angle          = glm::radians(10.0f);
+        p.inner_angle          = glm::radians(min_max_spot_angles.x);
+        p.outer_angle          = glm::radians(min_max_spot_angles.y);
         p.point.base.color     = hsv2rgb(glm::linearRand(1.0f, 360.0f), glm::linearRand(0.1f, 1.0f), glm::linearRand(0.1f, 1.0f));
         p.point.base.intensity = m_spot_lights_intensity;
-        p.point.position.y     = glm::linearRand(0.5f, 12.0f);
+        p.point.position.y     = glm::linearRand(min_lights_bounds.y, max_lights_bounds.y);
         p.point.radius         = glm::linearRand(min_max_spot_light_radius.x, min_max_spot_light_radius.y);
         e                      = glm::vec4(rand_x, rand_z, glm::linearRand(0.5f, 2.0f), 0.0f); // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 
@@ -812,46 +806,92 @@ void ClusteredShading::render_gui()
             ImGui::Checkbox   ("Show Debug Z Tiles",                         &m_debug_slices);
             ImGui::Checkbox   ("Animate Lights",                             &m_animate_lights);
             ImGui::SliderFloat("Animation Speed",                            &m_animation_speed, 0.0f, 15.0f, "%.1f");
-            ImGui::InputScalar("Point Lights Count",      ImGuiDataType_U32, &m_point_lights_count);
 
-            if (ImGui::InputFloat("Min Point Lights Radius", &min_max_point_light_radius.x, 0.0f, 0.0f, "%.2f"))
+            if (ImGui::DragFloat3("Min Bounds", &min_lights_bounds.x, 0.01f))
             {
-                if (min_max_point_light_radius.x < 0.0)
-                {
-                    min_max_point_light_radius.x = 0.0f;
-                }
+                max_lights_bounds = glm::max(min_lights_bounds, max_lights_bounds);
             }
-
-            if (ImGui::InputFloat ("Max Point Lights Radius", &min_max_point_light_radius.y, 0.0f, 0.0f, "%.2f"))
+            
+            if (ImGui::DragFloat3("Max Bounds", &max_lights_bounds.x, 0.01f))
             {
-                if (min_max_point_light_radius.y < 0.0)
-                {
-                    min_max_point_light_radius.y = 0.0f;
-                }
+                min_lights_bounds = glm::min(min_lights_bounds, max_lights_bounds);
             }
-            ImGui::SliderFloat("Point Lights Intensity", &m_point_lights_intensity, 0.0f, 10.0f, "%.2f");
+            
+            if (ImGui::Button("Normalize Bounds"))
+            {
+                float range3      = glm::pow(glm::max(min_max_point_light_radius.y, min_max_spot_light_radius.y), 3.0f);
+                float bounds      = glm::pow((m_point_lights_count + m_spot_lights_count) * range3, 1.0f / 3.0f) / 2.0f;
+                min_lights_bounds = glm::vec3(-bounds, -bounds, -bounds);
+                max_lights_bounds = glm::vec3(bounds, bounds, bounds);
+            }
 
             ImGui::Separator();
-            ImGui::InputScalar("Spot Lights Count", ImGuiDataType_U32, &m_spot_lights_count);
+            ImGui::DragScalar("Point Lights Count",      ImGuiDataType_U32, &m_point_lights_count);
 
-            if (ImGui::InputFloat("Min Spot Lights Radius", &min_max_spot_light_radius.x, 0.0f, 0.0f, "%.2f"))
+            if (ImGui::DragFloat("Min Point Lights Radius", &min_max_point_light_radius.x, 0.01f, 0.0f))
             {
-                if (min_max_spot_light_radius.x < 0.0)
-                {
-                    min_max_spot_light_radius.x = 0.0f;
-                }
+                min_max_point_light_radius.x = glm::max(0.0f, min_max_point_light_radius.x);
+                min_max_point_light_radius.y = glm::max(min_max_point_light_radius.x, min_max_point_light_radius.y);
             }
 
-            if (ImGui::InputFloat("Max Spot Lights Radius", &min_max_spot_light_radius.y, 0.0f, 0.0f, "%.2f"))
+            if (ImGui::DragFloat("Max Point Lights Radius", &min_max_point_light_radius.y, 0.01f, 0.0f))
             {
-                if (min_max_spot_light_radius.y < 0.0)
-                {
-                    min_max_spot_light_radius.y = 0.0f;
-                }
+                min_max_point_light_radius.y = glm::max(0.0f, min_max_point_light_radius.y);
+                min_max_point_light_radius.x = glm::min(min_max_point_light_radius.x, min_max_point_light_radius.y);
+            }
+            if (ImGui::DragFloat("Point Lights Intensity", &m_point_lights_intensity, 0.01f, 0.0f))
+            {
+                m_point_lights_intensity = glm::max(0.0f, m_point_lights_intensity);
             }
 
-            ImGui::SliderFloat("Spot Lights Intensity", &m_spot_lights_intensity, 0.0f, 10.0f, "%.2f");
+            ImGui::Separator();
+            ImGui::DragScalar("Spot Lights Count", ImGuiDataType_U32, &m_spot_lights_count);
 
+            if (ImGui::DragFloat("Min Spot Lights Radius", &min_max_spot_light_radius.x, 0.01f, 0.0f))
+            {
+                min_max_spot_light_radius.x = glm::max(0.0f, min_max_spot_light_radius.x);
+                min_max_spot_light_radius.y = glm::max(min_max_spot_light_radius.x, min_max_spot_light_radius.y);
+            }
+
+            if (ImGui::DragFloat("Max Spot Lights Radius", &min_max_spot_light_radius.y, 0.01f, 0.0f))
+            {
+                min_max_spot_light_radius.y = glm::max(0.0f, min_max_spot_light_radius.y);
+                min_max_spot_light_radius.x = glm::min(min_max_spot_light_radius.x, min_max_spot_light_radius.y);
+            }
+
+            if (ImGui::DragFloat("Min Spot Lights Angle", &min_max_spot_angles.x, 0.01f, 0.0f))
+            {
+                min_max_spot_angles.x = glm::clamp(min_max_spot_angles.x, 0.0f, 89.0f);
+                min_max_spot_angles.y = glm::max(min_max_spot_angles.x, min_max_spot_angles.y);
+            }
+
+            if (ImGui::DragFloat("Max Spot Lights Angle", &min_max_spot_angles.y, 0.01f, 0.0f))
+            {
+                min_max_spot_angles.y = glm::clamp(min_max_spot_angles.y, 0.0f, 89.0f);
+                min_max_spot_angles.x = glm::min(min_max_spot_angles.x, min_max_spot_angles.y);
+            }
+
+            if (ImGui::DragFloat("Spot Lights Intensity", &m_spot_lights_intensity, 0.01f, 0.0f))
+            {
+                m_spot_lights_intensity = glm::max(0.0f, m_spot_lights_intensity);
+            }
+
+            if (ImGui::Button("Normalize Lights Radii"))
+            {
+                float bounds3 = (max_lights_bounds.x - min_lights_bounds.x) * (max_lights_bounds.y - min_lights_bounds.y) * (max_lights_bounds.z - min_lights_bounds.z);
+
+                if (m_point_lights_count > 0)
+                {
+                    min_max_point_light_radius.y = glm::pow(bounds3 / (m_point_lights_count), 1.0f / 3.0f);
+                    min_max_point_light_radius.x = min_max_point_light_radius.y - (min_max_point_light_radius.y * 0.1f);
+                }
+
+                if (m_spot_lights_count > 0)
+                {
+                    min_max_spot_light_radius.y = glm::pow(bounds3 / (m_spot_lights_count), 1.0f / 3.0f);
+                    min_max_spot_light_radius.x = min_max_spot_light_radius.y - (min_max_spot_light_radius.y * 0.1f);
+                }
+            }
             if (ImGui::Button("Generate Lights"))
             {
                 GeneratePointLights();
