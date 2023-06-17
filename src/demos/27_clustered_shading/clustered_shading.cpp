@@ -346,7 +346,7 @@ void ClusteredShading::update(double delta_time)
         m_update_lights_shader->setUniform("u_time", time_accum);
 
         uint32_t max_lights_count = glm::max(m_point_lights_count, glm::max(m_spot_lights_count, m_directional_lights_count));
-        glDispatchCompute(std::ceilf(max_lights_count / 1024.0f), 1, 1);
+        glDispatchCompute(::ceilf(max_lights_count / 1024.0f), 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
 }
@@ -642,7 +642,7 @@ void ClusteredShading::render()
     m_cull_lights_shader->setUniform("u_view_matrix", m_camera->m_view);
 
     glBindBuffer             (GL_DISPATCH_INDIRECT_BUFFER, m_cull_lights_dispatch_args_ssbo);
-    glDispatchComputeIndirect(NULL);
+    glDispatchComputeIndirect(0);
     glMemoryBarrier          (GL_SHADER_STORAGE_BARRIER_BIT);
 
     // 6. Render lighting
