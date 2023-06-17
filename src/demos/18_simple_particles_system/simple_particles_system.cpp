@@ -359,7 +359,7 @@ void SimpleParticlesSystem::render_gui()
 
             ImGui::Spacing();
 
-            ImGui::Text(("Current texture: " + m_current_texture_filename).c_str());
+            ImGui::TextUnformatted(("Current texture: " + m_current_texture_filename).c_str());
             ImGui::SameLine();
             if (ImGui::Button("Load texture"))
             {

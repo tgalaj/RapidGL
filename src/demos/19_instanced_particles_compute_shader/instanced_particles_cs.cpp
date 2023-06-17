@@ -183,7 +183,7 @@ void InstancedParticlesCS::render()
     m_particles_compute_shader->setUniform("u_cone_angle",                        glm::radians(m_cone_angle));
     m_particles_compute_shader->setUniform("u_random",                            RGL::Util::RandomVec3(0, 1));
 
-    glDispatchCompute(std::ceilf((float)m_total_particles / 1024.0f), 1, 1);
+    glDispatchCompute(::ceilf((float)m_total_particles / 1024.0f), 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     /* Draw the scene */
@@ -241,7 +241,7 @@ void InstancedParticlesCS::render_gui()
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
         {
             static std::string label = "Number of particles: " + std::to_string(m_total_particles);
-            ImGui::Text(label.c_str());
+            ImGui::TextUnformatted(label.c_str());
             ImGui::Spacing();
 
             static glm::vec2 emitter_dir_angles = { 0.0, 0.0 };
