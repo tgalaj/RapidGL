@@ -51,7 +51,7 @@ void TessellationLoD::init_app()
 
     /* Create object model */
     m_model = std::make_shared<RGL::StaticModel>();
-    m_model->Load(RGL::FileSystem::getPath("models/suzanne.obj"));
+    m_model->Load(RGL::FileSystem::getResourcesPath() / "models/suzanne.obj");
     m_model->SetDrawMode(RGL::DrawMode::PATCHES);
 
     for (int i = 0; i < 5; ++i)
@@ -60,7 +60,7 @@ void TessellationLoD::init_app()
     }
 
     /* Create shader. */
-    std::string dir  = "../src/demos/15_ts_lod/";
+    std::string dir  = "src/demos/15_ts_lod/";
     m_pn_tessellation_shader = std::make_shared<RGL::Shader>(dir + "ts_lod.vert", dir + "ts_lod.frag", dir + "ts_lod.tcs", dir + "ts_lod.tes");
     m_pn_tessellation_shader->link();
 }
@@ -98,11 +98,11 @@ void TessellationLoD::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

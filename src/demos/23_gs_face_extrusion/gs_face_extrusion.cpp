@@ -61,15 +61,15 @@ void GSFaceExtrusion::init_app()
 
     /* Create models. */
     //m_static_model.GenSphere(0.5, 3);
-    m_static_model.Load(RGL::FileSystem::getPath("models/icosphere.glb"));
+    m_static_model.Load(RGL::FileSystem::getResourcesPath() / "models/icosphere.glb");
     m_static_model_transform = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 6.0, -3.0)) * glm::rotate(glm::mat4(1.0), glm::radians(-90.0f), glm::vec3(1, 0, 0));
 
     /* Create shader. */
-    std::string dir = "../src/demos/22_pbr/";
-    m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag", "../src/demos/23_gs_face_extrusion/face_extrusion.geom");
+    std::string dir = "src/demos/22_pbr/";
+    m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag", "src/demos/23_gs_face_extrusion/face_extrusion.geom");
     m_ambient_light_shader->link();
 
-    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-directional.frag", "../src/demos/23_gs_face_extrusion/face_extrusion.geom");
+    m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-directional.frag", "src/demos/23_gs_face_extrusion/face_extrusion.geom");
     m_directional_light_shader->link();
 
     m_equirectangular_to_cubemap_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "equirectangular_to_cubemap.frag");
@@ -81,7 +81,7 @@ void GSFaceExtrusion::init_app()
     m_prefilter_env_map_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "prefilter_cubemap.frag");
     m_prefilter_env_map_shader->link();
 
-    m_precompute_brdf = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
+    m_precompute_brdf = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
     m_precompute_brdf->link();
 
     m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
@@ -107,7 +107,7 @@ void GSFaceExtrusion::init_app()
     m_brdf_lut_rt = std::make_shared<Texture2DRenderTarget>();
     m_brdf_lut_rt->generate_rt(512, 512);
 
-    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
     PrecomputeBRDF(m_brdf_lut_rt);
 }
 
@@ -144,11 +144,11 @@ void GSFaceExtrusion::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 
@@ -487,7 +487,7 @@ void GSFaceExtrusion::render_gui()
                 if (ImGui::Selectable(m_hdr_maps_names[i].c_str(), is_selected))
                 {
                     m_current_hdr_map_idx = i;
-                    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+                    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
                 }
 
                 if (is_selected)

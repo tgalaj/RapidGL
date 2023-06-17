@@ -49,7 +49,7 @@ void ProjectedTexture::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->Load(RGL::FileSystem::getPath("models/bunny.obj"));
+    m_objects[0]->Load(RGL::FileSystem::getResourcesPath() / "models/bunny.obj");
     m_objects[1]->GenCone(1.0, 0.5);
     m_objects[2]->GenCube();
     m_objects[3]->GenCylinder(1.0, 0.5);
@@ -72,10 +72,10 @@ void ProjectedTexture::init_app()
 
     /* Add textures to the objects. */
     auto texture = std::make_shared<RGL::Texture2D>();
-    texture->Load(RGL::FileSystem::getPath("textures/bricks.png"), true);
+    texture->Load(RGL::FileSystem::getResourcesPath() / "textures/bricks.png", true);
 
     auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
-    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
+    default_diffuse_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/default_diffuse.png", true);
 
     m_objects[5]->AddTexture(texture);
 
@@ -88,7 +88,7 @@ void ProjectedTexture::init_app()
     }
 
     /* Create shader. */
-    std::string dir = "../src/demos/09_projected_texture/";
+    std::string dir = "src/demos/09_projected_texture/";
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -96,7 +96,7 @@ void ProjectedTexture::init_app()
     m_spot_light_shader->link();
 
     /* Load texture to be projected and adjust its parameters */
-    m_projector.m_texture.Load(RGL::FileSystem::getPath("textures/circles/" + m_current_projector_texture_name), true);
+    m_projector.m_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/circles" / m_current_projector_texture_name, true);
     m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
     m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
 
@@ -140,11 +140,11 @@ void ProjectedTexture::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }
@@ -303,7 +303,7 @@ void ProjectedTexture::render_gui()
                             {
                                 m_current_projector_texture_name = sf;
 
-                                m_projector.m_texture.Load(RGL::FileSystem::getPath("textures/circles/" + m_current_projector_texture_name), true);
+                                m_projector.m_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/circles" / m_current_projector_texture_name, true);
                                 m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
                                 m_projector.m_texture.SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::CLAMP_TO_BORDER);
                             }

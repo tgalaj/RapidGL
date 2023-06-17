@@ -52,7 +52,7 @@ void Tessellation2D::init_app()
     m_camera->setPosition(0.0, 0.0, 1.5);
 
     /* Create shader. */
-    std::string dir  = "../src/demos/14_ts_quad/";
+    std::string dir  = "src/demos/14_ts_quad/";
     m_quad_tessellation_shader = std::make_shared<RGL::Shader>(dir + "ts_quad.vert", dir + "ts_quad.frag", dir + "ts_quad.geom", dir + "ts_quad.tcs", dir + "ts_quad.tes");
     m_quad_tessellation_shader->link();
 
@@ -109,11 +109,11 @@ void Tessellation2D::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

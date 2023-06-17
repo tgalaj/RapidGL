@@ -89,7 +89,7 @@ void Bloom::init_app()
 
     /* Create models. */
     auto crate_model = std::make_shared<RGL::StaticModel>();
-    crate_model->Load(RGL::FileSystem::getPath("models/old_crate/old_crate.obj"));
+    crate_model->Load(RGL::FileSystem::getResourcesPath() / "models/old_crate/old_crate.obj");
 
     auto plane_model = std::make_shared<RGL::StaticModel>();
     plane_model->GenCube(1.0f, 4.0f);
@@ -156,15 +156,15 @@ void Bloom::init_app()
     }
 
     /* Add textures to the objects. */
-    auto old_crate_albedo_map    = std::make_shared<RGL::Texture2D>(); old_crate_albedo_map   ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Diff.png"), true);
-    auto old_crate_normal_map    = std::make_shared<RGL::Texture2D>(); old_crate_normal_map   ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_NORMAL.png"));
-    auto old_crate_metallic_map  = std::make_shared<RGL::Texture2D>(); old_crate_metallic_map ->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Texture_METAL.png"));
-    auto old_crate_roughness_map = std::make_shared<RGL::Texture2D>(); old_crate_roughness_map->Load(RGL::FileSystem::getPath("models/old_crate/Flat_Crate_Texture_ROUGH.png"));
+    auto old_crate_albedo_map    = std::make_shared<RGL::Texture2D>(); old_crate_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "models/old_crate/Flat_Crate_Diff.png", true);
+    auto old_crate_normal_map    = std::make_shared<RGL::Texture2D>(); old_crate_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "models/old_crate/Flat_Crate_NORMAL.png");
+    auto old_crate_metallic_map  = std::make_shared<RGL::Texture2D>(); old_crate_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "models/old_crate/Flat_Crate_Texture_METAL.png");
+    auto old_crate_roughness_map = std::make_shared<RGL::Texture2D>(); old_crate_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "models/old_crate/Flat_Crate_Texture_ROUGH.png");
 
-    auto wooden_floor_albedo_map    = std::make_shared<RGL::Texture2D>(); wooden_floor_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_diff_1k.png"), true);
-    auto wooden_floor_normal_map    = std::make_shared<RGL::Texture2D>(); wooden_floor_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_nor_1k.png"));
-    auto wooden_floor_roughness_map = std::make_shared<RGL::Texture2D>(); wooden_floor_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_rough_1k.png"));
-    auto wooden_floor_ao_map        = std::make_shared<RGL::Texture2D>(); wooden_floor_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_ao_1k.png"));
+    auto wooden_floor_albedo_map    = std::make_shared<RGL::Texture2D>(); wooden_floor_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_diff_1k.png", true);
+    auto wooden_floor_normal_map    = std::make_shared<RGL::Texture2D>(); wooden_floor_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_nor_1k.png");
+    auto wooden_floor_roughness_map = std::make_shared<RGL::Texture2D>(); wooden_floor_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_rough_1k.png");
+    auto wooden_floor_ao_map        = std::make_shared<RGL::Texture2D>(); wooden_floor_ao_map       ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/weathered_brown_planks_1k/weathered_brown_planks_ao_1k.png");
 
     wooden_floor_albedo_map   ->SetAnisotropy(16.0f);
     wooden_floor_normal_map   ->SetAnisotropy(16.0f);
@@ -187,7 +187,7 @@ void Bloom::init_app()
     plane_model->AddTexture(wooden_floor_ao_map,        RGL::Material::TextureType::AO);
 
     /* Create shader. */
-    std::string dir = "../src/demos/22_pbr/";
+    std::string dir = "src/demos/22_pbr/";
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -203,7 +203,7 @@ void Bloom::init_app()
     m_prefilter_env_map_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "prefilter_cubemap.frag");
     m_prefilter_env_map_shader->link();
 
-    m_precompute_brdf = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
+    m_precompute_brdf = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
     m_precompute_brdf->link();
 
     m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
@@ -212,7 +212,7 @@ void Bloom::init_app()
     m_tmo_ps = std::make_shared<PostprocessFilter>(RGL::Window::getWidth(), RGL::Window::getHeight());
 
     /* Bloom shaders. */
-    dir = "../src/demos/26_bloom/";
+    dir = "src/demos/26_bloom/";
     m_downscale_shader = std::make_shared<RGL::Shader>(dir + "downscale.comp");
     m_downscale_shader->link();
 
@@ -220,7 +220,7 @@ void Bloom::init_app()
     m_upscale_shader->link();
 
     m_bloom_dirt_texture = std::make_shared<RGL::Texture2D>(); 
-    m_bloom_dirt_texture->Load(RGL::FileSystem::getPath("textures/bloom_dirt_mask.png"));
+    m_bloom_dirt_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/bloom_dirt_mask.png");
 
     /* IBL precomputations. */
     GenSkyboxGeometry();
@@ -240,7 +240,7 @@ void Bloom::init_app()
     m_brdf_lut_rt = std::make_shared<Texture2DRenderTarget>();
     m_brdf_lut_rt->create(512, 512, GL_RG16F);
 
-    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
     PrecomputeBRDF(m_brdf_lut_rt);
 }
 
@@ -277,11 +277,11 @@ void Bloom::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 
@@ -668,7 +668,7 @@ void Bloom::render_gui()
                 if (ImGui::Selectable(m_hdr_maps_names[i].c_str(), is_selected))
                 {
                     m_current_hdr_map_idx = i;
-                    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+                    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
                 }
 
                 if (is_selected)

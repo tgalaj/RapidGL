@@ -80,7 +80,7 @@ struct PostprocessFilter
         glNamedFramebufferTexture(m_fbo_id, GL_COLOR_ATTACHMENT0, m_tex_id, 0);
         glNamedFramebufferRenderbuffer(m_fbo_id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rbo_id);
 
-        m_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", "../src/demos/22_pbr/tmo.frag");
+        m_shader = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", "src/demos/22_pbr/tmo.frag");
         m_shader->link();
 
         glCreateVertexArrays(1, &m_dummy_vao_id);

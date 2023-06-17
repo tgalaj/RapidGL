@@ -33,7 +33,7 @@ void Simple3d::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0].Load(RGL::FileSystem::getPath("models/spot/spot.obj"));
+    m_objects[0].Load(RGL::FileSystem::getResourcesPath() / "models/spot/spot.obj");
     m_objects[1].GenCone(1.0, 0.5);
     m_objects[2].GenCube();
     m_objects[3].GenCylinder(1.0, 0.5);
@@ -64,16 +64,16 @@ void Simple3d::init_app()
 
     /* Add texture to the spot and sphere models only. */
     auto texture_spot = std::make_shared<RGL::Texture2D>();
-    texture_spot->Load(RGL::FileSystem::getPath("models/spot/spot.png"));
+    texture_spot->Load(RGL::FileSystem::getResourcesPath() / "models/spot/spot.png");
 
     auto texture_bricks = std::make_shared<RGL::Texture2D>();
-    texture_bricks->Load(RGL::FileSystem::getPath("textures/bricks.png"));
+    texture_bricks->Load(RGL::FileSystem::getResourcesPath() / "textures/bricks.png");
 
     m_objects[0].AddTexture(texture_spot);
     m_objects[5].AddTexture(texture_bricks);
 
     /* Create shader. */
-    std::string dir = "../src/demos/02_simple_3d/";
+    std::string dir = "src/demos/02_simple_3d/";
     m_simple_texturing_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
     m_simple_texturing_shader->link();
 }
@@ -111,11 +111,11 @@ void Simple3d::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

@@ -114,7 +114,7 @@ void ProceduralNoise::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->Load(RGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[0]->Load(RGL::FileSystem::getResourcesPath() / "models/teapot.obj");
     m_objects[1]->GenPlane(3, 3, 2, 2);
     m_objects[2]->GenPlane(3, 3, 1, 1);
 
@@ -132,7 +132,7 @@ void ProceduralNoise::init_app()
     m_decal_texture      = gen_perlin_data(perlin_tex_width, perlin_tex_height, 12.0f);
 
     /* Create shader. */
-    std::string dir = "../src/demos/16_noise/";
+    std::string dir = "src/demos/16_noise/";
     m_noise_texturing_shader = std::make_shared<RGL::Shader>(dir + "simple.vert", dir + "noise.frag");
     m_noise_texturing_shader->link();
 }
@@ -170,11 +170,11 @@ void ProceduralNoise::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

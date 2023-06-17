@@ -1,5 +1,5 @@
 #version 460 core
-#include "../../src/demos/22_pbr/pbr-lighting.glh"
+#include "../22_pbr/pbr-lighting.glh"
 
 layout (location = 3) in vec4 in_pos_light_clip_space;
 layout (location = 4) in vec4 in_pos_light_view_space;

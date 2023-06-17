@@ -68,7 +68,7 @@ void Terrain::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0].Load(RGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[0].Load(RGL::FileSystem::getResourcesPath() / "models/teapot.obj");
     m_objects[1].GenCone(1.0, 0.5);
     m_objects[2].GenCube();
     m_objects[3].GenCylinder(1.0, 0.5);
@@ -89,10 +89,10 @@ void Terrain::init_app()
 
     /* Add textures to the objects. */
     auto texture_default_diffuse = std::make_shared<RGL::Texture2D>();
-    texture_default_diffuse->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
+    texture_default_diffuse->Load(RGL::FileSystem::getResourcesPath() / "textures/default_diffuse.png", true);
 
     auto texture_bricks = std::make_shared<RGL::Texture2D>();
-    texture_bricks->Load(RGL::FileSystem::getPath("textures/bricks.png"), true);
+    texture_bricks->Load(RGL::FileSystem::getResourcesPath() / "textures/bricks.png", true);
 
     m_objects[5].AddTexture(texture_bricks);
 
@@ -110,7 +110,7 @@ void Terrain::init_app()
 
     for (auto& tf : m_terrain_textures_filenames)
     {
-        std::string path = RGL::FileSystem::getPath("textures/" + tf);
+        std::filesystem::path path = RGL::FileSystem::getResourcesPath() / "textures" / tf;
 
         auto texture = std::make_shared<RGL::Texture2D>();
         texture->Load(path, tf != "blendmap.png" ? true : false);
@@ -122,7 +122,7 @@ void Terrain::init_app()
     }
 
     /* Create the shaders... */
-    std::string dir = "../src/demos/03_lighting/";
+    std::string dir = "src/demos/03_lighting/";
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -136,7 +136,7 @@ void Terrain::init_app()
     m_spot_light_shader->link();
 
     /* ... and the terrain specific shaders */
-    std::string dir_terrain = "../src/demos/04_terrain/";
+    std::string dir_terrain = "src/demos/04_terrain/";
     m_terrain_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir_terrain + "lighting-ambient-terrain.frag");
     m_terrain_ambient_light_shader->link();
 
@@ -183,11 +183,11 @@ void Terrain::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 
@@ -507,7 +507,7 @@ void Terrain::render_gui()
 
                         for (auto& tf : m_terrain_textures_filenames)
                         {
-                            std::string path = RGL::FileSystem::getPath("textures/" + tf);
+                            std::filesystem::path path = RGL::FileSystem::getResourcesPath() / "textures" / tf;
 
                             auto texture = std::make_shared<RGL::Texture2D>();
                             texture->Load(path, tf != "blendmap.png" ? true : false);
@@ -518,7 +518,7 @@ void Terrain::render_gui()
                             m_terrain_textures.push_back(texture);
 
                             /* Update other models' matrices */
-                            m_objects_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.3));                            //teapot
+                            m_objects_model_matrices[0] = glm::translate(glm::mat4(1.0), glm::vec3(-7.5, 0.0 + m_terrain_model->getHeightOfTerrain(-7.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5)) * glm::scale(glm::mat4(1.0), glm::vec3(0.08));                            //teapot
                             m_objects_model_matrices[1] = glm::translate(glm::mat4(1.0), glm::vec3(-5.0, 1.0 + m_terrain_model->getHeightOfTerrain(-5.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // cone
                             m_objects_model_matrices[2] = glm::translate(glm::mat4(1.0), glm::vec3(-2.5, 1.0 + m_terrain_model->getHeightOfTerrain(-2.5, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // cube
                             m_objects_model_matrices[3] = glm::translate(glm::mat4(1.0), glm::vec3( 0.0, 1.0 + m_terrain_model->getHeightOfTerrain( 0.0, -5.0, m_terrain_position.x, m_terrain_position.z), -5));                                                                         // cylinder

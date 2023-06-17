@@ -9,6 +9,8 @@ uniform uvec2 u_cluster_size_ss;
 uniform float u_log_grid_dim_y;
 
 uniform bool u_debug_slices;
+uniform bool u_debug_clusters_occupancy;
+uniform float u_debug_clusters_occupancy_blend_factor;
 
 const vec3 debug_colors[8] = vec3[]
 (
@@ -55,6 +57,9 @@ layout (std430, binding = SPOT_LIGHT_GRID_SSBO_BINDING_INDEX) buffer SpotLightGr
 
 uint  computeClusterIndex1D(uvec3 cluster_index3D);
 uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z);
+vec3  fromRedToGreen(float interpolant);
+vec3  fromGreenToBlue(float interpolant);
+vec3  heatMap(float interpolant);
 
 void main()
 {
@@ -100,9 +105,20 @@ void main()
 	{
 		frag_color = vec4(debug_colors[cluster_index3D.z % 8], 1.0);
 	}
+	else if (u_debug_clusters_occupancy)
+	{
+		uint total_light_count = point_light_grid[cluster_index1D].count + spot_light_grid[cluster_index1D].count;
+		if (total_light_count > 0)
+		{
+			float normalized_light_count = total_light_count / 100.0;
+			vec3 heat_map_color = heatMap(clamp(normalized_light_count, 0.0, 1.0));
+
+			frag_color = vec4(mix(radiance, heat_map_color, u_debug_clusters_occupancy_blend_factor), 1.0);
+		}
+	}
 	else
 	{
-		// total lighting
+		// Total lighting
 		frag_color = vec4(radiance, 1.0);
 	}
 }
@@ -122,4 +138,45 @@ uvec3 computeClusterIndex3D(vec2 screen_pos, float view_z)
     uint z = uint(log( -view_z / u_near_z ) * u_log_grid_dim_y);
 
 	return uvec3(x, y, z);
+}
+
+// Heat map functions
+// source: https://www.shadertoy.com/view/ltlSRj
+vec3 fromRedToGreen(float interpolant)
+{
+ 	if (interpolant < 0.5)
+    {
+       return vec3(1.0, 2.0 * interpolant, 0.0); 
+    }
+    else
+    {
+        return vec3(2.0 - 2.0 * interpolant, 1.0, 0.0 );
+    }
+}
+
+vec3 fromGreenToBlue(float interpolant)
+{
+   	if (interpolant < 0.5)
+    {
+       return vec3(0.0, 1.0, 2.0 * interpolant); 
+    }
+    else
+    {
+        return vec3(0.0, 2.0 - 2.0 * interpolant, 1.0 );
+    }  
+}
+
+vec3 heatMap(float interpolant)
+{
+    float invertedInterpolant = interpolant;
+ 	if (invertedInterpolant < 0.5)
+    {
+        float remappedFirstHalf = 1.0 - 2.0 * invertedInterpolant;
+        return fromGreenToBlue(remappedFirstHalf);
+    }
+    else
+    {
+     	float remappedSecondHalf = 2.0 - 2.0 * invertedInterpolant; 
+        return fromRedToGreen(remappedSecondHalf);
+    }
 }

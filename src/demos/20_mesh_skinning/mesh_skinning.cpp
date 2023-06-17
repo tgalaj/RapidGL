@@ -35,7 +35,7 @@ void MeshSkinning::init_app()
     /* Create models. */
     m_grid_model.GenPlaneGrid(20, 20, 20, 20);
 
-    m_animated_model.Load(RGL::FileSystem::getPath("models/fox.glb"));
+    m_animated_model.Load(RGL::FileSystem::getResourcesPath() / "models/fox.glb");
     m_animations_names = m_animated_model.GetAnimationsNames();
     m_animated_model.SetAnimationSpeed(m_animation_speed);
 
@@ -44,7 +44,7 @@ void MeshSkinning::init_app()
     m_object_model_matrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
 
     /* Create shader. */
-    std::string dir = "../src/demos/20_mesh_skinning/";
+    std::string dir = "src/demos/20_mesh_skinning/";
 
     /* Linear Blend Skinning shader. */
     m_lbs_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning_lbs.vert", dir + "skinning.frag");
@@ -54,7 +54,7 @@ void MeshSkinning::init_app()
     m_dqs_skinning_shader = std::make_shared<RGL::Shader>(dir + "skinning_dqs.vert", dir + "skinning.frag");
     m_dqs_skinning_shader->link();
 
-    dir = "../src/demos/02_simple_3d/";
+    dir = "src/demos/02_simple_3d/";
     m_simple_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
     m_simple_shader->link();
 }
@@ -92,11 +92,11 @@ void MeshSkinning::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

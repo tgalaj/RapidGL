@@ -1,5 +1,5 @@
 #version 460 core
-#include "../../src/demos/04_terrain/lighting-terrain.glh"
+#include "lighting-terrain.glh"
 
 uniform DirectionalLight directional_light;
 

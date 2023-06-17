@@ -62,12 +62,12 @@ void SimpleFog::init_app()
 
     /* Add textures to the objects. */
     auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
-    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
+    default_diffuse_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/default_diffuse.png", true);
     m_objects[0].AddTexture(default_diffuse_texture);
 
     /* Create shader. */
-    std::string dir          = "../src/demos/06_simple_fog/";
-    std::string dir_lighting = "../src/demos/03_lighting/";
+    std::string dir          = "src/demos/06_simple_fog/";
+    std::string dir_lighting = "src/demos/03_lighting/";
 
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional_w_fog.frag");
     m_directional_light_shader->link();
@@ -106,11 +106,11 @@ void SimpleFog::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

@@ -50,11 +50,11 @@ void EnvironmentMapping::init_app()
 
     /* Create models. */
     m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
-    m_objects[0]->Load(RGL::FileSystem::getPath("models/xyzrgb_dragon.obj"));
+    m_objects[0]->Load(RGL::FileSystem::getResourcesPath() / "models/xyzrgb_dragon.obj");
     m_xyzrgb_dragon = m_objects[0];
 
     m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
-    m_objects[1]->Load(RGL::FileSystem::getPath("models/lucy.obj"));
+    m_objects[1]->Load(RGL::FileSystem::getResourcesPath() / "models/lucy.obj");
     m_lucy = m_objects[1];
 
     constexpr auto kRadius    = 2.5f; 
@@ -83,13 +83,13 @@ void EnvironmentMapping::init_app()
 
     /* Add textures to the objects. */
     auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
-    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
+    default_diffuse_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/default_diffuse.png", true);
 
     m_xyzrgb_dragon->AddTexture(default_diffuse_texture);
     m_lucy->AddTexture(default_diffuse_texture);
 
     auto ground_texture = std::make_shared<RGL::Texture2D>();
-    ground_texture->Load(RGL::FileSystem::getPath("textures/grass_green_d.jpg"), true);
+    ground_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/grass_green_d.jpg", true);
     ground_texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
     ground_texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
     ground_texture->SetAnisotropy(16);
@@ -123,8 +123,8 @@ void EnvironmentMapping::init_app()
     }
 
     /* Create shader. */
-    std::string dir          = "../src/demos/08_enviro_mapping/";
-    std::string dir_lighting = "../src/demos/03_lighting/";
+    std::string dir          = "src/demos/08_enviro_mapping/";
+    std::string dir_lighting = "src/demos/03_lighting/";
 
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional.frag");
     m_directional_light_shader->link();
@@ -183,11 +183,11 @@ void EnvironmentMapping::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

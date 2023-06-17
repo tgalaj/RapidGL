@@ -59,7 +59,7 @@ void SimpleParticlesSystem::init_app()
     /* Set file browser properties */
     m_file_dialog.SetTitle("Load texture");
     m_file_dialog.SetTypeFilters({ ".png" });
-    m_file_dialog.SetPwd(RGL::FileSystem::getPath("textures/particles"));
+    m_file_dialog.SetPwd(RGL::FileSystem::getResourcesPath() / "textures/particles");
 
     /* Create virtual camera. */
     m_camera = std::make_shared<RGL::Camera>(60.0, RGL::Window::getAspectRatio(), 0.01, 100.0);
@@ -72,11 +72,11 @@ void SimpleParticlesSystem::init_app()
     m_grid_model->GenPlaneGrid(20, 20, 20, 20);
 
     /* Create shader. */
-    std::string dir = "../src/demos/02_simple_3d/";
+    std::string dir = "src/demos/02_simple_3d/";
     m_simple_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
     m_simple_shader->link();
 
-    dir = "../src/demos/18_simple_particles_system/";
+    dir = "src/demos/18_simple_particles_system/";
     m_particles_shader = std::make_shared<RGL::Shader>(dir + "particles.vert", dir + "particles.frag");
     m_particles_shader->link();
 
@@ -188,7 +188,7 @@ void SimpleParticlesSystem::init_app()
 
     /* Create particle texture */
     m_current_texture_filename = "bluewater.png";
-    m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
+    m_particle_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/particles" / m_current_texture_filename);
 }
 
 void SimpleParticlesSystem::input()
@@ -224,11 +224,11 @@ void SimpleParticlesSystem::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }
@@ -387,7 +387,7 @@ void SimpleParticlesSystem::render_gui()
                 m_cone_angle                = glm::degrees(glm::pi<float>() / 8.0f);
 
                 m_current_texture_filename = "bluewater.png";
-                m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
+                m_particle_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/particles" / m_current_texture_filename);
 
                 reset_particles_buffers();
             }
@@ -405,7 +405,7 @@ void SimpleParticlesSystem::render_gui()
                 m_cone_angle                = 0.0f;
 
                 m_current_texture_filename = "fire.png";
-                m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
+                m_particle_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/particles" / m_current_texture_filename);
 
                 reset_particles_buffers();
             }
@@ -423,7 +423,7 @@ void SimpleParticlesSystem::render_gui()
                 m_cone_angle                = glm::degrees(glm::pi<float>() / 1.5f);
 
                 m_current_texture_filename = "smoke.png";
-                m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
+                m_particle_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/particles" / m_current_texture_filename);
 
                 reset_particles_buffers();
             }
@@ -450,7 +450,7 @@ void SimpleParticlesSystem::render_gui()
             m_current_texture_filename = filepath.substr(pos + res_string.size(), filepath.size());
 
             /* Load texture data. */
-            m_particle_texture.Load(RGL::FileSystem::getPath("textures/particles/" + m_current_texture_filename));
+            m_particle_texture.Load(RGL::FileSystem::getResourcesPath() / "textures/particles" / m_current_texture_filename);
 
             /* Strip relative path to get filename + extenstion only. */
             m_current_texture_filename = m_current_texture_filename.substr(m_current_texture_filename.find_last_of("\\") + 1, m_current_texture_filename.size());

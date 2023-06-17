@@ -397,7 +397,9 @@ private:
     float      m_log_grid_dim_y;               // 1.0f / log( NearK )  // Used to compute the k index of the cluster from the view depth of a pixel sample.
     uint64_t   m_clusters_count;
 
-    bool m_debug_slices = false;
+    bool  m_debug_slices                          = false;
+    bool  m_debug_clusters_occupancy              = false;
+    float m_debug_clusters_occupancy_blend_factor = 0.9f;
 
     /// Lights
     uint32_t  m_point_lights_count       = 500;
@@ -410,8 +412,8 @@ private:
     glm::vec3 min_lights_bounds          = glm::vec3(-11.0f,  0.2f, -6.0f);
     glm::vec3 max_lights_bounds          = glm::vec3( 11.0f, 12.0f,  6.0f);
 
-    float     m_point_lights_intensity   = 1.0f;
-    float     m_spot_lights_intensity    = 6.0f;
+    float     m_point_lights_intensity   = 6.0f;
+    float     m_spot_lights_intensity    = 100.0f;
     float     m_animation_speed          = 0.618f;
     bool      m_animate_lights           = false;
 
@@ -436,7 +438,7 @@ private:
 
     float m_background_lod_level;
     std::string m_hdr_maps_names[4] = { "../black.hdr", "colorful_studio_4k.hdr", "phalzer_forest_01_4k.hdr", "sunset_fairway_4k.hdr" };
-    uint8_t m_current_hdr_map_idx   = 0;
+    uint8_t m_current_hdr_map_idx   = 3;
 
     GLuint m_skybox_vao, m_skybox_vbo;
 

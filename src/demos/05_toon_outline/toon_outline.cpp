@@ -99,15 +99,15 @@ void ToonOutline::init_app()
     }
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0].Load(RGL::FileSystem::getPath("models/spot/spot.obj"));
-    m_objects[1].Load(RGL::FileSystem::getPath("models/bunny.obj"));
-    m_objects[2].Load(RGL::FileSystem::getPath("models/cone.fbx"));
+    m_objects[0].Load(RGL::FileSystem::getResourcesPath() / "models/spot/spot.obj");
+    m_objects[1].Load(RGL::FileSystem::getResourcesPath() / "models/bunny.obj");
+    m_objects[2].Load(RGL::FileSystem::getResourcesPath() / "models/cone.fbx");
     m_objects[3].GenCube();
-    m_objects[4].Load(RGL::FileSystem::getPath("models/cylinder.fbx"));
-    m_objects[5].Load(RGL::FileSystem::getPath("models/torus_knot.fbx"));
+    m_objects[4].Load(RGL::FileSystem::getResourcesPath() / "models/cylinder.fbx");
+    m_objects[5].Load(RGL::FileSystem::getResourcesPath() / "models/torus_knot.fbx");
     m_objects[6].GenSphere(0.5, 40);
     m_objects[7].GenTorus(0.5, 1.0, 40, 40);
-    m_objects[8].Load(RGL::FileSystem::getPath("models/teapot.obj"));
+    m_objects[8].Load(RGL::FileSystem::getResourcesPath() / "models/teapot.obj");
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(-10.0,   0.25, -5)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)));                                               // spot
@@ -132,10 +132,10 @@ void ToonOutline::init_app()
     m_objects_colors.emplace_back(glm::vec3(0.0, 0.9,  0.0));
 
     auto texture_spot = std::make_shared<RGL::Texture2D>();
-    texture_spot->Load(RGL::FileSystem::getPath("models/spot/spot.png"), true);
+    texture_spot->Load(RGL::FileSystem::getResourcesPath() / "models/spot/spot.png", true);
 
     auto default_diffuse_texture = std::make_shared<RGL::Texture2D>();
-    default_diffuse_texture->Load(RGL::FileSystem::getPath("textures/default_diffuse.png"), true);
+    default_diffuse_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/default_diffuse.png", true);
 
     m_objects[0].AddTexture(texture_spot);
 
@@ -148,7 +148,7 @@ void ToonOutline::init_app()
     }
 
     /* Create the toon shaders. */
-    std::string dir = "../src/demos/05_toon_outline/";
+    std::string dir = "src/demos/05_toon_outline/";
     m_simple_toon_shader = std::make_shared<RGL::Shader>(dir + "toon.vert", dir + "toon_simple.frag");
     m_simple_toon_shader->link();
 
@@ -237,11 +237,11 @@ void ToonOutline::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

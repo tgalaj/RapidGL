@@ -37,7 +37,7 @@ void SimpleTriangle::init_app()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(vertices[0]), nullptr);
     glEnableVertexAttribArray(0);
 
-    std::string dir = "../src/demos/01_simple_triangle/";
+    std::string dir = "src/demos/01_simple_triangle/";
     m_shader = std::make_shared<RGL::Shader>(dir + "simple_triangle.vert", dir + "simple_triangle.frag");
     m_shader->link();
 }
@@ -54,11 +54,11 @@ void SimpleTriangle::input()
         std::string filename = "01_simple_triangle";
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

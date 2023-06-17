@@ -42,13 +42,13 @@ void GSWireframe::init_app()
     m_objects.emplace_back(std::make_shared<RGL::StaticModel>());
 
     /* You can load model from a file or generate a primitive on the fly. */
-    m_objects[0]->Load(RGL::FileSystem::getPath("models/armadillo.obj"));
+    m_objects[0]->Load(RGL::FileSystem::getResourcesPath() / "models/armadillo.obj");
 
     /* Set model matrices for each model. */
     m_objects_model_matrices.emplace_back(glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0, 1, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(0.02)));
 
     /* Create shader. */
-    std::string dir = "../src/demos/12_gs_wireframe/";
+    std::string dir = "src/demos/12_gs_wireframe/";
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "gs_wireframe.vert", dir + "gs_wireframe.frag", dir + "gs_wireframe.geom");
     m_directional_light_shader->link();
 }
@@ -86,11 +86,11 @@ void GSWireframe::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

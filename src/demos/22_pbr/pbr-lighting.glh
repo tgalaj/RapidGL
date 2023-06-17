@@ -195,6 +195,7 @@ vec3 pbr(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
     return (kd * albedo / PI + specular) * radiance * NdotL;
 }
 
+// source: https://google.github.io/filament/Filament.md.html
 float getSquareFalloffAttenuation(vec3 pos_to_light, float light_inv_radius) 
 {
     float distance_square = dot(pos_to_light, pos_to_light);
@@ -204,6 +205,7 @@ float getSquareFalloffAttenuation(vec3 pos_to_light, float light_inv_radius)
     return (smooth_factor * smooth_factor) / max(distance_square, 1e-5);
 }
 
+// source: https://google.github.io/filament/Filament.md.html
 float getSpotAngleAttenuation(vec3 l, vec3 light_dir, float inner_angle, float outer_angle) 
 {
     // the scale and offset computations can be done CPU-side

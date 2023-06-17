@@ -1,5 +1,5 @@
 #version 460 core
-#include "../../src/demos/03_lighting/lighting.glh"
+#include "../03_lighting/lighting.glh"
 
 uniform DirectionalLight directional_light;
 

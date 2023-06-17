@@ -12,7 +12,7 @@
 using namespace RGL;
 
 ClusteredShading::ClusteredShading()
-      : m_exposure            (3.0f),
+      : m_exposure            (0.4f),
         m_gamma               (2.2f),
         m_background_lod_level(1.2),
         m_skybox_vao          (0),
@@ -733,12 +733,14 @@ void ClusteredShading::renderLighting()
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 
     m_clustered_pbr_shader->bind();
-    m_clustered_pbr_shader->setUniform("u_cam_pos",         m_camera->position());
-    m_clustered_pbr_shader->setUniform("u_near_z",          m_camera->NearPlane());
-    m_clustered_pbr_shader->setUniform("u_grid_dim",        m_cluster_grid_dim);
-    m_clustered_pbr_shader->setUniform("u_cluster_size_ss", glm::uvec2(m_cluster_grid_block_size));
-    m_clustered_pbr_shader->setUniform("u_log_grid_dim_y",  m_log_grid_dim_y);
-    m_clustered_pbr_shader->setUniform("u_debug_slices",    m_debug_slices);
+    m_clustered_pbr_shader->setUniform("u_cam_pos",                               m_camera->position());
+    m_clustered_pbr_shader->setUniform("u_near_z",                                m_camera->NearPlane());
+    m_clustered_pbr_shader->setUniform("u_grid_dim",                              m_cluster_grid_dim);
+    m_clustered_pbr_shader->setUniform("u_cluster_size_ss",                       glm::uvec2(m_cluster_grid_block_size));
+    m_clustered_pbr_shader->setUniform("u_log_grid_dim_y",                        m_log_grid_dim_y);
+    m_clustered_pbr_shader->setUniform("u_debug_slices",                          m_debug_slices);
+    m_clustered_pbr_shader->setUniform("u_debug_clusters_occupancy",              m_debug_clusters_occupancy);
+    m_clustered_pbr_shader->setUniform("u_debug_clusters_occupancy_blend_factor", m_debug_clusters_occupancy_blend_factor);
 
     m_clustered_pbr_shader->setUniform("u_model",         m_sponza_static_object.m_transform);
     m_clustered_pbr_shader->setUniform("u_view",          m_camera->m_view);
@@ -803,7 +805,19 @@ void ClusteredShading::render_gui()
         {
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
 
-            ImGui::Checkbox   ("Show Debug Z Tiles",                         &m_debug_slices);
+            if (ImGui::Checkbox("Show Debug Z Tiles", &m_debug_slices))
+            {
+                m_debug_clusters_occupancy = false;
+            }
+            if (ImGui::Checkbox("Show Clusters Occupancy", &m_debug_clusters_occupancy))
+            {
+                m_debug_slices = false;
+            }
+            if (m_debug_clusters_occupancy)
+            {
+                ImGui::SliderFloat("Cluster Occupancy Blend Factor", &m_debug_clusters_occupancy_blend_factor, 0.0f, 1.0f);
+            }
+
             ImGui::Checkbox   ("Animate Lights",                             &m_animate_lights);
             ImGui::SliderFloat("Animation Speed",                            &m_animation_speed, 0.0f, 15.0f, "%.1f");
 

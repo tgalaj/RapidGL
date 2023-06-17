@@ -49,7 +49,7 @@ void VertexDisplacement::init_app()
     m_world_matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.0, 0)) * glm::mat4_cast(rotation);
 
     /* Create shader. */
-    std::string dir  = "../src/demos/17_vertex_displacement/";
+    std::string dir  = "src/demos/17_vertex_displacement/";
     m_vs_disp_shader = std::make_shared<RGL::Shader>(dir + "vs_disp.vert", dir + "vs_disp.frag");
     m_vs_disp_shader->link();
 }
@@ -87,11 +87,11 @@ void VertexDisplacement::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

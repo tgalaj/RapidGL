@@ -81,7 +81,7 @@ void CascadedPCSS::init_app()
 
     /* Create models. */
     m_plane_model.GenCube();
-    m_hk_model.Load(RGL::FileSystem::getPath("models/hk/hk.obj"));
+    m_hk_model.Load(RGL::FileSystem::getResourcesPath() / "models/hk/hk.obj");
     
     m_models_with_model_matrices.push_back( { &m_plane_model, glm::translate(glm::mat4(1.0), glm::vec3(0.0, 0.0, 0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(24.0, 0.1, 24.0)) } );
 
@@ -103,11 +103,11 @@ void CascadedPCSS::init_app()
     }
 
     /* Add textures to the objects. */
-    auto concrete_albedo_map    = std::make_shared<RGL::Texture2D>(); concrete_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_color.png"), true);
-    auto concrete_normal_map    = std::make_shared<RGL::Texture2D>(); concrete_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_normal.png"));
-    auto concrete_metallic_map  = std::make_shared<RGL::Texture2D>(); concrete_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_metallic.png"));
-    auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_roughness.png"));
-    auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_ao.png"));
+    auto concrete_albedo_map    = std::make_shared<RGL::Texture2D>(); concrete_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_color.png", true);
+    auto concrete_normal_map    = std::make_shared<RGL::Texture2D>(); concrete_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_normal.png");
+    auto concrete_metallic_map  = std::make_shared<RGL::Texture2D>(); concrete_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_metallic.png");
+    auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_roughness.png");
+    auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_ao.png");
 
     m_plane_model.AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
     m_plane_model.AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
@@ -115,14 +115,14 @@ void CascadedPCSS::init_app()
     m_plane_model.AddTexture(concrete_roughness_map, RGL::Material::TextureType::ROUGHNESS);
     m_plane_model.AddTexture(concrete_ao_map,        RGL::Material::TextureType::AO);
 
-    auto hk_albedo_map = std::make_shared<RGL::Texture2D>(); hk_albedo_map->Load(RGL::FileSystem::getPath("models/hk/albedo.png"), true);
-    auto hk_normal_map = std::make_shared<RGL::Texture2D>(); hk_normal_map->Load(RGL::FileSystem::getPath("models/hk/normal.png"));
+    auto hk_albedo_map = std::make_shared<RGL::Texture2D>(); hk_albedo_map->Load(RGL::FileSystem::getResourcesPath() / "models/hk/albedo.png", true);
+    auto hk_normal_map = std::make_shared<RGL::Texture2D>(); hk_normal_map->Load(RGL::FileSystem::getResourcesPath() / "models/hk/normal.png");
 
     m_hk_model.AddTexture(hk_albedo_map, RGL::Material::TextureType::ALBEDO);
     m_hk_model.AddTexture(hk_normal_map, RGL::Material::TextureType::NORMAL);
 
     /* Create shader. */
-    std::string dir = "../src/demos/22_pbr/";
+    std::string dir = "src/demos/22_pbr/";
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -135,7 +135,7 @@ void CascadedPCSS::init_app()
     m_prefilter_env_map_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "prefilter_cubemap.frag");
     m_prefilter_env_map_shader->link();
 
-    m_precompute_brdf = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
+    m_precompute_brdf = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
     m_precompute_brdf->link();
 
     m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
@@ -161,18 +161,18 @@ void CascadedPCSS::init_app()
     m_brdf_lut_rt = std::make_shared<Texture2DRenderTarget>();
     m_brdf_lut_rt->generate_rt(512, 512);
 
-    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
     PrecomputeBRDF(m_brdf_lut_rt);
 
     // Shadows
-    dir = "../src/demos/25_cascaded_pcss/";
+    dir = "src/demos/25_cascaded_pcss/";
     m_generate_shadow_map_shader = std::make_shared<RGL::Shader>(dir + "generate_csm.vert", dir + "generate_csm.frag", dir + "generate_csm.geom");
     m_generate_shadow_map_shader->link();
 
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting-shadow.vert", dir + "pbr-directional-shadow.frag");
     m_directional_light_shader->link();
 
-    m_visualize_shadow_map_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "visualize_csm_depth.frag");
+    m_visualize_shadow_map_shader = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", dir + "visualize_csm_depth.frag");
     m_visualize_shadow_map_shader->link();
 
     m_dir_light_view_projection_matrices.resize(NUM_CASCADES);
@@ -239,11 +239,11 @@ void CascadedPCSS::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 
@@ -836,7 +836,7 @@ void CascadedPCSS::render_gui()
                 {
                     glDisable(GL_CULL_FACE);
                     m_current_hdr_map_idx = i;
-                    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+                    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
                     glEnable(GL_CULL_FACE);
                 }
 

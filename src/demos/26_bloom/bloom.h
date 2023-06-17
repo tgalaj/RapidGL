@@ -185,7 +185,7 @@ private:
 
         PostprocessFilter(uint32_t width, uint32_t height)
         {
-            m_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", "../src/demos/22_pbr/tmo.frag");
+            m_shader = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", "src/demos/22_pbr/tmo.frag");
             m_shader->link();
 
             rt = std::make_shared<Texture2DRenderTarget>();

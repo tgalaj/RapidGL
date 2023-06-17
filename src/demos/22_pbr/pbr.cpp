@@ -74,7 +74,7 @@ void PBR::init_app()
     m_point_light_properties[3].radius     = 10.0f; 
 
     m_spot_light_properties.color       = glm::vec3(0.0, 1.0, 0.0);
-    m_spot_light_properties.intensity   = 100.0f;
+    m_spot_light_properties.intensity   = 800.0f;
     m_spot_light_properties.position    = glm::vec3(-6, 8.0, 3.5);
     m_spot_light_properties.radius      = 35.0f;
     m_spot_light_properties.inner_angle = 30.0f;
@@ -96,7 +96,7 @@ void PBR::init_app()
     m_textured_models_model_matrices[3] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 1.21,  0.0)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
     m_textured_models_model_matrices[4] = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 4 + 1.11,  3.5)) * glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0));
 
-    m_cerberus_model.Load(RGL::FileSystem::getPath("models/cerberus/Cerberus_LP.FBX"));
+    m_cerberus_model.Load(RGL::FileSystem::getResourcesPath() / "models/cerberus/Cerberus_LP.FBX");
     m_cerberus_model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(-6.0, 6.0, -3.0)) * glm::rotate(glm::mat4(1.0), glm::radians(-90.0f), glm::vec3(1, 0, 0)) * glm::scale(glm::mat4(1.0), glm::vec3(10 * m_cerberus_model.GetUnitScaleFactor()));
 
     /* Set model matrices for each model. */
@@ -114,29 +114,29 @@ void PBR::init_app()
     }
 
     /* Add textures to the objects. */
-    auto concrete_albedo_map    = std::make_shared<RGL::Texture2D>(); concrete_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_color.png"), true);
-    auto concrete_normal_map    = std::make_shared<RGL::Texture2D>(); concrete_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_normal.png"));
-    auto concrete_metallic_map  = std::make_shared<RGL::Texture2D>(); concrete_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_metallic.png"));
-    auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_roughness.png"));
-    auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/concrete034_1k/concrete034_1K_ao.png"));
+    auto concrete_albedo_map    = std::make_shared<RGL::Texture2D>(); concrete_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_color.png", true);
+    auto concrete_normal_map    = std::make_shared<RGL::Texture2D>(); concrete_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_normal.png");
+    auto concrete_metallic_map  = std::make_shared<RGL::Texture2D>(); concrete_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_metallic.png");
+    auto concrete_roughness_map = std::make_shared<RGL::Texture2D>(); concrete_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_roughness.png");
+    auto concrete_ao_map        = std::make_shared<RGL::Texture2D>(); concrete_ao_map       ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/concrete034_1k/concrete034_1K_ao.png");
 
-    auto plastic_albedo_map    = std::make_shared<RGL::Texture2D>(); plastic_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_color.png"), true);
-    auto plastic_normal_map    = std::make_shared<RGL::Texture2D>(); plastic_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_normal.png"));
-    auto plastic_metallic_map  = std::make_shared<RGL::Texture2D>(); plastic_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_metallic.png"));
-    auto plastic_roughness_map = std::make_shared<RGL::Texture2D>(); plastic_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_roughness.png"));
-    auto plastic_ao_map        = std::make_shared<RGL::Texture2D>(); plastic_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/plastic008_1k/plastic008_1K_ao.png"));
+    auto plastic_albedo_map    = std::make_shared<RGL::Texture2D>(); plastic_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/plastic008_1k/plastic008_1K_color.png", true);
+    auto plastic_normal_map    = std::make_shared<RGL::Texture2D>(); plastic_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/plastic008_1k/plastic008_1K_normal.png");
+    auto plastic_metallic_map  = std::make_shared<RGL::Texture2D>(); plastic_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/plastic008_1k/plastic008_1K_metallic.png");
+    auto plastic_roughness_map = std::make_shared<RGL::Texture2D>(); plastic_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/plastic008_1k/plastic008_1K_roughness.png");
+    auto plastic_ao_map        = std::make_shared<RGL::Texture2D>(); plastic_ao_map       ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/plastic008_1k/plastic008_1K_ao.png");
 
-    auto gold_albedo_map    = std::make_shared<RGL::Texture2D>(); gold_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_albedo.png"), true);
-    auto gold_normal_map    = std::make_shared<RGL::Texture2D>(); gold_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_normal-ogl.png"));
-    auto gold_metallic_map  = std::make_shared<RGL::Texture2D>(); gold_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_metallic.png"));
-    auto gold_roughness_map = std::make_shared<RGL::Texture2D>(); gold_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_roughness.png"));
-    auto gold_ao_map        = std::make_shared<RGL::Texture2D>(); gold_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/gold-scuffed-bl/gold-scuffed_metallic.png"));
+    auto gold_albedo_map    = std::make_shared<RGL::Texture2D>(); gold_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/gold-scuffed-bl/gold-scuffed_albedo.png", true);
+    auto gold_normal_map    = std::make_shared<RGL::Texture2D>(); gold_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/gold-scuffed-bl/gold-scuffed_normal-ogl.png");
+    auto gold_metallic_map  = std::make_shared<RGL::Texture2D>(); gold_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/gold-scuffed-bl/gold-scuffed_metallic.png");
+    auto gold_roughness_map = std::make_shared<RGL::Texture2D>(); gold_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/gold-scuffed-bl/gold-scuffed_roughness.png");
+    auto gold_ao_map        = std::make_shared<RGL::Texture2D>(); gold_ao_map       ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/gold-scuffed-bl/gold-scuffed_metallic.png");
 
-    auto granite_albedo_map    = std::make_shared<RGL::Texture2D>(); granite_albedo_map   ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_albedo.png"), true);
-    auto granite_normal_map    = std::make_shared<RGL::Texture2D>(); granite_normal_map   ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_normal-ogl.png"));
-    auto granite_metallic_map  = std::make_shared<RGL::Texture2D>(); granite_metallic_map ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_metallic.png"));
-    auto granite_roughness_map = std::make_shared<RGL::Texture2D>(); granite_roughness_map->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_roughness.png"));
-    auto granite_ao_map        = std::make_shared<RGL::Texture2D>(); granite_ao_map       ->Load(RGL::FileSystem::getPath("textures/pbr/fleshy-granite1-bl/fleshy_granite1_ao.png"));
+    auto granite_albedo_map    = std::make_shared<RGL::Texture2D>(); granite_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/fleshy-granite1-bl/fleshy_granite1_albedo.png", true);
+    auto granite_normal_map    = std::make_shared<RGL::Texture2D>(); granite_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/fleshy-granite1-bl/fleshy_granite1_normal-ogl.png");
+    auto granite_metallic_map  = std::make_shared<RGL::Texture2D>(); granite_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/fleshy-granite1-bl/fleshy_granite1_metallic.png");
+    auto granite_roughness_map = std::make_shared<RGL::Texture2D>(); granite_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/fleshy-granite1-bl/fleshy_granite1_roughness.png");
+    auto granite_ao_map        = std::make_shared<RGL::Texture2D>(); granite_ao_map       ->Load(RGL::FileSystem::getResourcesPath() / "textures/pbr/fleshy-granite1-bl/fleshy_granite1_ao.png");
 
     m_textured_models[0].AddTexture(concrete_albedo_map,    RGL::Material::TextureType::ALBEDO);
     m_textured_models[0].AddTexture(concrete_normal_map,    RGL::Material::TextureType::NORMAL);
@@ -168,10 +168,10 @@ void PBR::init_app()
     m_textured_models[4].AddTexture(granite_roughness_map, RGL::Material::TextureType::ROUGHNESS);
     m_textured_models[4].AddTexture(granite_ao_map,        RGL::Material::TextureType::AO);
 
-    auto cerberus_albedo_map    = std::make_shared<RGL::Texture2D>(); cerberus_albedo_map   ->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_A.tga"));
-    auto cerberus_normal_map    = std::make_shared<RGL::Texture2D>(); cerberus_normal_map   ->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_N.tga"));
-    auto cerberus_metallic_map  = std::make_shared<RGL::Texture2D>(); cerberus_metallic_map ->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_M.tga"));
-    auto cerberus_roughness_map = std::make_shared<RGL::Texture2D>(); cerberus_roughness_map->Load(RGL::FileSystem::getPath("models/cerberus/Textures/Cerberus_R.tga"));
+    auto cerberus_albedo_map    = std::make_shared<RGL::Texture2D>(); cerberus_albedo_map   ->Load(RGL::FileSystem::getResourcesPath() / "models/cerberus/Textures/Cerberus_A.tga");
+    auto cerberus_normal_map    = std::make_shared<RGL::Texture2D>(); cerberus_normal_map   ->Load(RGL::FileSystem::getResourcesPath() / "models/cerberus/Textures/Cerberus_N.tga");
+    auto cerberus_metallic_map  = std::make_shared<RGL::Texture2D>(); cerberus_metallic_map ->Load(RGL::FileSystem::getResourcesPath() / "models/cerberus/Textures/Cerberus_M.tga");
+    auto cerberus_roughness_map = std::make_shared<RGL::Texture2D>(); cerberus_roughness_map->Load(RGL::FileSystem::getResourcesPath() / "models/cerberus/Textures/Cerberus_R.tga");
 
     m_cerberus_model.AddTexture(cerberus_albedo_map,    RGL::Material::TextureType::ALBEDO);
     m_cerberus_model.AddTexture(cerberus_normal_map,    RGL::Material::TextureType::NORMAL);
@@ -179,7 +179,7 @@ void PBR::init_app()
     m_cerberus_model.AddTexture(cerberus_roughness_map, RGL::Material::TextureType::ROUGHNESS);
 
     /* Create shader. */
-    std::string dir = "../src/demos/22_pbr/";
+    std::string dir = "src/demos/22_pbr/";
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "pbr-lighting.vert", dir + "pbr-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -201,7 +201,7 @@ void PBR::init_app()
     m_prefilter_env_map_shader = std::make_shared<RGL::Shader>(dir + "cubemap.vert", dir + "prefilter_cubemap.frag");
     m_prefilter_env_map_shader->link();
 
-    m_precompute_brdf = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
+    m_precompute_brdf = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", dir + "precompute_brdf.frag");
     m_precompute_brdf->link();
 
     m_background_shader = std::make_shared<RGL::Shader>(dir + "background.vert", dir + "background.frag");
@@ -227,7 +227,7 @@ void PBR::init_app()
     m_brdf_lut_rt = std::make_shared<Texture2DRenderTarget>();
     m_brdf_lut_rt->generate_rt(512, 512);
 
-    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
     PrecomputeBRDF(m_brdf_lut_rt);
 }
 
@@ -264,11 +264,11 @@ void PBR::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 
@@ -902,7 +902,7 @@ void PBR::render_gui()
                 if (ImGui::Selectable(m_hdr_maps_names[i].c_str(), is_selected))
                 {
                     m_current_hdr_map_idx = i;
-                    PrecomputeIndirectLight(RGL::FileSystem::getPath("textures/skyboxes/IBL/" + m_hdr_maps_names[m_current_hdr_map_idx]));
+                    PrecomputeIndirectLight(RGL::FileSystem::getResourcesPath() / "textures/skyboxes/IBL" / m_hdr_maps_names[m_current_hdr_map_idx]);
                 }
 
                 if (is_selected)

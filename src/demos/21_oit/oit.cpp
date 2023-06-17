@@ -63,7 +63,7 @@ void OIT::init_app()
         }
     }
 
-    m_dragon_model.Load(RGL::FileSystem::getPath("models/dragon.obj"));
+    m_dragon_model.Load(RGL::FileSystem::getResourcesPath() / "models/dragon.obj");
     m_dragon_model_matrix = glm::scale(glm::mat4(1.0f), glm::vec3(m_dragon_model.GetUnitScaleFactor() * 25.0f));
     m_dragon_color        = glm::vec3(0, 1, 0);
 
@@ -73,11 +73,11 @@ void OIT::init_app()
     m_objects_colors.emplace_back(glm::vec3(1.0, 0.0, 0.0));
 
     /* Create shader. */
-    std::string dir = "../src/demos/21_oit/";
+    std::string dir = "src/demos/21_oit/";
     m_oit_linked_list_shader = std::make_shared<RGL::Shader>(dir + "oit.vert", dir + "oit_linked_list.frag");
     m_oit_linked_list_shader->link();
 
-    std::string dir2 = "../src/demos/10_postprocessing_filters/";
+    std::string dir2 = "src/demos/10_postprocessing_filters/";
     m_oit_render_shader = std::make_shared<RGL::Shader>(dir2 + "FSQ.vert", dir + "oit_render.frag");
     m_oit_render_shader->link();
 
@@ -143,11 +143,11 @@ void OIT::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

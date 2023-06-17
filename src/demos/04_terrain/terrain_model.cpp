@@ -9,7 +9,7 @@ TerrainModel::TerrainModel(const std::string& heightmap_filename, float size, fl
     : M_SIZE(size),
       M_MAX_HEIGHT(max_height)
 {
-    genTerrainVertices(RGL::FileSystem::getPath(heightmap_filename));
+    genTerrainVertices(RGL::FileSystem::getResourcesPath() / heightmap_filename);
 
     std::cout << "Created terrain with max height = " << M_MAX_HEIGHT << std::endl;
 }
@@ -58,7 +58,7 @@ float TerrainModel::getHeightOfTerrain(float world_x, float world_z, float terra
     return height;
 }
 
-void TerrainModel::genTerrainVertices(const std::string& heightmap_filename)
+void TerrainModel::genTerrainVertices(const std::filesystem::path & heightmap_filename)
 {
     RGL::VertexData vertex_data;
     RGL::ImageData heightmap_metadata;

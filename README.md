@@ -151,5 +151,13 @@ Bloom implementation based on Call of Duty: Advanced  Warfare [Jimenez14](http:/
 
 <img src="screenshots/26_bloom.png" width="50%" height="50%" alt="Bloom implementation based on Call of Duty: Advanced Warfare." />
 
-### Clustered Shading
-TODO
+### Clustered Forward Shading
+Clustered Forward Shading implementation based on *[Clustered Deferred and Forward Shading (2012)](https://www.cse.chalmers.se/~uffe/clustered_shading_preprint.pdf) (Ola Olsson, Markus Billeter, Ulf Assarsson)* and [Jeremiah van Oosten's DX12 demo](https://github.com/jpvanoosten/VolumeTiledForwardShading).
+
+For light culling, I used view aligned AABB grid. During the lighting stage, only the visible clusters are taken into account (it greatly improves the performance as we limit the searching domain). 
+
+The demo is able to render ~100k lights at interactive frame rates (> 30FPS) on NVidia GTX 1660 Ti with Max-Q Design at 1920x1080 resolution.
+
+To further improve the performance, you may look into adding lights BVH structure as described in O. Olsson's paper. [Jeremiah van Oosten's DX12 demo](https://github.com/jpvanoosten/VolumeTiledForwardShading) includes the fully optimized version of clustered shading algorithm. I highly recommend looking into it.
+
+<img src="screenshots/27_clustered_shading.png" width="50%" height="50%" alt="Clustered Forward Shading implementation." />

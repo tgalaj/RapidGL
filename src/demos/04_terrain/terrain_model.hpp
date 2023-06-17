@@ -12,7 +12,7 @@ public:
     float getHeightOfTerrain(float world_x, float world_z, float terrain_world_x, float terrain_world_z);
 
 protected:
-    void genTerrainVertices(const std::string & heightmap_filename);
+    void genTerrainVertices(const std::filesystem::path & heightmap_filename);
     float getHeight(int x, int z, unsigned char* heightmap_data, RGL::ImageData & heightmap_metadata);
     glm::vec3 calculateNormal(int x, int z, unsigned char* heightmap_data, RGL::ImageData& heightmap_metadata);
 

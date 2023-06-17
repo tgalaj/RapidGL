@@ -41,7 +41,7 @@ void AlphaCutout::init_app()
     m_dir_light_properties.setDirection(m_dir_light_angles);
 
     /* Create models. */
-    m_pine_tree.Load(RGL::FileSystem::getPath("models/pine/snow_pine_tree.obj"));
+    m_pine_tree.Load(RGL::FileSystem::getResourcesPath() / "models/pine/snow_pine_tree.obj");
 
     constexpr auto kRadius    = 2.5f;
     constexpr float area_size = 15.0f;
@@ -64,11 +64,11 @@ void AlphaCutout::init_app()
 
     /* Add textures to the objects. */
     auto pine_texture = std::make_shared<RGL::Texture2D>();
-    pine_texture->Load(RGL::FileSystem::getPath("models/pine/diffuse_half.tga"), true);
+    pine_texture->Load(RGL::FileSystem::getResourcesPath() / "models/pine/diffuse_half.tga", true);
     pine_texture->SetAnisotropy(16);
 
     auto ground_texture = std::make_shared<RGL::Texture2D>();
-    ground_texture->Load(RGL::FileSystem::getPath("textures/grass_green_d.jpg"), true);
+    ground_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/grass_green_d.jpg", true);
     ground_texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
     ground_texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
     ground_texture->SetAnisotropy(16);
@@ -77,8 +77,8 @@ void AlphaCutout::init_app()
     m_ground_plane.AddTexture(ground_texture);
 
     /* Create shader. */
-    std::string dir          = "../src/demos/07_alpha_cutout/";
-    std::string dir_lighting = "../src/demos/03_lighting/";
+    std::string dir          = "src/demos/07_alpha_cutout/";
+    std::string dir_lighting = "src/demos/03_lighting/";
 
     m_directional_light_shader = std::make_shared<RGL::Shader>(dir_lighting + "lighting.vert", dir + "lighting-directional_alpha_cutout.frag");
     m_directional_light_shader->link();
@@ -117,11 +117,11 @@ void AlphaCutout::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

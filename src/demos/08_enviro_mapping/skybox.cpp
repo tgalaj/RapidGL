@@ -12,20 +12,20 @@ Skybox::Skybox(const std::string& skybox_directory,
     : m_world(glm::mat4(1.0f))
 {
     /* Create cubemap texture object */
-    std::string filenames[6] = 
+    std::filesystem::path filenames[6] = 
     {
-        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + left_face),
-        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + right_face),
-        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + up_face),
-        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + down_face),
-        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + front_face),
-        RGL::FileSystem::getPath("textures/skyboxes/" + skybox_directory + "/" + back_face)
+        RGL::FileSystem::getResourcesPath() / "textures/skyboxes" / skybox_directory / left_face,
+        RGL::FileSystem::getResourcesPath() / "textures/skyboxes" / skybox_directory / right_face,
+        RGL::FileSystem::getResourcesPath() / "textures/skyboxes" / skybox_directory / up_face,
+        RGL::FileSystem::getResourcesPath() / "textures/skyboxes" / skybox_directory / down_face,
+        RGL::FileSystem::getResourcesPath() / "textures/skyboxes" / skybox_directory / front_face,
+        RGL::FileSystem::getResourcesPath() / "textures/skyboxes" / skybox_directory / back_face
     };
     
     m_cubemap_texture.Load(filenames);
 
     /* Create skybox shader object */
-    std::string dir = "../src/demos/08_enviro_mapping/";
+    std::string dir = "src/demos/08_enviro_mapping/";
 
     m_skybox_shader = std::make_shared<RGL::Shader>(dir + "skybox.vert", dir + "skybox.frag");
     m_skybox_shader->link();

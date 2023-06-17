@@ -61,10 +61,10 @@ void PostprocessingFilters::init_app()
 
     /* Add textures to the objects. */
     auto crate_texture = std::make_shared<RGL::Texture2D>();
-    crate_texture->Load(RGL::FileSystem::getPath("textures/crate/crate0_diffuse.png"), true);
+    crate_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/crate/crate0_diffuse.png", true);
 
     auto ground_texture = std::make_shared<RGL::Texture2D>();
-    ground_texture->Load(RGL::FileSystem::getPath("textures/ground.png"), true);
+    ground_texture->Load(RGL::FileSystem::getResourcesPath() / "textures/ground.png", true);
     ground_texture->SetWraping(RGL::TextureWrapingCoordinate::S, RGL::TextureWrapingParam::REPEAT);
     ground_texture->SetWraping(RGL::TextureWrapingCoordinate::T, RGL::TextureWrapingParam::REPEAT);
     ground_texture->SetAnisotropy(16);
@@ -76,8 +76,8 @@ void PostprocessingFilters::init_app()
     m_objects[4]->AddTexture(ground_texture);
 
     /* Create shader. */
-    std::string dir  = "../src/demos/03_lighting/";
-    std::string dir2 = "../src/demos/10_postprocessing_filters/";
+    std::string dir  = "src/demos/03_lighting/";
+    std::string dir2 = "src/demos/10_postprocessing_filters/";
     m_ambient_light_shader = std::make_shared<RGL::Shader>(dir + "lighting.vert", dir2 + "lighting-ambient.frag");
     m_ambient_light_shader->link();
 
@@ -121,11 +121,11 @@ void PostprocessingFilters::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

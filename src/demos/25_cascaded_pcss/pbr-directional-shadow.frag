@@ -1,5 +1,5 @@
 #version 460 core
-#include "../../src/demos/22_pbr/pbr-lighting.glh"
+#include "../22_pbr/pbr-lighting.glh"
 
 const int NUM_CASCADES = 3;
 

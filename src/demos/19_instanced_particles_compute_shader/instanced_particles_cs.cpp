@@ -51,11 +51,11 @@ void InstancedParticlesCS::init_app()
     m_grid_model.GenPlaneGrid(20, 20, 20, 20);
 
     /* Create shader. */
-    std::string dir = "../src/demos/02_simple_3d/";
+    std::string dir = "src/demos/02_simple_3d/";
     m_simple_shader = std::make_shared<RGL::Shader>(dir + "simple_3d.vert", dir + "simple_3d.frag");
     m_simple_shader->link();
 
-    dir = "../src/demos/19_instanced_particles_compute_shader/";
+    dir = "src/demos/19_instanced_particles_compute_shader/";
     m_particles_render_shader = std::make_shared<RGL::Shader>(dir + "particles.vert", dir + "particles.frag");
     m_particles_render_shader->link();
 
@@ -151,11 +151,11 @@ void InstancedParticlesCS::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

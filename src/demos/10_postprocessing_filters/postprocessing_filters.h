@@ -61,7 +61,7 @@ struct PostprocessFilter
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        m_shader = std::make_shared<RGL::Shader>("../src/demos/10_postprocessing_filters/FSQ.vert", "../src/demos/10_postprocessing_filters/PS_filters.frag");
+        m_shader = std::make_shared<RGL::Shader>("src/demos/10_postprocessing_filters/FSQ.vert", "src/demos/10_postprocessing_filters/PS_filters.frag");
         m_shader->link();
 
         glGenVertexArrays(1, &m_dummy_vao_id);

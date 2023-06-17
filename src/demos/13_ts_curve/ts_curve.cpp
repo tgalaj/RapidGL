@@ -51,7 +51,7 @@ void Tessellation1D::init_app()
     m_camera->setPosition(0.0, 0.0, 1.5);
 
     /* Create shader. */
-    std::string dir  = "../src/demos/13_ts_curve/";
+    std::string dir  = "src/demos/13_ts_curve/";
     m_curve_tessellation_shader = std::make_shared<RGL::Shader>(dir + "ts_curve.vert", dir + "ts_curve.frag", dir + "ts_curve.tcs", dir + "ts_curve.tes");
     m_curve_tessellation_shader->link();
 
@@ -111,11 +111,11 @@ void Tessellation1D::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

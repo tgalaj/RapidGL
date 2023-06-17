@@ -46,10 +46,10 @@ void GSPointSprites::init_app()
 
     /* Add textures to the objects. */
     m_sprite_tex = std::make_shared<RGL::Texture2D>();
-    m_sprite_tex->Load(RGL::FileSystem::getPath("textures/sprites/pear-tree.png"), false);
+    m_sprite_tex->Load(RGL::FileSystem::getResourcesPath() / "textures/sprites/pear-tree.png", false);
 
     /* Create shader. */
-    std::string dir  = "../src/demos/11_gs_point_sprites/";
+    std::string dir  = "src/demos/11_gs_point_sprites/";
     m_point_sprites_shader = std::make_shared<RGL::Shader>(dir + "gs_point_sprites.vert", dir + "gs_point_sprites.frag", dir + "gs_point_sprites.geom");
     m_point_sprites_shader->link();
 
@@ -108,11 +108,11 @@ void GSPointSprites::input()
         if (take_screenshot_png(filename, RGL::Window::getWidth() / 2.0, RGL::Window::getHeight() / 2.0))
         {
             /* If specified folders in the path are not already created, they'll be created automagically. */
-            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cout << "Saved " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
         else
         {
-            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getPath("../screenshots/") << std::endl;
+            std::cerr << "Could not save " << filename << ".png to " << RGL::FileSystem::getRootPath() / "screenshots/" << std::endl;
         }
     }
 }

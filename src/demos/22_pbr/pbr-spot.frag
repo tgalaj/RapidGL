@@ -1,5 +1,5 @@
 #version 460 core
-#include "../../src/demos/22_pbr/pbr-lighting.glh"
+#include "pbr-lighting.glh"
 
 uniform SpotLight u_spot_light;
 

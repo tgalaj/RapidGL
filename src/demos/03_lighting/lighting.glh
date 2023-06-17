@@ -50,13 +50,13 @@ struct SpotLight
 
 vec4 blinnPhong(BaseLight base, vec3 direction, vec3 normal, vec3 world_pos)
 {
-    float diffuse = max(dot(normal, -direction), 0.0f);
+    float diffuse = max(dot(normal, -direction), 0.0);
 
     vec3 dir_to_eye  = normalize(cam_pos - world_pos);
     vec3 half_vector = normalize(dir_to_eye - direction);
-    float specular   = pow(max(dot(half_vector, normal), 0.0f), specular_power);
+    float specular   = pow(max(dot(half_vector, normal), 0.0), specular_power);
 
-    vec4 diffuse_color  = vec4(base.color, 1.0f) * base.intensity * diffuse * texture(texture_diffuse1, texcoord) * vec4(color_tint, 1.0);
+    vec4 diffuse_color  = vec4(base.color, 1.0) * base.intensity * diffuse * texture(texture_diffuse1, texcoord) * vec4(color_tint, 1.0);
     vec4 specular_color = vec4(1.0) * specular * specular_intensity;
 
     return diffuse_color + specular_color;
@@ -74,13 +74,13 @@ vec4 calcPointLight(PointLight light, vec3 normal, vec3 world_pos)
 
     if(distance_to_point > light.range)
     {
-        return vec4(0.0f);
+        return vec4(0.0);
     }
 
     float attenuation = light.atten.constant                                          + 
                         light.atten.linear    * distance_to_point                     +
                         light.atten.quadratic * distance_to_point * distance_to_point +
-                        0.00001f; //to prevent division by zero
+                        0.00001; //to prevent division by zero
     
     vec4 color = blinnPhong(light.base, normalize(light_direction), normal, world_pos);
 
@@ -92,7 +92,7 @@ vec4 calcSpotLight(SpotLight light, vec3 normal, vec3 world_pos)
     vec3 light_direction = normalize(world_pos - light.point.position);
     float theta = dot(light_direction, light.direction);
     
-    vec4 color = vec4(0.0f);
+    vec4 color = vec4(0.0);
     
     if(theta > light.cutoff)
     {

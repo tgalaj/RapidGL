@@ -1,5 +1,5 @@
 #version 460 core
-#include "../../src/demos/03_lighting/lighting.glh"
+#include "lighting.glh"
 
 uniform PointLight point_light;
 
