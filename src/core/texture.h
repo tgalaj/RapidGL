@@ -150,6 +150,7 @@ namespace RGL
         bool Load(const std::filesystem::path & filepath, bool is_srgb = false, uint32_t num_mipmaps = 0);
         bool Load(unsigned char* memory_data, uint32_t data_size, bool is_srgb = false, uint32_t num_mipmaps = 0);
         bool LoadHdr(const std::filesystem::path& filepath, uint32_t num_mipmaps = 0);
+        bool LoadDds(const std::filesystem::path& filepath);
     };
 
     class TextureCubeMap : public Texture

@@ -41,7 +41,34 @@ namespace RGL
         return filetext;
     }
 
-    std::string Util::LoadShaderIncludes(const std::string & shader_code, const std::filesystem::path& dir)
+    std::vector<unsigned char> Util::LoadFileBinary(const std::filesystem::path& filename)
+    {
+        std::filesystem::path filepath = FileSystem::getRootPath() / filename;
+        std::ifstream file(filepath, std::ios::binary);
+
+        if (!file)
+        {
+            fprintf(stderr, "Could not open file %s\n", filepath.string().c_str());
+            file.close();
+
+            return {};
+        }
+
+        // Determine the file size.
+        file.seekg(0, std::ios_base::end);
+        size_t file_size = file.tellg();
+        file.seekg(0, std::ios_base::beg);
+
+        // Allocate storage.
+        std::vector<unsigned char> data(file_size / sizeof(unsigned char));
+
+        // Read the file contents into the allocated storage.
+        file.read((char*)&data[0], file_size);
+
+        return data;
+    }
+
+    std::string Util::LoadShaderIncludes(const std::string& shader_code, const std::filesystem::path& dir)
     {
         std::istringstream ss(shader_code);
 

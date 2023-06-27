@@ -25,6 +25,17 @@ CPMAddPackage("gh:g-truc/glm#0.9.9.8")
 CPMAddPackage("gh:ocornut/imgui@1.88")
 CPMAddPackage("gh:gabime/spdlog@1.10.0")
 
+CPMAddPackage(
+        GITHUB_REPOSITORY benikabocha/tinyddsloader
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+        DOWNLOAD_ONLY TRUE)
+
+if (tinyddsloader_ADDED)
+    add_library(tinyddsloader INTERFACE)
+    target_include_directories(tinyddsloader INTERFACE "${tinyddsloader_SOURCE_DIR}")
+endif()
+
 set(imgui_SOURCE_DIR ${imgui_SOURCE_DIR} CACHE INTERNAL "")
 add_library(imgui STATIC ${imgui_SOURCE_DIR}/imgui.cpp
 					     ${imgui_SOURCE_DIR}/imgui_demo.cpp
@@ -38,7 +49,8 @@ set_target_properties(glad
                       glfw 
                       glm 
                       imgui 
-                      spdlog PROPERTIES FOLDER "thirdparty")
+                      spdlog
+                      tinyddsloader PROPERTIES FOLDER "thirdparty")
 
 if (TARGET zlibstatic)
     set_target_properties(zlibstatic PROPERTIES FOLDER "thirdparty")

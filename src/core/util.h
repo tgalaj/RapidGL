@@ -28,12 +28,21 @@ namespace RGL
     public:
         /**
         * @brief   Loads a file in a text mode.
-        * @param   std::string Relative path, with file name
-        *                      and extension, to the file that
-        *                      needs to be loaded.
+        * @param   std::filesystem::path Relative path, with file name
+        *                                and extension, to the file that
+        *                                needs to be loaded.
         * @returns Full file's source as a std::string.
         */
         static std::string LoadFile(const std::filesystem::path & filename);
+
+        /**
+        * @brief   Loads a file in a binary mode.
+        * @param   std::filesystem::path Relative path, with file name
+        *                                and extension, to the file that
+        *                                needs to be loaded.
+        * @returns std::vector<unsigned char> that contains the loaded data.
+        */
+        static std::vector<unsigned char> LoadFileBinary(const std::filesystem::path& filename);
 
         static std::string LoadShaderIncludes(const std::string & shader_code, const std::filesystem::path& dir = "shaders");
         /**

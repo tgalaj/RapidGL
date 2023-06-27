@@ -2,6 +2,83 @@
 
 #include <glm/glm.hpp>
 
+#define TINYDDSLOADER_IMPLEMENTATION
+#include <tinyddsloader.h>
+
+using namespace tinyddsloader;
+
+namespace
+{
+    struct GLSwizzle
+    {
+        GLenum m_r, m_g, m_b, m_a;
+    };
+
+    struct GLFormat
+    {
+        DDSFile::DXGIFormat m_dxgiFormat;
+        GLenum m_type;
+        GLenum m_format;
+        GLSwizzle m_swizzle;
+    };
+
+    bool translateDdsFormat(DDSFile::DXGIFormat fmt, GLFormat* outFormat)
+    {
+        static const GLSwizzle sws[] = {
+            {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA},
+            {GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA},
+            {GL_BLUE, GL_GREEN, GL_RED, GL_ONE},
+            {GL_RED, GL_GREEN, GL_BLUE, GL_ONE},
+            {GL_RED, GL_ZERO, GL_ZERO, GL_ZERO},
+            {GL_RED, GL_GREEN, GL_ZERO, GL_ZERO},
+        };
+        using DXGIFmt = DDSFile::DXGIFormat;
+        static const GLFormat formats[] = {
+            {DXGIFmt::R8G8B8A8_UNorm, GL_UNSIGNED_BYTE, GL_RGBA, sws[0]},
+            {DXGIFmt::B8G8R8A8_UNorm, GL_UNSIGNED_BYTE, GL_RGBA, sws[1]},
+            {DXGIFmt::B8G8R8X8_UNorm, GL_UNSIGNED_BYTE, GL_RGBA, sws[2]},
+            {DXGIFmt::BC1_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, sws[0]},
+            {DXGIFmt::BC2_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, sws[0]},
+            {DXGIFmt::BC3_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, sws[0]},
+            {DXGIFmt::BC4_UNorm, 0, GL_COMPRESSED_RED_RGTC1_EXT, sws[0]},
+            {DXGIFmt::BC4_SNorm, 0, GL_COMPRESSED_SIGNED_RED_RGTC1_EXT, sws[0]},
+            {DXGIFmt::BC5_UNorm, 0, GL_COMPRESSED_RED_GREEN_RGTC2_EXT, sws[0]},
+            {DXGIFmt::BC5_SNorm, 0, GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT,
+             sws[0]},
+        };
+        for (const auto& format : formats)
+        {
+            if (format.m_dxgiFormat == fmt)
+            {
+                if (outFormat)
+                {
+                    *outFormat = format;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isDdsCompressed(GLenum fmt)
+    {
+        switch (fmt)
+        {
+            case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+            case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+            case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+            case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+            case GL_COMPRESSED_RED_RGTC1_EXT:
+            case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
+            case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
+            case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
+                return true;
+            default:
+                return false;
+        }
+    }
+}
+
 namespace RGL
 {
     // --------------------- Texture Sampler -------------------------
@@ -236,7 +313,7 @@ namespace RGL
         GLenum internal_format = GL_RGB16F;
 
         const GLuint max_num_mipmaps = GetMaxMipMapsLevels(m_metadata.width, m_metadata.height, 0);
-             num_mipmaps     = num_mipmaps == 0 ? max_num_mipmaps : glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
+                     num_mipmaps     = num_mipmaps == 0 ? max_num_mipmaps : glm::clamp(num_mipmaps, 1u, max_num_mipmaps);
 
         glCreateTextures       (GLenum(TextureType::Texture2D), 1, &m_obj_name);
         glTextureStorage2D     (m_obj_name, 1 /* levels */, internal_format, m_metadata.width, m_metadata.height);
@@ -249,6 +326,74 @@ namespace RGL
         SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
 
         Util::ReleaseTextureData(data);
+
+        return true;
+    }
+
+    bool Texture2D::LoadDds(const std::filesystem::path& filepath)
+    {
+        DDSFile dds;
+        auto ret = dds.Load(filepath.string().c_str());
+
+        if (Result::Success != ret)
+        {
+            std::cout << "Failed to load.[" << filepath << "]\n";
+            std::cout << "Result : " << int(ret) << "\n";
+
+            fprintf(stderr, "Texture failed to load at path: %s\n", filepath.string().c_str());
+            fprintf(stderr, "Result: %d", int(ret));
+            return false;
+        }
+
+        if (dds.GetTextureDimension() == DDSFile::TextureDimension::Texture2D)
+        {
+            m_type = TextureType::Texture2D;
+        }
+
+        GLFormat format;
+        if (!translateDdsFormat(dds.GetFormat(), &format))
+        {
+            return false;
+        }
+
+        glCreateTextures   (GLenum(m_type), 1, &m_obj_name);
+        glTextureParameteri(m_obj_name, GL_TEXTURE_BASE_LEVEL, 0);
+        glTextureParameteri(m_obj_name, GL_TEXTURE_MAX_LEVEL, dds.GetMipCount() - 1);
+        glTextureParameteri(m_obj_name, GL_TEXTURE_SWIZZLE_R, format.m_swizzle.m_r);
+        glTextureParameteri(m_obj_name, GL_TEXTURE_SWIZZLE_G, format.m_swizzle.m_g);
+        glTextureParameteri(m_obj_name, GL_TEXTURE_SWIZZLE_B, format.m_swizzle.m_b);
+        glTextureParameteri(m_obj_name, GL_TEXTURE_SWIZZLE_A, format.m_swizzle.m_a);
+
+        m_metadata.width  = dds.GetWidth();
+        m_metadata.height = dds.GetHeight();
+
+        glTextureStorage2D(m_obj_name, dds.GetMipCount(), format.m_format, m_metadata.width, m_metadata.height);
+        dds.Flip();
+
+        for (uint32_t level = 0; level < dds.GetMipCount(); level++)
+        {
+            auto imageData = dds.GetImageData(level, 0);
+            switch (GLenum(m_type))
+            {
+                case GL_TEXTURE_2D:
+                {
+                    auto w = imageData->m_width;
+                    auto h = imageData->m_height;
+
+                    if (isDdsCompressed(format.m_format))
+                    {
+                        glCompressedTextureSubImage2D(m_obj_name, level, 0, 0, w, h, format.m_format, imageData->m_memSlicePitch, imageData->m_mem);
+                    }
+                    else
+                    {
+                        glTextureSubImage2D(m_obj_name, level, 0, 0, w, h, format.m_format, format.m_type, imageData->m_mem);
+                    }
+                    break;
+                }
+                default:
+                    return false;
+            }
+        }
 
         return true;
     }
