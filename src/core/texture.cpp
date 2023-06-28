@@ -19,33 +19,39 @@ namespace
         DDSFile::DXGIFormat m_dxgiFormat;
         GLenum m_type;
         GLenum m_format;
+        GLenum m_internal_format;
         GLSwizzle m_swizzle;
     };
 
     bool translateDdsFormat(DDSFile::DXGIFormat fmt, GLFormat* outFormat)
     {
-        static const GLSwizzle sws[] = {
-            {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA},
-            {GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA},
-            {GL_BLUE, GL_GREEN, GL_RED, GL_ONE},
-            {GL_RED, GL_GREEN, GL_BLUE, GL_ONE},
-            {GL_RED, GL_ZERO, GL_ZERO, GL_ZERO},
-            {GL_RED, GL_GREEN, GL_ZERO, GL_ZERO},
+        static const GLSwizzle sws[] = 
+        {
+            { GL_RED,  GL_GREEN, GL_BLUE, GL_ALPHA },
+            { GL_BLUE, GL_GREEN, GL_RED,  GL_ALPHA },
+            { GL_BLUE, GL_GREEN, GL_RED,  GL_ONE   },
+            { GL_RED,  GL_GREEN, GL_BLUE, GL_ONE   },
+            { GL_RED,  GL_ZERO,  GL_ZERO, GL_ZERO  },
+            { GL_RED,  GL_GREEN, GL_ZERO, GL_ZERO  },
         };
+
         using DXGIFmt = DDSFile::DXGIFormat;
-        static const GLFormat formats[] = {
-            {DXGIFmt::R8G8B8A8_UNorm, GL_UNSIGNED_BYTE, GL_RGBA, sws[0]},
-            {DXGIFmt::B8G8R8A8_UNorm, GL_UNSIGNED_BYTE, GL_RGBA, sws[1]},
-            {DXGIFmt::B8G8R8X8_UNorm, GL_UNSIGNED_BYTE, GL_RGBA, sws[2]},
-            {DXGIFmt::BC1_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, sws[0]},
-            {DXGIFmt::BC2_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, sws[0]},
-            {DXGIFmt::BC3_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, sws[0]},
-            {DXGIFmt::BC4_UNorm, 0, GL_COMPRESSED_RED_RGTC1_EXT, sws[0]},
-            {DXGIFmt::BC4_SNorm, 0, GL_COMPRESSED_SIGNED_RED_RGTC1_EXT, sws[0]},
-            {DXGIFmt::BC5_UNorm, 0, GL_COMPRESSED_RED_GREEN_RGTC2_EXT, sws[0]},
-            {DXGIFmt::BC5_SNorm, 0, GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT,
-             sws[0]},
+        static const GLFormat formats[] = 
+        {
+            { DXGIFmt::R8G8B8A8_UNorm,     GL_UNSIGNED_BYTE, GL_RGBA,                                  GL_RGBA8UI,                               sws[0] },
+            { DXGIFmt::B8G8R8A8_UNorm,     GL_UNSIGNED_BYTE, GL_RGBA,                                  GL_RGBA8UI,                               sws[1] },
+            { DXGIFmt::B8G8R8X8_UNorm,     GL_UNSIGNED_BYTE, GL_RGBA,                                  GL_RGBA8UI,                               sws[2] },
+            { DXGIFmt::R32G32_Float,       GL_FLOAT,         GL_RG,                                    GL_RG32F,                                 sws[0] },
+            { DXGIFmt::R32G32B32A32_Float, GL_FLOAT,         GL_RGBA,                                  GL_RGBA32F,                               sws[0] },
+            { DXGIFmt::BC1_UNorm,          0,                GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,         GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,         sws[0] },
+            { DXGIFmt::BC2_UNorm,          0,                GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,         GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,         sws[0] },
+            { DXGIFmt::BC3_UNorm,          0,                GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,         GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,         sws[0] },
+            { DXGIFmt::BC4_UNorm,          0,                GL_COMPRESSED_RED_RGTC1_EXT,              GL_COMPRESSED_RED_RGTC1_EXT,              sws[0] },
+            { DXGIFmt::BC4_SNorm,          0,                GL_COMPRESSED_SIGNED_RED_RGTC1_EXT,       GL_COMPRESSED_SIGNED_RED_RGTC1_EXT,       sws[0] },
+            { DXGIFmt::BC5_UNorm,          0,                GL_COMPRESSED_RED_GREEN_RGTC2_EXT,        GL_COMPRESSED_RED_GREEN_RGTC2_EXT,        sws[0] },
+            { DXGIFmt::BC5_SNorm,          0,                GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT, GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT, sws[0] },
         };
+
         for (const auto& format : formats)
         {
             if (format.m_dxgiFormat == fmt)
@@ -57,6 +63,7 @@ namespace
                 return true;
             }
         }
+        assert(0 && "Format not supported.");
         return false;
     }
 
@@ -367,7 +374,7 @@ namespace RGL
         m_metadata.width  = dds.GetWidth();
         m_metadata.height = dds.GetHeight();
 
-        glTextureStorage2D(m_obj_name, dds.GetMipCount(), format.m_format, m_metadata.width, m_metadata.height);
+        glTextureStorage2D(m_obj_name, dds.GetMipCount(), format.m_internal_format, m_metadata.width, m_metadata.height);
         dds.Flip();
 
         for (uint32_t level = 0; level < dds.GetMipCount(); level++)

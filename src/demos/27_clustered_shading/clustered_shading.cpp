@@ -59,6 +59,8 @@ ClusteredShading::~ClusteredShading()
 
 void ClusteredShading::init_app()
 {
+    // std::filesystem::path ltc_amp_path = RGL::FileSystem::getResourcesPath() / "lut/ltc_amp.dds";
+
     /// Initialize all the variables, buffers, etc. here.
     glClearColor(0.05, 0.05, 0.05, 1.0);
     glEnable(GL_DEPTH_TEST);
@@ -182,6 +184,37 @@ void ClusteredShading::init_app()
 
     GLenum draw_buffers[] = { GL_NONE };
     glNamedFramebufferDrawBuffers(m_depth_pass_fbo_id, 1, draw_buffers);
+
+    /// Load LTC look-up-tables for area lights rendering
+    auto ltc_lut_path     = FileSystem::getResourcesPath() / "lut";
+    auto ltc_lut_amp_path = ltc_lut_path / "ltc_amp.dds";
+    auto ltc_lut_mat_path = ltc_lut_path / "ltc_mat.dds";
+
+    m_ltc_amp_lut = std::make_shared<Texture2D>();
+    if (m_ltc_amp_lut->LoadDds(ltc_lut_amp_path))
+    {
+        m_ltc_amp_lut->SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        m_ltc_amp_lut->SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+        m_ltc_amp_lut->SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::NEAREST);
+        m_ltc_amp_lut->SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
+    }
+    else
+    {
+        fprintf(stderr, "Error: could not load texture %s\n", ltc_lut_amp_path.string().c_str());
+    }
+
+    m_ltc_mat_lut = std::make_shared<Texture2D>();
+    if (m_ltc_mat_lut->LoadDds(ltc_lut_mat_path))
+    {
+        m_ltc_mat_lut->SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        m_ltc_mat_lut->SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+        m_ltc_mat_lut->SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::NEAREST);
+        m_ltc_mat_lut->SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
+    }
+    else
+    {
+        fprintf(stderr, "Error: could not load texture %s\n", ltc_lut_mat_path.string().c_str());
+    }
 
     /// Create shaders.
     std::string dir = "src/demos/27_clustered_shading/";

@@ -431,6 +431,10 @@ private:
     GLuint m_point_lights_ellipses_radii_ssbo;
     GLuint m_spot_lights_ellipses_radii_ssbo;
 
+    /// Area lights variables
+    std::shared_ptr<RGL::Texture2D> m_ltc_amp_lut;
+    std::shared_ptr<RGL::Texture2D> m_ltc_mat_lut;
+
     /* Tonemapping variables */
     std::shared_ptr<PostprocessFilter> m_tmo_ps;
     float m_exposure; 
