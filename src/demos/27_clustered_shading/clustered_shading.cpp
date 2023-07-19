@@ -48,9 +48,11 @@ ClusteredShading::~ClusteredShading()
     glDeleteBuffers(1, &m_spot_lights_ellipses_radii_ssbo);
     glDeleteBuffers(1, &m_clusters_flags_ssbo);
     glDeleteBuffers(1, &m_point_light_index_list_ssbo);
-    glDeleteBuffers(1, &m_spot_light_index_list_ssbo);
     glDeleteBuffers(1, &m_point_light_grid_ssbo);
+    glDeleteBuffers(1, &m_spot_light_index_list_ssbo);
     glDeleteBuffers(1, &m_spot_light_grid_ssbo);
+    glDeleteBuffers(1, &m_area_light_index_list_ssbo);
+    glDeleteBuffers(1, &m_area_light_grid_ssbo);
     glDeleteBuffers(1, &m_unique_active_clusters_ssbo);
 
     glDeleteTextures(1, &m_depth_tex2D_id);
@@ -59,8 +61,6 @@ ClusteredShading::~ClusteredShading()
 
 void ClusteredShading::init_app()
 {
-    // std::filesystem::path ltc_amp_path = RGL::FileSystem::getResourcesPath() / "lut/ltc_amp.dds";
-
     /// Initialize all the variables, buffers, etc. here.
     glClearColor(0.05, 0.05, 0.05, 1.0);
     glEnable(GL_DEPTH_TEST);
@@ -98,6 +98,7 @@ void ClusteredShading::init_app()
     srand(3281991);
     GeneratePointLights();
     GenerateSpotLights();
+    GenerateAreaLights();
 
     /// Create Sponza static object
     auto sponza_model = std::make_shared<StaticModel>();
@@ -127,6 +128,10 @@ void ClusteredShading::init_app()
     glCreateBuffers  (1, &m_spot_lights_ellipses_radii_ssbo);
     glNamedBufferData(m_spot_lights_ellipses_radii_ssbo, sizeof(m_spot_lights_ellipses_radii[0]) * m_spot_lights_ellipses_radii.size(), m_spot_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase (GL_SHADER_STORAGE_BUFFER, SPOT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX, m_spot_lights_ellipses_radii_ssbo);
+
+    glCreateBuffers  (1, &m_area_lights_ssbo);
+    glNamedBufferData(m_area_lights_ssbo, sizeof(AreaLight) * m_area_lights.size(), m_area_lights.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase (GL_SHADER_STORAGE_BUFFER, AREA_LIGHTS_SSBO_BINDING_INDEX, m_area_lights_ssbo);
 
     /// Prepare SSBOs related to the clustering (light-culling) algorithm.
     // Stores the screen-space clusters 
@@ -158,6 +163,10 @@ void ClusteredShading::init_app()
     glNamedBufferData(m_spot_light_index_list_ssbo, sizeof(uint32_t) * m_clusters_count * AVERAGE_OVERLAPPING_LIGHTS_PER_CLUSTER, nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase (GL_SHADER_STORAGE_BUFFER, SPOT_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX, m_spot_light_index_list_ssbo);
 
+    glCreateBuffers  (1, &m_area_light_index_list_ssbo);
+    glNamedBufferData(m_area_light_index_list_ssbo, sizeof(uint32_t) * m_clusters_count * AVERAGE_OVERLAPPING_LIGHTS_PER_CLUSTER, nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase (GL_SHADER_STORAGE_BUFFER, AREA_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX, m_area_light_index_list_ssbo);
+
     // Every tile takes LightGrid struct that has two unsigned ints one to represent the number of lights in that grid
     // Another to represent the offset to the light index list from where to begin reading light indexes from
     // In this SSBO, atomic counter is also being stored (uint global_index_count)
@@ -169,6 +178,10 @@ void ClusteredShading::init_app()
     glCreateBuffers  (1, &m_spot_light_grid_ssbo);
     glNamedBufferData(m_spot_light_grid_ssbo, sizeof(uint32_t) + sizeof(LightGrid) * m_clusters_count, nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase (GL_SHADER_STORAGE_BUFFER, SPOT_LIGHT_GRID_SSBO_BINDING_INDEX, m_spot_light_grid_ssbo);
+
+    glCreateBuffers(1, &m_area_light_grid_ssbo);
+    glNamedBufferData(m_area_light_grid_ssbo, sizeof(uint32_t) + sizeof(LightGrid) * m_clusters_count, nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, AREA_LIGHT_GRID_SSBO_BINDING_INDEX, m_area_light_grid_ssbo);
 
     // Create depth pre-pass texture and FBO
     glCreateTextures  (GL_TEXTURE_2D, 1, &m_depth_tex2D_id);
@@ -187,21 +200,8 @@ void ClusteredShading::init_app()
 
     /// Load LTC look-up-tables for area lights rendering
     auto ltc_lut_path     = FileSystem::getResourcesPath() / "lut";
-    auto ltc_lut_amp_path = ltc_lut_path / "ltc_amp.dds";
     auto ltc_lut_mat_path = ltc_lut_path / "ltc_mat.dds";
-
-    m_ltc_amp_lut = std::make_shared<Texture2D>();
-    if (m_ltc_amp_lut->LoadDds(ltc_lut_amp_path))
-    {
-        m_ltc_amp_lut->SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
-        m_ltc_amp_lut->SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
-        m_ltc_amp_lut->SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::NEAREST);
-        m_ltc_amp_lut->SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
-    }
-    else
-    {
-        fprintf(stderr, "Error: could not load texture %s\n", ltc_lut_amp_path.string().c_str());
-    }
+    auto ltc_lut_amp_path = ltc_lut_path / "ltc_amp.dds";
 
     m_ltc_mat_lut = std::make_shared<Texture2D>();
     if (m_ltc_mat_lut->LoadDds(ltc_lut_mat_path))
@@ -214,6 +214,19 @@ void ClusteredShading::init_app()
     else
     {
         fprintf(stderr, "Error: could not load texture %s\n", ltc_lut_mat_path.string().c_str());
+    }
+
+    m_ltc_amp_lut = std::make_shared<Texture2D>();
+    if (m_ltc_amp_lut->LoadDds(ltc_lut_amp_path))
+    {
+        m_ltc_amp_lut->SetWraping  (TextureWrapingCoordinate::S, TextureWrapingParam::CLAMP_TO_EDGE);
+        m_ltc_amp_lut->SetWraping  (TextureWrapingCoordinate::T, TextureWrapingParam::CLAMP_TO_EDGE);
+        m_ltc_amp_lut->SetFiltering(TextureFiltering::MIN,       TextureFilteringParam::NEAREST);
+        m_ltc_amp_lut->SetFiltering(TextureFiltering::MAG,       TextureFilteringParam::LINEAR);
+    }
+    else
+    {
+        fprintf(stderr, "Error: could not load texture %s\n", ltc_lut_amp_path.string().c_str());
     }
 
     /// Create shaders.
@@ -241,6 +254,9 @@ void ClusteredShading::init_app()
 
     m_update_lights_shader = std::make_shared<Shader>(dir + "update_lights.comp");
     m_update_lights_shader->link();
+
+    m_draw_area_lights_geometry_shader = std::make_shared<Shader>(dir + "area_light_geom.vert", dir + "area_light_geom.frag");
+    m_draw_area_lights_geometry_shader->link();
 
     dir = "src/demos/22_pbr/";
     m_equirectangular_to_cubemap_shader = std::make_shared<Shader>(dir + "cubemap.vert", dir + "equirectangular_to_cubemap.frag");
@@ -368,19 +384,82 @@ void ClusteredShading::update(double delta_time)
     /* Update variables here. */
     m_camera->update(delta_time);
 
-    static float rotation_speed = 1.0f;
-    static float time_accum     = 0.0f;
-    
+    static float     rotation_speed = 1.0f;
+    static float     time_accum     = 0.0f;
+    static glm::mat4 rotation_mat   = glm::mat4(1.0f);
+
     if (m_animate_lights)
     {
-        time_accum += delta_time * m_animation_speed;
+        time_accum  += delta_time * m_animation_speed;
+        rotation_mat = glm::rotate(glm::mat4(1.0f), glm::radians(60.0f * float(delta_time)) * 2.0f * m_animation_speed, glm::vec3(0.0f, 1.0f, 0.0f));
 
         m_update_lights_shader->bind();
-        m_update_lights_shader->setUniform("u_time", time_accum);
+        m_update_lights_shader->setUniform("u_time",            time_accum);
+        m_update_lights_shader->setUniform("u_two_sided",       m_area_lights_two_sided);
+        m_update_lights_shader->setUniform("u_rotation_matrix", rotation_mat);
 
-        uint32_t max_lights_count = glm::max(m_point_lights_count, glm::max(m_spot_lights_count, m_directional_lights_count));
+        uint32_t max_lights_count = glm::max(m_point_lights.size(), glm::max(m_spot_lights.size(), glm::max(m_directional_lights.size(), m_area_lights.size())));
         glDispatchCompute(::ceilf(max_lights_count / 1024.0f), 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    }
+}
+
+void ClusteredShading::GenerateAreaLights()
+{
+    auto computeAreaLightPoints = [](glm::vec3 position, glm::vec2 size, glm::vec4 points[4])
+    {
+        points[0] = glm::vec4(position, 1.0) + glm::vec4(0.0,  size.y, -size.x, 0.0);
+        points[1] = glm::vec4(position, 1.0) + glm::vec4(0.0, -size.y, -size.x, 0.0);
+        points[2] = glm::vec4(position, 1.0) + glm::vec4(0.0,  size.y,  size.x, 0.0);
+        points[3] = glm::vec4(position, 1.0) + glm::vec4(0.0, -size.y, size.x, 0.0);
+    };
+
+    auto getPointOnRectPerimeter = [](float width, float height, float x0) -> glm::vec2
+    {
+        float x = x0 * (2.0 * width + 2.0 * height);
+
+        if (x < width)
+            return glm::vec2(x, 0);
+
+        x -= width;
+        if (x < height)
+            return glm::vec2(width, x);
+
+        x -= height;
+        if (x < width)
+            return glm::vec2(x, height);
+        else
+            return glm::vec2(0, x - width);
+    };
+
+    m_area_lights.clear();
+    m_area_lights.resize(m_area_lights_count);
+
+    float step             = 1.0f / (m_area_lights_count / 2.0f);
+    float x0               = 0.0f;
+    float rect_width       = 19.0f;
+    float rect_height      = 7.0f;
+    float area_light_pos_y = 0.3f;
+
+    for (uint32_t i = 0; i < m_area_lights.size(); ++i)
+    {
+        if (i == m_area_lights_count / 2)
+        {
+            area_light_pos_y = 3.8f;
+            x0               = 0.0f;
+        }
+
+        auto& ar = m_area_lights[i];
+
+        ar.base.color     = hsv2rgb(Util::RandomDouble(1.0f, 360.0f), Util::RandomDouble(0.1f, 1.0f), Util::RandomDouble(0.1f, 1.0f));
+        ar.base.intensity = m_area_lights_intensity;
+        ar.two_sided      = m_area_lights_two_sided;
+
+        glm::vec2 p_on_rect = getPointOnRectPerimeter(rect_width, rect_height, x0 + Util::RandomDouble(0.0f, step / 2.0f));
+        glm::vec3 center    = glm::vec3(p_on_rect.x, area_light_pos_y, p_on_rect.y) + glm::vec3(-10.0f, m_area_lights_size.y * 0.5f, -3.5f);
+        computeAreaLightPoints(center, m_area_lights_size, ar.points);
+
+        x0 += step;
     }
 }
 
@@ -446,6 +525,7 @@ void ClusteredShading::UpdateLightsSSBOs()
     glNamedBufferData(m_directional_lights_ssbo,          sizeof(DirectionalLight)                 * m_directional_lights.size(),          m_directional_lights.data(),          GL_DYNAMIC_DRAW);
     glNamedBufferData(m_point_lights_ssbo,                sizeof(PointLight)                       * m_point_lights.size(),                m_point_lights.data(),                GL_DYNAMIC_DRAW);
     glNamedBufferData(m_spot_lights_ssbo,                 sizeof(SpotLight)                        * m_spot_lights.size(),                 m_spot_lights.data(),                 GL_DYNAMIC_DRAW);
+    glNamedBufferData(m_area_lights_ssbo,                 sizeof(AreaLight)                        * m_area_lights.size(),                 m_area_lights.data(),                 GL_DYNAMIC_DRAW);
     glNamedBufferData(m_point_lights_ellipses_radii_ssbo, sizeof(m_point_lights_ellipses_radii[0]) * m_point_lights_ellipses_radii.size(), m_point_lights_ellipses_radii.data(), GL_DYNAMIC_DRAW);
     glNamedBufferData(m_spot_lights_ellipses_radii_ssbo,  sizeof(m_spot_lights_ellipses_radii[0])  * m_spot_lights_ellipses_radii.size(),  m_spot_lights_ellipses_radii.data(),  GL_DYNAMIC_DRAW);
 }
@@ -670,6 +750,8 @@ void ClusteredShading::render()
     glClearNamedBufferData(m_point_light_index_list_ssbo, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
     glClearNamedBufferData(m_spot_light_grid_ssbo,        GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
     glClearNamedBufferData(m_spot_light_index_list_ssbo,  GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
+    glClearNamedBufferData(m_area_light_grid_ssbo,        GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
+    glClearNamedBufferData(m_area_light_index_list_ssbo,  GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &clear_val);
 
     m_cull_lights_shader->bind();
     m_cull_lights_shader->setUniform("u_view_matrix", m_camera->m_view);
@@ -682,7 +764,12 @@ void ClusteredShading::render()
     m_tmo_ps->bindFilterFBO(GL_COLOR_BUFFER_BIT);
     renderLighting();
 
-    // 7. Render skybox
+    // 7. Render area lights geometry
+    m_draw_area_lights_geometry_shader->bind();
+    m_draw_area_lights_geometry_shader->setUniform("u_view_projection", m_camera->m_projection * m_camera->m_view);
+    glDrawArrays(GL_TRIANGLES, 0, 6 * m_area_lights.size());
+
+    // 8. Render skybox
     m_background_shader->bind();
     m_background_shader->setUniform("u_projection", m_camera->m_projection);
     m_background_shader->setUniform("u_view",       glm::mat4(glm::mat3(m_camera->m_view)));
@@ -692,7 +779,7 @@ void ClusteredShading::render()
     glBindVertexArray(m_skybox_vao);
     glDrawArrays     (GL_TRIANGLES, 0, 36);
 
-    // 8. Bloom: downscale
+    // 9. Bloom: downscale
     if (m_bloom_enabled)
     {
         m_downscale_shader->bind();
@@ -739,7 +826,7 @@ void ClusteredShading::render()
         }
     }
 
-    // 9. Apply tone mapping
+    // 10. Apply tone mapping
     m_tmo_ps->render(m_exposure, m_gamma);
 }
 
@@ -783,6 +870,8 @@ void ClusteredShading::renderLighting()
     m_irradiance_cubemap_rt->bindTexture(6);
     m_prefiltered_env_map_rt->bindTexture(7);
     m_brdf_lut_rt->bindTexture(8);
+    m_ltc_mat_lut->Bind(9);
+    m_ltc_amp_lut->Bind(10);
 
     m_sponza_static_object.m_model->Render(m_clustered_pbr_shader);
 
@@ -873,7 +962,7 @@ void ClusteredShading::render_gui()
             }
 
             ImGui::Separator();
-            ImGui::DragScalar("Point Lights Count",      ImGuiDataType_U32, &m_point_lights_count);
+            ImGui::DragScalar("Point Lights Count", ImGuiDataType_U32, &m_point_lights_count);
 
             if (ImGui::DragFloat("Min Point Lights Radius", &min_max_point_light_radius.x, 0.01f, 0.0f))
             {
@@ -886,7 +975,7 @@ void ClusteredShading::render_gui()
                 min_max_point_light_radius.y = glm::max(0.0f, min_max_point_light_radius.y);
                 min_max_point_light_radius.x = glm::min(min_max_point_light_radius.x, min_max_point_light_radius.y);
             }
-            if (ImGui::DragFloat("Point Lights Intensity", &m_point_lights_intensity, 0.01f, 0.0f))
+            if (ImGui::DragFloat("Point Lights Intensity", &m_point_lights_intensity, 0.1f, 0.0f))
             {
                 m_point_lights_intensity = glm::max(0.0f, m_point_lights_intensity);
             }
@@ -918,10 +1007,26 @@ void ClusteredShading::render_gui()
                 min_max_spot_angles.x = glm::min(min_max_spot_angles.x, min_max_spot_angles.y);
             }
 
-            if (ImGui::DragFloat("Spot Lights Intensity", &m_spot_lights_intensity, 0.01f, 0.0f))
+            if (ImGui::DragFloat("Spot Lights Intensity", &m_spot_lights_intensity, 0.1f, 0.0f))
             {
                 m_spot_lights_intensity = glm::max(0.0f, m_spot_lights_intensity);
             }
+
+            ImGui::Separator();
+            ImGui::Checkbox  ("Two Sided Area Lights", &m_area_lights_two_sided);
+            ImGui::DragScalar("Area Lights Count", ImGuiDataType_U32, &m_area_lights_count);
+
+            if (ImGui::DragFloat("Area Lights Intensity", &m_area_lights_intensity, 0.1f, 0.0f))
+            {
+                m_area_lights_intensity = glm::max(0.0f, m_area_lights_intensity);
+            }
+
+            if (ImGui::DragFloat2("Area Lights Size", &m_area_lights_size[0], 0.01f, 0.1f))
+            {
+                m_area_lights_size = glm::max(glm::vec2(0.1f), m_area_lights_size);
+            }
+
+            ImGui::Spacing();
 
             if (ImGui::Button("Normalize Lights Radii"))
             {
@@ -943,6 +1048,7 @@ void ClusteredShading::render_gui()
             {
                 GeneratePointLights();
                 GenerateSpotLights();
+                GenerateAreaLights();
                 UpdateLightsSSBOs();
             }
 

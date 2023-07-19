@@ -1,6 +1,10 @@
 #include "shared.h"
+#include "area_light_ltc.glh"
 
-#define PI 3.141592653589793238462643
+#ifndef PI
+    #define PI 3.141592653589793238462643
+#endif
+
 const float MAX_REFLECTION_LOD = 4.0; // mips in range [0, 4]
 
 layout (location = 0) in vec2 in_texcoord;
@@ -37,13 +41,13 @@ uniform vec3  u_cam_pos;
 
 struct MaterialProperties
 {
-	vec3 albedo;
-	vec3 normal;
-	vec3 emission;
-	float metallic;
-	float roughness;
-	float ao;
-	float opacity;
+    vec3 albedo;
+    vec3 normal;
+    vec3 emission;
+    float metallic;
+    float roughness;
+    float ao;
+    float opacity;
 };
 
 vec3 getNormalFromMap()
@@ -65,26 +69,26 @@ vec3 getNormalFromMap()
 
 MaterialProperties getMaterialProperties(vec3 normal)
 {
-	MaterialProperties material;
+    MaterialProperties material;
 
-	vec4 albedo_opacity = texture(u_albedo_map, in_texcoord);
+    vec4 albedo_opacity = texture(u_albedo_map, in_texcoord);
     material.albedo    = u_has_albedo_map    ? albedo_opacity.rgb                       : u_albedo;
-	material.emission  = u_has_emissive_map  ? texture(u_emissive_map, in_texcoord).rgb : u_emission;
-	material.normal    = u_has_normal_map    ? getNormalFromMap()                       : normal;
+    material.emission  = u_has_emissive_map  ? texture(u_emissive_map, in_texcoord).rgb : u_emission;
+    material.normal    = u_has_normal_map    ? getNormalFromMap()                       : normal;
     material.metallic  = u_has_metallic_map  ? texture(u_metallic_map, in_texcoord).b   : u_metallic;
     material.roughness = u_has_roughness_map ? texture(u_roughness_map, in_texcoord).g  : u_roughness;
-	material.ao        = u_has_ao_map        ? texture(u_ao_map, in_texcoord).r         : u_ao;
-	material.opacity   = albedo_opacity.a;
+    material.ao        = u_has_ao_map        ? texture(u_ao_map, in_texcoord).r         : u_ao;
+    material.opacity   = albedo_opacity.a;
 
-	return material;
+    return material;
 }
 
 float linearDepth(float depth, float z_near, float z_far)
 {
-	float ndc = depth * 2.0 - 1.0;
-	float linear_depth = 2.0 * z_near * z_far / (z_far + z_near - ndc * (z_far - z_near));
-	
-	return linear_depth;
+    float ndc = depth * 2.0 - 1.0;
+    float linear_depth = 2.0 * z_near * z_far / (z_far + z_near - ndc * (z_far - z_near));
+    
+    return linear_depth;
 }
 
 vec3 fresnelSchlick(float cos_theta, vec3 F0)
@@ -163,36 +167,36 @@ vec3 indirectLightingIBL(vec3 world_pos, MaterialProperties material)
 vec3 pbr(BaseLight base, vec3 direction, vec3 world_pos, float attenuation, MaterialProperties material)
 {
     vec3 wo         = normalize(u_cam_pos - world_pos);
-	vec3 radiance   = vec3(0.0);
+    vec3 radiance   = vec3(0.0);
 
-	// fresnel reflectance at normal incidence
+    // fresnel reflectance at normal incidence
     vec3 F0 = vec3(0.04); // base reflectance
          F0 = mix(F0, material.albedo, material.metallic);
 
-	// calculate radiance
-	{	    
+    // calculate radiance
+    {	    
         vec3 wi               = normalize(direction);
         vec3 h                = normalize(wo + wi);
         vec3 light_irradiance = base.color * base.intensity;
-	    
+        
         // cook-torrance brdf
         float NDF = distributionGGX(material.normal, h, material.roughness);
         float G   = geometrySmith(material.normal, wo, wi, material.roughness);
-	    vec3  F   = fresnelSchlick(max(dot(h, wo), 0.0), F0);
-	    
+        vec3  F   = fresnelSchlick(max(dot(h, wo), 0.0), F0);
+        
         float NdotL    = max(dot(material.normal, wi), 0.0);
         vec3  num      = NDF * G * F;
         float denom    = 4.0 * max(dot(material.normal, wo), 0.0) * NdotL;
         vec3  specular = num / max(denom, 1e-5);
-	    
+        
         vec3 ks = F;
         vec3 kd = 1.0 - ks;
              kd = kd * (1.0 - material.metallic);
-	    
+        
         radiance += (kd * material.albedo / PI + specular) * light_irradiance * NdotL * attenuation;
-	}
+    }
 
-	return radiance;
+    return radiance;
 }
 
 // source: https://google.github.io/filament/Filament.md.html
@@ -234,12 +238,40 @@ vec3 calcPointLight(PointLight light, vec3 world_pos, MaterialProperties materia
 
 vec3 calcSpotLight(SpotLight light, vec3 world_pos, MaterialProperties material)
 {
-    vec3  L               = normalize(world_pos - light.point.position);
-	vec3  posToLight      = light.point.position - world_pos;
+    vec3  L            = normalize(world_pos - light.point.position);
+    vec3  pos_to_light = light.point.position - world_pos;
 
-    float attenuation     = getSquareFalloffAttenuation(posToLight, 1.0 / light.point.radius);
-	      attenuation    *= getSpotAngleAttenuation(L, -light.direction, light.inner_angle, light.outer_angle);
-	vec3  light_direction = posToLight;
+    float attenuation     = getSquareFalloffAttenuation(pos_to_light, 1.0 / light.point.radius);
+          attenuation    *= getSpotAngleAttenuation(L, -light.direction, light.inner_angle, light.outer_angle);
+    vec3  light_direction = pos_to_light;
 
-	return pbr(light.point.base, light_direction, world_pos, attenuation, material);
+    return pbr(light.point.base, light_direction, world_pos, attenuation, material);
+}
+
+vec3 calcLtcAreaLight(AreaLight light, vec3 world_pos, MaterialProperties material)
+{
+    vec3 F0         = vec3(0.04); // base reflectance
+    vec3 diff_color = material.albedo * (1.0 - material.metallic);
+    vec3 spec_color = mix(F0, material.albedo, material.metallic);
+
+    vec3  N         = material.normal;
+    vec3  V         = normalize(u_cam_pos - world_pos);
+    float cos_theta = max(dot(N, V), 0.0);
+
+    // diffuse term
+    vec3 diff  = ltcEvaluate(N, V, world_pos, mat3(1), light.points, light.two_sided); 
+         diff *= diff_color * light.base.color;
+
+    // specular term
+    vec2 coords  = ltcCoords(cos_theta, material.roughness);
+    mat3 Minv    = ltcMatrix(s_ltc_mat, coords);
+    vec2 schlick = texture2D(s_ltc_amp, coords).xy;
+
+    vec3 spec  = ltcEvaluate(N, V, world_pos, Minv, light.points, light.two_sided);
+         spec *= spec_color * schlick.x + (1.0 - spec_color) * schlick.y;
+
+    vec3 radiance  = light.base.intensity * (diff + spec);
+         radiance /= 2.0 * PI;
+
+    return radiance;;
 }

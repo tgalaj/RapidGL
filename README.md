@@ -160,4 +160,10 @@ The demo is able to render ~100k lights at interactive frame rates (> 30FPS) on 
 
 To further improve the performance, you may look into adding lights BVH structure as described in O. Olsson's paper. [Jeremiah van Oosten's DX12 demo](https://github.com/jpvanoosten/VolumeTiledForwardShading) includes the fully optimized version of clustered shading algorithm. I highly recommend looking into it.
 
-<img src="screenshots/27_clustered_shading.png" width="50%" height="50%" alt="Clustered Forward Shading implementation." />
+**19/07/2023 update:**
+The demo now also supports the LTC Area Lights based on Eric Heitz's paper *[Real-Time Polygonal-Light Shading with Linearly Transformed Cosines (2016)](https://eheitzresearch.wordpress.com/415-2/)*. 
+The area lights are also being culled by the clustered shading algorithm.
+
+<img src="screenshots/27_clustered_shading0.png" width="50%" height="50%" alt="Clustered Forward Shading implementation." />
+
+<img src="screenshots/27_clustered_shading1.png" width="50%" height="50%" alt="Clustered Forward Shading implementation with Area Lights." />

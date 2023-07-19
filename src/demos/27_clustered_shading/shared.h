@@ -3,6 +3,7 @@
 #define vec3 alignas(16) glm::vec3
 #define vec4 alignas(16) glm::vec4
 #define uint alignas(4)  uint32_t
+#define bool alignas(4)  bool
 #endif
 
 #define CLUSTERS_SSBO_BINDING_INDEX                    0
@@ -18,6 +19,9 @@
 #define SPOT_LIGHT_GRID_SSBO_BINDING_INDEX             10
 #define UNIQUE_ACTIVE_CLUSTERS_SSBO_BINDING_INDEX      11
 #define CULL_LIGHTS_DISPATCH_ARGS_SSBO_BINDING_INDEX   12
+#define AREA_LIGHTS_SSBO_BINDING_INDEX                 13
+#define AREA_LIGHT_INDEX_LIST_SSBO_BINDING_INDEX       14
+#define AREA_LIGHT_GRID_SSBO_BINDING_INDEX             15
 
 struct BaseLight
 {
@@ -46,6 +50,13 @@ struct SpotLight
     float outer_angle;
 };
 
+struct AreaLight
+{
+    BaseLight base;
+    vec4 points[4];
+    bool two_sided;
+};
+
 struct ClusterAABB
 {
     vec4 min;
@@ -62,4 +73,5 @@ struct LightGrid
 #undef vec3
 #undef vec4
 #undef uint
+#undef bool
 #endif

@@ -3,42 +3,67 @@
 
 layout(std430, binding = POINT_LIGHTS_SSBO_BINDING_INDEX) buffer PointLightSSBO
 {
-	PointLight point_lights[];
+    PointLight point_lights[];
 };
 
 layout(std430, binding = SPOT_LIGHTS_SSBO_BINDING_INDEX) buffer SpotLightsSSBO
 {
-	SpotLight spot_lights[];
+    SpotLight spot_lights[];
+};
+
+layout(std430, binding = AREA_LIGHTS_SSBO_BINDING_INDEX) buffer AreaLightsSSBO
+{
+    AreaLight area_lights[];
 };
 
 layout(std430, binding = POINT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX) buffer PointEllipsesRadii
 {
-	vec4 point_ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+    vec4 point_ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 };
 
 layout(std430, binding = SPOT_LIGHTS_ELLIPSES_RADII_SSBO_BINDING_INDEX) buffer SpotEllipsesRadii
 {
-	vec4 spot_ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
+    vec4 spot_ellipses_radii[]; // [x, y, z] => [ellipse a radius, ellipse b radius, light move speed]
 };
 
 uniform float u_time;
+uniform bool  u_two_sided;
+uniform mat4  u_rotation_matrix;
+
+mat4 translate(vec3 p)
+{
+    return mat4(vec4(1, 0, 0, 0), vec4(0, 1, 0, 0), vec4(0, 0, 1, 0), vec4(p, 1));
+}
 
 layout(local_size_x = 1024) in;
 void main()
 {
-	uint thread_ID = gl_GlobalInvocationID.x;
+    uint thread_ID = gl_GlobalInvocationID.x;
 
-	// Update point lights
-	if (thread_ID < point_lights.length())
-	{
-	    point_lights[thread_ID].position.x = point_ellipses_radii[thread_ID].x * cos(u_time * point_ellipses_radii[thread_ID].z);
+    // Update point lights
+    if (thread_ID < point_lights.length())
+    {
+        point_lights[thread_ID].position.x = point_ellipses_radii[thread_ID].x * cos(u_time * point_ellipses_radii[thread_ID].z);
         point_lights[thread_ID].position.z = point_ellipses_radii[thread_ID].y * sin(u_time * point_ellipses_radii[thread_ID].z);
-	}
+    }
 
-	// Update spot lights
-	if (thread_ID < spot_lights.length())
-	{
-	    spot_lights[thread_ID].point.position.x = spot_ellipses_radii[thread_ID].x * cos(u_time * spot_ellipses_radii[thread_ID].z);
+    // Update spot lights
+    if (thread_ID < spot_lights.length())
+    {
+        spot_lights[thread_ID].point.position.x = spot_ellipses_radii[thread_ID].x * cos(u_time * spot_ellipses_radii[thread_ID].z);
         spot_lights[thread_ID].point.position.z = spot_ellipses_radii[thread_ID].y * sin(u_time * spot_ellipses_radii[thread_ID].z);
-	}
+    }
+
+    // Update area lights
+    if (thread_ID < area_lights.length())
+    {
+        // Rotate each area light around it's center point
+        vec3 center = vec3(area_lights[thread_ID].points[1] + area_lights[thread_ID].points[2]) / 2.0;
+
+        for (uint i = 0; i < 4; ++i)
+        {
+            area_lights[thread_ID].points[i] = translate(center.xyz) * u_rotation_matrix * translate(-center.xyz) * area_lights[thread_ID].points[i];
+        }
+        area_lights[thread_ID].two_sided = u_two_sided;
+    }
 }
