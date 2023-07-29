@@ -296,7 +296,7 @@ namespace RGL
             // Only one texture of a given type is being loaded
             if (material->GetTexture(type, 0, &path, NULL, NULL, NULL, NULL, texture_map_mode) == AI_SUCCESS)
             {
-                bool is_srgb = (type == aiTextureType_DIFFUSE);
+                bool is_srgb = (type == aiTextureType_DIFFUSE) || (type == aiTextureType_EMISSIVE) || (type == aiTextureType_BASE_COLOR);
 
                 std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>();
                 const aiTexture* paiTexture = scene->GetEmbeddedTexture(path.C_Str());
