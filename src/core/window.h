@@ -37,7 +37,9 @@ namespace RGL
         static GLFWwindow * m_window;
         static std::string  m_title;
         static glm::mat4    m_viewport_matrix;
-        static glm::vec2    m_window_size;
+        static glm::ivec2   m_window_pos;
+        static glm::ivec2   m_window_size;
+        static glm::ivec2   m_viewport_size;
 
         static void setViewportMatrix(int width, int height);
 
