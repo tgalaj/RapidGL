@@ -1,6 +1,8 @@
 #include "static_model.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/component_wise.hpp>
 
 #include <assimp/postprocess.h>

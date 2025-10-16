@@ -761,7 +761,6 @@ void ClusteredShading::render()
     glMemoryBarrier          (GL_SHADER_STORAGE_BARRIER_BIT);
 
     // 6. Render lighting
-    m_tmo_ps->bindFilterFBO(GL_COLOR_BUFFER_BIT);
     renderLighting();
 
     // 7. Render area lights geometry
@@ -849,6 +848,8 @@ void ClusteredShading::renderLighting()
     glDepthMask(0);
     glColorMask(1, 1, 1, 1);
     glDepthFunc(GL_EQUAL);
+
+    m_tmo_ps->bindFilterFBO(GL_COLOR_BUFFER_BIT);
 
     auto view_projection = m_camera->m_projection * m_camera->m_view;
 

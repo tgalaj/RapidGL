@@ -1,7 +1,9 @@
 #include "animated_model.h"
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <assimp/postprocess.h>
+#include <glm/gtc/matrix_transform.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
 
